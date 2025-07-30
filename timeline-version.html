@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fallen Soldiers - Timeline Memorial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stats-header {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            text-align: center;
+            background: rgba(255,255,255,0.9);
+            padding: 15px 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .total-count {
+            font-size: 3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .count-label {
+            font-size: 1.2em;
+            opacity: 0.7;
+            color: #666;
+        }
+
+        .names-container {
+            position: fixed;
+            top: 80px;
+            bottom: 120px;
+            left: 5px;
+            right: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            align-content: flex-start;
+            gap: 3.3px;
+            overflow: hidden;
+            justify-content: center;
+            direction: rtl;
+        }
+
+        .soldier-name {
+            font-family: 'Handjet', monospace;
+            font-size: 8px; /* will be dynamically calculated */
+            font-weight: 400;
+            padding: 2px 4px;
+            background: rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            line-height: 1.1;
+            text-decoration: none;
+            -webkit-text-decoration-line: none;
+            text-decoration-line: none;
+            font-feature-settings: normal;
+        }
+
+        .soldier-name:hover {
+            background: rgba(0,0,0,0.3);
+            transform: scale(1.05);
+        }
+
+        .soldier-name.fallen {
+            opacity: 0.2;
+            background: rgba(255,100,100,0.1);
+        }
+
+        .soldier-name.alive {
+            opacity: 1;
+            background: rgba(100,255,100,0.2);
+        }
+
+        .timeline-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(15px);
+            border-top: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .timeline-track {
+            position: relative;
+            height: 4px;
+            background: linear-gradient(to right, #666, #333, #666);
+            border-radius: 2px;
+            margin: 15px 0 40px 0;
+            border: 1px solid rgba(0,0,0,0.4);
+        }
+
+        .timeline-track::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(to right, #444, #222, #444);
+            border-radius: 3px;
+            z-index: -1;
+        }
+
+        .timeline-axis {
+            position: absolute;
+            top: 12px;
+            left: 0;
+            right: 0;
+            height: 20px;
+        }
+
+        .timeline-tick {
+            position: absolute;
+            width: 1px;
+            height: 8px;
+            background: rgba(0,0,0,0.4);
+            top: 0;
+        }
+
+        .timeline-tick.major {
+            height: 12px;
+            width: 2px;
+            background: rgba(0,0,0,0.6);
+        }
+
+        .timeline-date-label {
+            position: absolute;
+            top: 15px;
+            font-size: 10px;
+            color: #666;
+            white-space: nowrap;
+            transform: translateX(-50%);
+            font-weight: 500;
+        }
+
+        .timeline-slider {
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            outline: none;
+            position: absolute;
+            top: 0;
+            cursor: pointer;
+            -webkit-appearance: none;
+            z-index: 10;
+        }
+
+        .timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #333 0%, #555 100%);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+
+        .timeline-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.2);
+        }
+
+        .timeline-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #333 0%, #555 100%);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+        }
+
+        .timeline-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .current-date {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <div class="stats-header">
+        <div class="total-count" id="totalCount">0</div>
+        <div class="count-label">soldiers could still be alive</div>
+    </div>
+
+    <div class="names-container" id="namesContainer">
+        <div class="loading">Loading memorial data...</div>
+    </div>
+
+    <div class="timeline-container">
+        <div class="current-date" id="currentDate">If war ended on: Oct 26, 2024</div>
+        <div class="timeline-track">
+            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="643" value="276">
+            <div class="timeline-axis" id="timelineAxis"></div>
+        </div>
+        <div class="timeline-labels">
+            <span>Today (Jul 29, 2025)</span>
+            <span>Oct 26, 2023</span>
+        </div>
+    </div>
+
+    <script>
+        class TimelineMemorial {
+            constructor() {
+                this.soldiers = [];
+                this.oct26Date = new Date('2023-10-26');
+                this.todayDate = new Date('2025-07-29');
+                this.currentEndDate = new Date('2024-10-26');
+                this.init();
+            }
+
+            async init() {
+                await this.loadData();
+                this.setupEventListeners();
+                this.generateTimelineAxis();
+                this.renderAllNames();
+                this.updateVisualization();
+            }
+
+            async loadData() {
+                try {
+                    const response = await fetch('idf-url-increment.csv');
+                    const csvText = await response.text();
+                    this.parseCsvData(csvText);
+                    console.log(`Loaded ${this.soldiers.length} soldiers`);
+                    
+                    if (this.soldiers.length > 0) {
+                        const dates = this.soldiers.map(s => s.death_date).sort((a,b) => a - b);
+                        console.log('Date range:', dates[0].toLocaleDateString(), 'to', dates[dates.length-1].toLocaleDateString());
+                        
+                        const afterOct26 = this.soldiers.filter(s => s.death_date >= this.oct26Date);
+                        console.log(`${afterOct26.length} soldiers died after Oct 26, 2023`);
+                    }
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    document.getElementById('namesContainer').innerHTML = '<div class="loading">Error loading memorial data</div>';
+                }
+            }
+
+            parseCsvData(csvText) {
+                const lines = csvText.split('\n');
+                let currentRecord = '';
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    if (line.match(/^"\d+-\d+"/)) {
+                        if (currentRecord) {
+                            const soldier = this.parseCsvLine(currentRecord);
+                            if (soldier && soldier.death_date) {
+                                this.soldiers.push(soldier);
+                            }
+                        }
+                        currentRecord = line;
+                    } else {
+                        currentRecord += ' ' + line;
+                    }
+                }
+                
+                if (currentRecord) {
+                    const soldier = this.parseCsvLine(currentRecord);
+                    if (soldier && soldier.death_date) {
+                        this.soldiers.push(soldier);
+                    }
+                }
+            }
+
+            parseCsvLine(line) {
+                const deathDateField = line;
+                
+                const hebrewMonths = {
+                    'באוקטובר': 9,
+                    'בנובמבר': 10,
+                    'בדצמבר': 11,
+                    'בינואר': 0,
+                    'בפברואר': 1,
+                    'במרץ': 2,
+                    'באפריל': 3,
+                    'במאי': 4,
+                    'ביוני': 5,
+                    'ביולי': 6,
+                    'באוגוסט': 7,
+                    'בספטמבר': 8
+                };
+
+                let deathDate = null;
+                let matchedDateStr = '';
+                
+                for (const [hebrewMonth, monthIndex] of Object.entries(hebrewMonths)) {
+                    const pattern = new RegExp(`(\\d{1,2}) ${hebrewMonth} (\\d{4})`);
+                    const match = deathDateField.match(pattern);
+                    if (match) {
+                        const day = parseInt(match[1]);
+                        const year = parseInt(match[2]);
+                        deathDate = new Date(year, monthIndex, day);
+                        matchedDateStr = match[0];
+                        break;
+                    }
+                }
+
+                if (!deathDate) return null;
+
+                // Simple approach: extract from the whole line using simpler patterns
+                let name = 'Unknown';
+                let rank = 'Unknown'; 
+                let unit = 'Unknown';
+                
+                // Extract name: look for pattern with Hebrew text followed by ז"ל
+                const namePattern = /\s+([א-ת\s']+)\s+ז""ל/;
+                const nameMatch = line.match(namePattern);
+                if (nameMatch) {
+                    const fullName = nameMatch[1].trim();
+                    // Remove rank prefix if it exists
+                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם)\s+/, '');
+                    name = cleanName.trim();
+                }
+                
+                // Extract rank: look for common rank patterns at start
+                const rankPattern = /","(רס""[א-ת\(\)\\s]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם[^"]*)/;
+                const rankMatch = line.match(rankPattern);
+                if (rankMatch) {
+                    rank = rankMatch[1].trim();
+                }
+                
+                // Extract unit: appears after ז"ל and before נפל
+                const unitPattern = /ז""ל","([^"]+)","([^"]+)","נפל/;
+                const unitMatch = line.match(unitPattern);  
+                if (unitMatch) {
+                    unit = unitMatch[2].trim();
+                }
+
+                return {
+                    name: name,
+                    rank: rank,
+                    unit: unit,
+                    death_date: deathDate,
+                    death_date_string: matchedDateStr
+                };
+            }
+
+            generateTimelineAxis() {
+                const axisContainer = document.getElementById('timelineAxis');
+                axisContainer.innerHTML = '';
+                
+                const totalDays = 643; // From today back to Oct 26, 2023
+                const startDate = new Date('2023-10-26');
+                const endDate = new Date('2025-07-29');
+                
+                // Generate major ticks every 3 months and minor ticks every month
+                const majorTickMonths = [0, 3, 6, 9, 12, 15, 18, 21]; // Every 3 months
+                const minorTickMonths = [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20]; // Every month
+                
+                // Calculate date positions
+                const monthsTotal = 21; // Approximately 21 months from Oct 2023 to Jul 2025
+                
+                // Major ticks with labels
+                majorTickMonths.forEach(monthOffset => {
+                    if (monthOffset <= monthsTotal) {
+                        const tickDate = new Date(startDate);
+                        tickDate.setMonth(tickDate.getMonth() + monthOffset);
+                        
+                        const position = (monthOffset / monthsTotal) * 100;
+                        
+                        // Create tick mark
+                        const tick = document.createElement('div');
+                        tick.className = 'timeline-tick major';
+                        tick.style.left = position + '%';
+                        axisContainer.appendChild(tick);
+                        
+                        // Create date label
+                        const label = document.createElement('div');
+                        label.className = 'timeline-date-label';
+                        label.style.left = position + '%';
+                        label.textContent = tickDate.toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            year: '2-digit' 
+                        });
+                        axisContainer.appendChild(label);
+                    }
+                });
+                
+                // Minor ticks
+                minorTickMonths.forEach(monthOffset => {
+                    if (monthOffset <= monthsTotal) {
+                        const position = (monthOffset / monthsTotal) * 100;
+                        
+                        const tick = document.createElement('div');
+                        tick.className = 'timeline-tick';
+                        tick.style.left = position + '%';
+                        axisContainer.appendChild(tick);
+                    }
+                });
+            }
+
+            setupEventListeners() {
+                const slider = document.getElementById('timelineSlider');
+                
+                slider.addEventListener('input', (e) => {
+                    const days = parseInt(e.target.value);
+                    
+                    // Calculate end date going back from today
+                    const newEndDate = new Date(this.todayDate);
+                    newEndDate.setDate(newEndDate.getDate() - days);
+                    this.currentEndDate = newEndDate;
+                    
+                    this.updateVisualization();
+                });
+
+                // Recalculate font size when window is resized
+                window.addEventListener('resize', () => {
+                    const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
+                    this.calculateOptimalFontSize(relevantSoldiers.length);
+                });
+            }
+
+            renderAllNames() {
+                const container = document.getElementById('namesContainer');
+                
+                // Filter soldiers who died after Oct 26, 2023
+                const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
+                
+                if (relevantSoldiers.length === 0) {
+                    container.innerHTML = '<div class="loading">No memorial data found</div>';
+                    return;
+                }
+
+                // Sort by death date
+                relevantSoldiers.sort((a, b) => a.death_date - b.death_date);
+
+                const namesHtml = relevantSoldiers.map(soldier => 
+                    `<div class="soldier-name" data-death-date="${soldier.death_date.getTime()}" title="${soldier.rank} - ${soldier.unit} - ${soldier.death_date.toLocaleDateString()}">${soldier.name}</div>`
+                ).join('');
+
+                container.innerHTML = namesHtml;
+                
+                // Calculate and apply optimal font size
+                this.calculateOptimalFontSize(relevantSoldiers.length);
+            }
+
+            calculateOptimalFontSize(totalNames) {
+                const container = document.getElementById('namesContainer');
+                
+                // Give container time to get proper dimensions
+                setTimeout(() => {
+                    const availableWidth = container.clientWidth;
+                    const availableHeight = container.clientHeight;
+                    
+                    if (availableWidth <= 0 || availableHeight <= 0 || totalNames === 0) {
+                        return;
+                    }
+
+                    console.log(`Calculating font size for ${totalNames} names`);
+                    console.log(`Container dimensions: ${availableWidth}x${availableHeight}px`);
+                    
+                    this.performFontSizeCalculation(totalNames, availableWidth, availableHeight);
+                }, 50);
+            }
+
+            performFontSizeCalculation(totalNames, availableWidth, availableHeight) {
+                const soldierNames = document.querySelectorAll('.soldier-name');
+                
+                console.log(`\n=== FONT SIZE CALCULATION START ===`);
+                console.log(`Names: ${totalNames}, Available: ${availableWidth}x${availableHeight}px`);
+                
+                // Create a completely unconstrained test container
+                const testContainer = document.createElement('div');
+                testContainer.style.position = 'absolute';
+                testContainer.style.top = '-9999px';
+                testContainer.style.left = '-9999px';
+                testContainer.style.width = availableWidth + 'px';
+                testContainer.style.display = 'flex';
+                testContainer.style.flexWrap = 'wrap';
+                testContainer.style.gap = '3.3px';
+                testContainer.style.direction = 'rtl';
+                testContainer.style.visibility = 'hidden';
+                
+                // Create fresh elements with only essential styling
+                soldierNames.forEach(name => {
+                    const clone = document.createElement('div');
+                    clone.textContent = name.textContent;
+                    // Apply only essential styles, avoid copying CSS that might override font-size
+                    clone.style.padding = '2px 4px';
+                    clone.style.background = 'rgba(0,0,0,0.1)';
+                    clone.style.cursor = 'pointer';
+                    clone.style.lineHeight = '1';
+                    clone.style.fontWeight = '400';
+                    clone.style.fontFamily = 'Handjet, monospace';
+                    // Don't set font-size yet - we'll override it in the loop
+                    testContainer.appendChild(clone);
+                });
+                
+                document.body.appendChild(testContainer);
+                
+                console.log(`\n--- Testing with unconstrained container ---`);
+                
+                // First pass: find approximate range
+                const roughSizes = [3, 5, 8, 10, 12, 15, 18, 20, 25, 30];
+                let maxFittingSize = 3;
+                let minOverflowSize = 30;
+                
+                // Rough pass to find range
+                console.log(`--- Rough pass ---`);
+                for (const size of roughSizes) {
+                    const naturalHeight = this.testFontSize(testContainer, size);
+                    const fits = naturalHeight <= availableHeight;
+                    
+                    console.log(`Rough test ${size}px: height=${naturalHeight}px, fits=${fits}`);
+                    
+                    if (fits) {
+                        maxFittingSize = size;
+                    } else {
+                        minOverflowSize = size;
+                        break;
+                    }
+                }
+                
+                console.log(`Range found: ${maxFittingSize}px fits, ${minOverflowSize}px overflows`);
+                
+                // Precise pass: test every pixel between maxFitting and minOverflow
+                console.log(`--- Precise pass from ${maxFittingSize}px to ${minOverflowSize}px ---`);
+                let optimalFontSize = maxFittingSize;
+                
+                for (let size = maxFittingSize + 1; size < minOverflowSize; size++) {
+                    const naturalHeight = this.testFontSize(testContainer, size);
+                    const fits = naturalHeight <= availableHeight;
+                    
+                    console.log(`Precise test ${size}px: height=${naturalHeight}px, fits=${fits}`);
+                    
+                    if (fits) {
+                        optimalFontSize = size;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Also test fractional sizes for maximum precision
+                console.log(`--- Ultra-precise fractional test around ${optimalFontSize}px ---`);
+                const fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+                
+                for (const fraction of fractions) {
+                    const size = optimalFontSize + fraction;
+                    const naturalHeight = this.testFontSize(testContainer, size);
+                    const fits = naturalHeight <= availableHeight;
+                    
+                    console.log(`Fractional test ${size}px: height=${naturalHeight}px, fits=${fits}`);
+                    
+                    if (fits) {
+                        optimalFontSize = size;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Clean up test container
+                document.body.removeChild(testContainer);
+                
+                console.log(`\n--- Final optimal size: ${optimalFontSize}px ---`);
+
+                // Apply the final optimal font size
+                soldierNames.forEach(name => {
+                    name.style.fontSize = optimalFontSize + 'px';
+                });
+
+                console.log(`Applied optimal font size: ${optimalFontSize}px to ${soldierNames.length} elements`);
+            }
+
+            testFontSize(testContainer, size) {
+                const children = Array.from(testContainer.children);
+                children.forEach((element) => {
+                    element.style.removeProperty('font-size');
+                    element.style.setProperty('font-size', size + 'px', 'important');
+                    const currentStyle = element.style.cssText;
+                    element.style.cssText = currentStyle + `; font-size: ${size}px !important;`;
+                });
+                
+                // Force layout recalculation
+                testContainer.offsetHeight;
+                testContainer.getBoundingClientRect();
+                
+                return testContainer.offsetHeight;
+            }
+
+            updateVisualization() {
+                const currentDateLabel = document.getElementById('currentDate');
+                const totalCount = document.getElementById('totalCount');
+                
+                // Update date display
+                currentDateLabel.textContent = `If war ended on: ${this.currentEndDate.toLocaleDateString()}`;
+                
+                // Update all soldier name elements
+                const soldierElements = document.querySelectorAll('.soldier-name');
+                let aliveCount = 0;
+                
+                soldierElements.forEach(el => {
+                    const deathDate = new Date(parseInt(el.dataset.deathDate));
+                    
+                    if (deathDate > this.currentEndDate) {
+                        // This soldier would still be alive
+                        el.className = 'soldier-name alive';
+                        aliveCount++;
+                    } else {
+                        // This soldier would still have died
+                        el.className = 'soldier-name fallen';
+                    }
+                });
+                
+                // Update count
+                totalCount.textContent = aliveCount;
+            }
+        }
+
+        // Initialize the memorial
+        new TimelineMemorial();
+    </script>
+</body>
+</html>
