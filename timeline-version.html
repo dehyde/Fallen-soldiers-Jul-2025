@@ -54,7 +54,7 @@
         .names-container {
             position: fixed;
             top: 80px;
-            bottom: 120px;
+            bottom: 80px;
             left: 5px;
             right: 5px;
             display: flex;
@@ -62,8 +62,8 @@
             align-items: flex-start;
             align-content: flex-start;
             gap: 3.3px;
-            overflow: hidden;
-            justify-content: center;
+            overflow: visible;
+            justify-content: flex-start;
             direction: rtl;
         }
 
@@ -102,7 +102,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 120px;
+            height: 60px;
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(15px);
             border-top: 2px solid rgba(0,0,0,0.3);
@@ -110,57 +110,60 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 20px;
+            padding: 10px;
             z-index: 100;
         }
 
         .timeline-track {
             position: relative;
             height: 4px;
-            background: linear-gradient(to right, #666, #333, #666);
+            background: rgba(0,0,0,0.2);
             border-radius: 2px;
-            margin: 15px 0 40px 0;
+            margin: 5px 0 15px 0;
             border: 1px solid rgba(0,0,0,0.4);
         }
 
-        .timeline-track::before {
-            content: '';
+        .timeline-progress {
             position: absolute;
-            top: -1px;
-            left: -1px;
-            right: -1px;
-            bottom: -1px;
-            background: linear-gradient(to right, #444, #222, #444);
-            border-radius: 3px;
-            z-index: -1;
+            top: 0;
+            right: 0;
+            height: 4px;
+            width: 57.1%;
+            background: #000;
+            border-radius: 2px;
+            transition: width 0.2s ease;
+            z-index: 1;
+            pointer-events: none;
         }
 
         .timeline-axis {
             position: absolute;
-            top: 12px;
+            top: 5px;
             left: 0;
             right: 0;
-            height: 20px;
+            height: 10px;
+            z-index: 5;
+            pointer-events: none;
         }
 
         .timeline-tick {
             position: absolute;
             width: 1px;
-            height: 8px;
+            height: 2px;
             background: rgba(0,0,0,0.4);
             top: 0;
         }
 
         .timeline-tick.major {
-            height: 12px;
-            width: 2px;
+            height: 3px;
+            width: 1px;
             background: rgba(0,0,0,0.6);
         }
 
         .timeline-date-label {
             position: absolute;
-            top: 15px;
-            font-size: 10px;
+            top: 5px;
+            font-size: 8px;
             color: #666;
             white-space: nowrap;
             transform: translateX(-50%);
@@ -176,19 +179,25 @@
             top: 0;
             cursor: pointer;
             -webkit-appearance: none;
-            z-index: 10;
+            z-index: 20;
         }
 
         .timeline-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
+            width: 12px;
+            height: 12px;
             background: linear-gradient(135deg, #333 0%, #555 100%);
             border: 2px solid #fff;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
+            opacity: 1;
+            z-index: 30;
+        }
+
+        .timeline-container:hover .timeline-slider::-webkit-slider-thumb {
+            opacity: 1;
         }
 
         .timeline-slider::-webkit-slider-thumb:hover {
@@ -197,13 +206,19 @@
         }
 
         .timeline-slider::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
+            width: 12px;
+            height: 12px;
             background: linear-gradient(135deg, #333 0%, #555 100%);
             border: 2px solid #fff;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+            opacity: 1;
+            transition: opacity 0.2s ease;
+        }
+
+        .timeline-container:hover .timeline-slider::-moz-range-thumb {
+            opacity: 1;
         }
 
         .timeline-labels {
@@ -215,13 +230,6 @@
             color: #555;
         }
 
-        .current-date {
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 12px;
-            color: #333;
-        }
 
         .loading {
             text-align: center;
@@ -241,14 +249,14 @@
     </div>
 
     <div class="timeline-container">
-        <div class="current-date" id="currentDate">If war ended on: Oct 26, 2024</div>
         <div class="timeline-track">
+            <div class="timeline-progress" id="timelineProgress"></div>
             <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="643" value="276">
             <div class="timeline-axis" id="timelineAxis"></div>
         </div>
         <div class="timeline-labels">
-            <span>Today (Jul 29, 2025)</span>
             <span>Oct 26, 2023</span>
+            <span>Today (Jul 29, 2025)</span>
         </div>
     </div>
 
@@ -267,7 +275,28 @@
                 this.setupEventListeners();
                 this.generateTimelineAxis();
                 this.renderAllNames();
+                
+                // Set initial timeline progress (show war period on right)
+                const initialProgress = ((643 - 276) / 643) * 100; // 276 is the default slider value
+                document.getElementById('timelineProgress').style.width = initialProgress + '%';
+                
                 this.updateVisualization();
+                
+                // Recalculate font size after timeline changes
+                setTimeout(() => {
+                    const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
+                    console.log('Forcing font recalculation for', relevantSoldiers.length, 'soldiers');
+                    
+                    // Force container dimensions update
+                    const container = document.getElementById('namesContainer');
+                    const availableWidth = container.clientWidth;
+                    const availableHeight = container.clientHeight;
+                    console.log('New container dimensions:', availableWidth, 'x', availableHeight);
+                    
+                    if (availableWidth > 0 && availableHeight > 0) {
+                        this.performFontSizeCalculation(relevantSoldiers.length, availableWidth, availableHeight);
+                    }
+                }, 200);
             }
 
             async loadData() {
@@ -457,6 +486,10 @@
                     newEndDate.setDate(newEndDate.getDate() - days);
                     this.currentEndDate = newEndDate;
                     
+                    // Update timeline progress (show war period on right)
+                    const progress = ((643 - days) / 643) * 100;
+                    document.getElementById('timelineProgress').style.width = progress + '%';
+                    
                     this.updateVisualization();
                 });
 
@@ -493,21 +526,39 @@
 
             calculateOptimalFontSize(totalNames) {
                 const container = document.getElementById('namesContainer');
+                const soldierNames = document.querySelectorAll('.soldier-name');
+                const timeline = document.querySelector('.timeline-container');
+                const statsHeader = document.querySelector('.stats-header');
                 
-                // Give container time to get proper dimensions
+                console.log(`Simple font calculation for ${totalNames} names`);
+                
+                // Debug container bounds vs actual space
+                const containerRect = container.getBoundingClientRect();
+                const timelineRect = timeline.getBoundingClientRect();
+                const statsRect = statsHeader.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                
+                console.log(`Viewport height: ${viewportHeight}px`);
+                console.log(`Stats header: top=${statsRect.top}, bottom=${statsRect.bottom}, height=${statsRect.height}`);
+                console.log(`Container: top=${containerRect.top}, bottom=${containerRect.bottom}, height=${containerRect.height}`);
+                console.log(`Timeline: top=${timelineRect.top}, bottom=${timelineRect.bottom}, height=${timelineRect.height}`);
+                console.log(`Available space for names: ${containerRect.height}px`);
+                console.log(`Gap between container bottom and timeline top: ${timelineRect.top - containerRect.bottom}px`);
+                
+                // Use a conservative font size that should fit within the available height
+                const conservativeFontSize = 8; // Increased from 6px now that we have proper spacing
+                
+                soldierNames.forEach(name => {
+                    name.style.fontSize = conservativeFontSize + 'px';
+                });
+                
+                console.log(`Using conservative font size: ${conservativeFontSize}px`);
+                
+                // Check if it actually fits
                 setTimeout(() => {
-                    const availableWidth = container.clientWidth;
-                    const availableHeight = container.clientHeight;
-                    
-                    if (availableWidth <= 0 || availableHeight <= 0 || totalNames === 0) {
-                        return;
-                    }
-
-                    console.log(`Calculating font size for ${totalNames} names`);
-                    console.log(`Container dimensions: ${availableWidth}x${availableHeight}px`);
-                    
-                    this.performFontSizeCalculation(totalNames, availableWidth, availableHeight);
-                }, 50);
+                    const finalCheck = container.scrollHeight > container.clientHeight;
+                    console.log(`Final check - is overflowing: ${finalCheck}`);
+                }, 100);
             }
 
             performFontSizeCalculation(totalNames, availableWidth, availableHeight) {
@@ -516,17 +567,22 @@
                 console.log(`\n=== FONT SIZE CALCULATION START ===`);
                 console.log(`Names: ${totalNames}, Available: ${availableWidth}x${availableHeight}px`);
                 
-                // Create a completely unconstrained test container
+                // Create a test container that exactly matches the real container
                 const testContainer = document.createElement('div');
                 testContainer.style.position = 'absolute';
                 testContainer.style.top = '-9999px';
                 testContainer.style.left = '-9999px';
                 testContainer.style.width = availableWidth + 'px';
+                testContainer.style.height = availableHeight + 'px';
                 testContainer.style.display = 'flex';
                 testContainer.style.flexWrap = 'wrap';
+                testContainer.style.alignItems = 'flex-start';
+                testContainer.style.alignContent = 'flex-start';
                 testContainer.style.gap = '3.3px';
+                testContainer.style.justifyContent = 'center';
                 testContainer.style.direction = 'rtl';
                 testContainer.style.visibility = 'hidden';
+                testContainer.style.overflow = 'hidden';
                 
                 // Create fresh elements with only essential styling
                 soldierNames.forEach(name => {
@@ -616,6 +672,65 @@
                 });
 
                 console.log(`Applied optimal font size: ${optimalFontSize}px to ${soldierNames.length} elements`);
+                
+                // Debug: log some sample names to see if they're being rendered
+                console.log('Sample names being rendered:');
+                const sampleNames = Array.from(soldierNames).slice(0, 10).map(el => el.textContent);
+                console.log(sampleNames);
+                
+                // Check if container is overflowing
+                const container = document.getElementById('namesContainer');
+                console.log('Container scroll info:', {
+                    scrollHeight: container.scrollHeight,
+                    clientHeight: container.clientHeight,
+                    isOverflowing: container.scrollHeight > container.clientHeight
+                });
+                
+                // Check if all names are actually visible
+                const allNames = document.querySelectorAll('.soldier-name');
+                const visibleNames = Array.from(allNames).filter(name => {
+                    const rect = name.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    return rect.top >= containerRect.top && rect.bottom <= containerRect.bottom &&
+                           rect.left >= containerRect.left && rect.right <= containerRect.right;
+                });
+                console.log(`Total names: ${allNames.length}, Visible names: ${visibleNames.length}`);
+                
+                // Log last few visible names
+                const lastVisible = Array.from(allNames).slice(-10).map(el => el.textContent);
+                console.log('Last 10 names in DOM:', lastVisible);
+                
+                // Find where "רונן שפירו" is in the list
+                const ronenIndex = Array.from(allNames).findIndex(el => el.textContent.includes('רונן שפירו'));
+                console.log(`רונן שפירו is at index: ${ronenIndex} of ${allNames.length}`);
+                
+                // Check names around רונן שפירו with detailed positioning
+                if (ronenIndex >= 0) {
+                    const startIdx = Math.max(0, ronenIndex - 2);
+                    const endIdx = Math.min(allNames.length, ronenIndex + 10);
+                    
+                    console.log(`Checking names from index ${startIdx} to ${endIdx}:`);
+                    for (let i = startIdx; i < endIdx; i++) {
+                        const name = allNames[i];
+                        const rect = name.getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+                        
+                        const isVisible = rect.top >= containerRect.top && rect.bottom <= containerRect.bottom &&
+                                         rect.left >= containerRect.left && rect.right <= containerRect.right;
+                        
+                        console.log(`[${i}] "${name.textContent}": pos(${Math.round(rect.left)}, ${Math.round(rect.top)}) size(${Math.round(rect.width)}x${Math.round(rect.height)}) visible=${isVisible}`);
+                        
+                        if (rect.width === 0 && rect.height === 0) {
+                            console.log(`  ⚠️ Name has zero dimensions!`);
+                        }
+                        if (rect.top > containerRect.bottom) {
+                            console.log(`  ⚠️ Name is below container bottom (${Math.round(containerRect.bottom)})`);
+                        }
+                        if (rect.left > containerRect.right) {
+                            console.log(`  ⚠️ Name is to the right of container`);
+                        }
+                    }
+                }
             }
 
             testFontSize(testContainer, size) {
@@ -631,15 +746,16 @@
                 testContainer.offsetHeight;
                 testContainer.getBoundingClientRect();
                 
-                return testContainer.offsetHeight;
+                // Check if content overflows the fixed height container
+                const containerHeight = testContainer.clientHeight;
+                const scrollHeight = testContainer.scrollHeight;
+                
+                // Return scroll height to check if it exceeds container height
+                return scrollHeight;
             }
 
             updateVisualization() {
-                const currentDateLabel = document.getElementById('currentDate');
                 const totalCount = document.getElementById('totalCount');
-                
-                // Update date display
-                currentDateLabel.textContent = `If war ended on: ${this.currentEndDate.toLocaleDateString()}`;
                 
                 // Update all soldier name elements
                 const soldierElements = document.querySelectorAll('.soldier-name');
