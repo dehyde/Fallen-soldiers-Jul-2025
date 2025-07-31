@@ -6,7 +6,8 @@
       "Bash(powershell:*)",
       "Bash(python:*)",
       "Bash(start \"G:\\My Drive\\Tom''s Files\\code\\Fallen soldiers Jul 2025\\timeline-version.html\")",
-      "Bash(cmd /c start \"\" \"G:\\My Drive\\Tom''s Files\\code\\Fallen soldiers Jul 2025\\timeline-version.html\")"
+      "Bash(cmd /c start \"\" \"G:\\My Drive\\Tom''s Files\\code\\Fallen soldiers Jul 2025\\timeline-version.html\")",
+      "Bash(git stash:*)"
     ],
     "deny": []
   }

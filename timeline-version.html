@@ -6,7 +6,7 @@
     <title>Fallen Soldiers - Timeline Memorial</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@100..900&family=Heebo:wght@100..900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -15,7 +15,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Heebo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: transparent;
             color: #333;
             height: 100vh;
@@ -25,17 +25,7 @@
         }
 
         .stats-header {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            text-align: center;
-            background: rgba(255,255,255,0.9);
-            padding: 15px 30px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0,0,0,0.1);
+            display: none;
         }
 
         .total-count {
@@ -53,8 +43,8 @@
 
         .names-container {
             position: fixed;
-            top: 80px;
-            bottom: 80px;
+            top: 60px;
+            bottom: 60px;
             left: 5px;
             right: 5px;
             display: flex;
@@ -62,14 +52,14 @@
             align-items: flex-start;
             align-content: flex-start;
             gap: 3.3px;
-            overflow: visible;
-            justify-content: flex-start;
+            overflow: hidden;
+            justify-content: center;
             direction: rtl;
         }
 
         .soldier-name {
             font-family: 'Handjet', monospace;
-            font-size: 8px; /* will be dynamically calculated */
+            font-size: 1px; /* will be dynamically calculated */
             font-weight: 400;
             padding: 2px 4px;
             background: rgba(0,0,0,0.1);
@@ -128,7 +118,7 @@
             top: 0;
             right: 0;
             height: 4px;
-            width: 57.1%;
+            width: 0%;
             background: #000;
             border-radius: 2px;
             transition: width 0.2s ease;
@@ -236,12 +226,100 @@
             padding: 40px;
             font-size: 1.5em;
         }
+
+        .draggable-container {
+            position: fixed;
+            top: 50%;
+            right: 100px;
+            transform: translateY(-50%);
+            width: 280px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 4px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,0,0,0.1);
+            z-index: 200;
+            cursor: move;
+            user-select: none;
+            transition: transform 0.2s ease;
+        }
+
+
+        .draggable-container.dragging {
+            transform: scale(1.05);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+        }
+
+
+        .draggable-content {
+            padding: 20px;
+            cursor: move;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .content-text {
+            font-size: 1.1em;
+            line-height: 1.4;
+            color: #333;
+            margin-bottom: 20px;
+            font-family: 'Heebo', sans-serif;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            cursor: default;
+        }
+
+        .cta-primary {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 2px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Heebo', sans-serif;
+        }
+
+        .cta-primary:hover {
+            background: #005a99;
+            transform: translateY(-1px);
+        }
+
+        .cta-tertiary {
+            background: transparent;
+            color: #666;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 2px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Heebo', sans-serif;
+        }
+
+        .cta-tertiary:hover {
+            background: rgba(0,0,0,0.05);
+            border-color: #bbb;
+        }
     </style>
 </head>
 <body>
-    <div class="stats-header">
-        <div class="total-count" id="totalCount">0</div>
-        <div class="count-label">soldiers could still be alive</div>
+    <div class="draggable-container" id="draggableContainer">
+        <div class="draggable-content">
+            <div class="content-text" id="contentText">
+                טוען נתונים...
+            </div>
+            <div class="cta-buttons">
+                <button class="cta-tertiary" id="ctaBack">חזור</button>
+                <button class="cta-primary" id="ctaContinue">המשך</button>
+            </div>
+        </div>
     </div>
 
     <div class="names-container" id="namesContainer">
@@ -251,7 +329,7 @@
     <div class="timeline-container">
         <div class="timeline-track">
             <div class="timeline-progress" id="timelineProgress"></div>
-            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="643" value="276">
+            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="643" value="0">
             <div class="timeline-axis" id="timelineAxis"></div>
         </div>
         <div class="timeline-labels">
@@ -261,28 +339,302 @@
     </div>
 
     <script>
+        class NarrativeEngine {
+            constructor(timeline) {
+                this.timeline = timeline;
+                this.narrativePoints = [];
+                this.currentPointId = 'loaded';
+            }
+
+            async loadNarrative() {
+                try {
+                    const response = await fetch('narrative.csv');
+                    const csvText = await response.text();
+                    console.log('CSV loaded:', csvText.substring(0, 200) + '...');
+                    this.parseNarrativeCsv(csvText);
+                    console.log(`Loaded ${this.narrativePoints.length} narrative points:`, this.narrativePoints);
+                } catch (error) {
+                    console.error('Error loading narrative:', error);
+                    // Fallback content if CSV fails to load
+                    document.getElementById('contentText').innerHTML = 'שגיאה בטעינת הנתונים';
+                }
+            }
+
+            parseNarrativeCsv(csvText) {
+                const lines = csvText.split('\n');
+                const headers = lines[0].split(',');
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const values = this.parseCsvLine(line);
+                    if (values.length === headers.length) {
+                        const point = {};
+                        headers.forEach((header, index) => {
+                            point[header.trim()] = values[index].trim();
+                        });
+                        this.narrativePoints.push(point);
+                    }
+                }
+            }
+
+            parseCsvLine(line) {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current);
+                return result;
+            }
+
+            // Advanced placeholder parsing
+            parseTemplate(content) {
+                return content.replace(/\{\{([^}]+)\}\}/g, (match, placeholder) => {
+                    return this.resolvePlaceholder(placeholder.trim());
+                });
+            }
+
+            resolvePlaceholder(placeholder) {
+                const [type, ...params] = placeholder.split(':');
+                
+                switch(type) {
+                    case 'total_count':
+                        return this.timeline.soldiers.filter(s => s.death_date >= this.timeline.oct26Date).length;
+                    
+                    case 'alive_count':
+                        return this.getAliveCount();
+                    
+                    case 'fallen_count':
+                        return this.getFallenCount();
+                    
+                    case 'fallen_since_date':
+                        const days = parseInt(params[0]) || 0;
+                        return this.getFallenSince(days);
+                    
+                    case 'fallen_on_date':
+                        const targetDays = parseInt(params[0]) || 0;
+                        return this.getFallenOnDate(targetDays);
+                    
+                    case 'date_hebrew':
+                        const daysBack = parseInt(params[0]) || 0;
+                        return this.formatHebrewDate(daysBack);
+                    
+                    case 'days_since_start':
+                        return Math.round((this.timeline.currentEndDate - this.timeline.oct26Date) / (1000 * 60 * 60 * 24));
+                    
+                    case 'percentage_fallen':
+                        const total = this.timeline.soldiers.filter(s => s.death_date >= this.timeline.oct26Date).length;
+                        const fallen = this.getFallenCount();
+                        return Math.round((fallen / total) * 100);
+                    
+                    case 'soldier_name':
+                        return this.getSoldierName(params[0]);
+                    
+                    case 'months_since_start':
+                        return this.getMonthsSinceStart();
+                    
+                    case 'average_monthly_casualties':
+                        return this.getAverageMonthlycasualties();
+                    
+                    default:
+                        return `{{${placeholder}}}`;
+                }
+            }
+
+            getAliveCount() {
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.oct26Date && 
+                    s.death_date > this.timeline.currentEndDate
+                ).length;
+            }
+
+            getFallenCount() {
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.oct26Date && 
+                    s.death_date <= this.timeline.currentEndDate
+                ).length;
+            }
+
+            getFallenSince(daysBack) {
+                const sinceDate = new Date(this.timeline.currentEndDate);
+                sinceDate.setDate(sinceDate.getDate() - daysBack);
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.oct26Date && 
+                    s.death_date <= this.timeline.currentEndDate &&
+                    s.death_date >= sinceDate
+                ).length;
+            }
+
+            getFallenOnDate(daysFromToday) {
+                const targetDate = new Date(this.timeline.todayDate);
+                targetDate.setDate(targetDate.getDate() - daysFromToday);
+                
+                const startOfDay = new Date(targetDate);
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(targetDate);
+                endOfDay.setHours(23, 59, 59, 999);
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= startOfDay && 
+                    s.death_date <= endOfDay
+                ).length;
+            }
+
+            formatHebrewDate(daysFromToday) {
+                const targetDate = new Date(this.timeline.todayDate);
+                targetDate.setDate(targetDate.getDate() - daysFromToday);
+                
+                const hebrewMonths = [
+                    'בינואר', 'בפברואר', 'במרץ', 'באפריל', 'במאי', 'ביוני',
+                    'ביולי', 'באוגוסט', 'בספטמבר', 'באוקטובר', 'בנובמבר', 'בדצמבר'
+                ];
+                
+                return `${targetDate.getDate()} ${hebrewMonths[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
+            }
+
+            getSoldierName(type) {
+                const relevantSoldiers = this.timeline.soldiers.filter(s => s.death_date >= this.timeline.oct26Date);
+                
+                switch(type) {
+                    case 'first':
+                        const first = relevantSoldiers.sort((a, b) => a.death_date - b.death_date)[0];
+                        return first ? first.name : 'לא ידוע';
+                    
+                    case 'latest':
+                        const latest = relevantSoldiers
+                            .filter(s => s.death_date <= this.timeline.currentEndDate)
+                            .sort((a, b) => b.death_date - a.death_date)[0];
+                        return latest ? latest.name : 'לא ידוע';
+                    
+                    default:
+                        return 'לא ידוע';
+                }
+            }
+
+            getMonthsSinceStart() {
+                const startDate = this.timeline.oct26Date;
+                const currentDate = this.timeline.currentEndDate;
+                
+                const yearDiff = currentDate.getFullYear() - startDate.getFullYear();
+                const monthDiff = currentDate.getMonth() - startDate.getMonth();
+                const dayDiff = currentDate.getDate() - startDate.getDate();
+                
+                let totalMonths = yearDiff * 12 + monthDiff;
+                
+                // Add partial month if we've passed the start day
+                if (dayDiff >= 0) {
+                    totalMonths += Math.round(dayDiff / 30 * 10) / 10; // Round to 1 decimal
+                }
+                
+                return Math.round(totalMonths);
+            }
+
+            getAverageMonthlycasualties() {
+                const monthsSinceStart = this.getMonthsSinceStart();
+                const totalFallen = this.getFallenCount();
+                
+                if (monthsSinceStart === 0) return 0;
+                
+                return Math.round(totalFallen / monthsSinceStart);
+            }
+
+            // Navigation methods
+            getCurrentPoint() {
+                return this.narrativePoints.find(p => p.id === this.currentPointId) || this.narrativePoints[0];
+            }
+
+            navigateToPoint(pointId) {
+                const point = this.narrativePoints.find(p => p.id === pointId);
+                if (!point) return;
+                
+                this.currentPointId = pointId;
+                
+                // Update timeline position
+                const timelinePoint = parseInt(point.timeline_point);
+                const newEndDate = new Date(this.timeline.todayDate);
+                newEndDate.setDate(newEndDate.getDate() - timelinePoint);
+                this.timeline.currentEndDate = newEndDate;
+                
+                // Update slider
+                const slider = document.getElementById('timelineSlider');
+                slider.value = timelinePoint;
+                
+                // Update timeline progress
+                const progress = ((643 - timelinePoint) / 643) * 100;
+                document.getElementById('timelineProgress').style.width = progress + '%';
+                
+                // Update content
+                this.updateNarrativeContent();
+                this.timeline.updateVisualization();
+            }
+
+            updateNarrativeContent() {
+                const point = this.getCurrentPoint();
+                if (!point) return;
+                
+                const contentText = document.getElementById('contentText');
+                const ctaBack = document.getElementById('ctaBack');
+                const ctaContinue = document.getElementById('ctaContinue');
+                
+                // Parse and update content
+                const parsedContent = this.parseTemplate(point.content_hebrew);
+                contentText.innerHTML = parsedContent;
+                
+                // Update buttons
+                ctaContinue.textContent = point.cta_continue_he || 'המשך';
+                ctaBack.textContent = point.cta_back_he || 'חזור';
+                
+                // Show/hide buttons based on navigation
+                ctaBack.style.display = point.navigation_target ? 'inline-block' : 'none';
+                ctaContinue.style.display = this.getNextPoint() ? 'inline-block' : 'none';
+            }
+
+            getNextPoint() {
+                const currentIndex = this.narrativePoints.findIndex(p => p.id === this.currentPointId);
+                return currentIndex < this.narrativePoints.length - 1 ? this.narrativePoints[currentIndex + 1] : null;
+            }
+
+            getPrevPoint() {
+                const currentIndex = this.narrativePoints.findIndex(p => p.id === this.currentPointId);
+                return currentIndex > 0 ? this.narrativePoints[currentIndex - 1] : null;
+            }
+        }
+
         class TimelineMemorial {
             constructor() {
                 this.soldiers = [];
                 this.oct26Date = new Date('2023-10-26');
                 this.todayDate = new Date('2025-07-29');
-                this.currentEndDate = new Date('2024-10-26');
+                this.currentEndDate = new Date('2025-07-29'); // Start at today so all soldiers are "fallen"
+                this.navigationState = 'month_back'; // 'month_back' or 'today'
+                this.narrative = new NarrativeEngine(this);
                 this.init();
             }
 
             async init() {
                 await this.loadData();
+                await this.narrative.loadNarrative(); // Load narrative data
                 this.setupEventListeners();
                 this.generateTimelineAxis();
                 this.renderAllNames();
                 
-                // Set initial timeline progress (show war period on right)
-                const initialProgress = ((643 - 276) / 643) * 100; // 276 is the default slider value
-                document.getElementById('timelineProgress').style.width = initialProgress + '%';
+                // Initialize with loaded narrative point (at today - 0 days back)
+                this.narrative.navigateToPoint('loaded');
                 
-                this.updateVisualization();
-                
-                // Recalculate font size after timeline changes
+                // Recalculate font size after timeline changes with buffer
                 setTimeout(() => {
                     const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
                     console.log('Forcing font recalculation for', relevantSoldiers.length, 'soldiers');
@@ -493,12 +845,83 @@
                     this.updateVisualization();
                 });
 
-                // Recalculate font size when window is resized
+                // Setup draggable container
+                this.setupDraggableContainer();
+
+                // Setup navigation CTAs
+                this.setupNavigationCTAs();
+
+                // Recalculate font size when window is resized with buffer
                 window.addEventListener('resize', () => {
                     const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
                     this.calculateOptimalFontSize(relevantSoldiers.length);
                 });
             }
+
+            setupDraggableContainer() {
+                const container = document.getElementById('draggableContainer');
+                let isDragging = false;
+                let dragOffset = { x: 0, y: 0 };
+
+                container.addEventListener('mousedown', (e) => {
+                    if (e.target.tagName === 'BUTTON' || e.target.closest('.cta-buttons')) return; // Don't drag when clicking buttons
+                    
+                    isDragging = true;
+                    container.classList.add('dragging');
+                    
+                    const rect = container.getBoundingClientRect();
+                    dragOffset.x = e.clientX - rect.left;
+                    dragOffset.y = e.clientY - rect.top;
+                    
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const x = e.clientX - dragOffset.x;
+                    const y = e.clientY - dragOffset.y;
+                    
+                    // Keep container within viewport bounds
+                    const maxX = window.innerWidth - container.offsetWidth;
+                    const maxY = window.innerHeight - container.offsetHeight;
+                    
+                    const constrainedX = Math.max(0, Math.min(x, maxX));
+                    const constrainedY = Math.max(0, Math.min(y, maxY));
+                    
+                    container.style.left = constrainedX + 'px';
+                    container.style.top = constrainedY + 'px';
+                    container.style.right = 'auto'; // Remove right positioning when dragging
+                    container.style.transform = 'none'; // Remove transform when dragging
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        container.classList.remove('dragging');
+                    }
+                });
+            }
+
+            setupNavigationCTAs() {
+                const ctaBack = document.getElementById('ctaBack');
+                const ctaContinue = document.getElementById('ctaContinue');
+
+                ctaBack.addEventListener('click', () => {
+                    const prevPoint = this.narrative.getPrevPoint();
+                    if (prevPoint) {
+                        this.narrative.navigateToPoint(prevPoint.id);
+                    }
+                });
+
+                ctaContinue.addEventListener('click', () => {
+                    const nextPoint = this.narrative.getNextPoint();
+                    if (nextPoint) {
+                        this.narrative.navigateToPoint(nextPoint.id);
+                    }
+                });
+            }
+
 
             renderAllNames() {
                 const container = document.getElementById('namesContainer');
@@ -520,33 +943,44 @@
 
                 container.innerHTML = namesHtml;
                 
-                // Calculate and apply optimal font size
-                this.calculateOptimalFontSize(relevantSoldiers.length);
+                // Wait for DOM to settle then calculate optimal font size with buffer
+                setTimeout(() => {
+                    const availableWidth = container.clientWidth;
+                    const availableHeight = container.clientHeight;
+                    if (availableWidth > 0 && availableHeight > 0) {
+                        this.performFontSizeCalculation(relevantSoldiers.length, availableWidth, availableHeight);
+                    }
+                }, 50);
+            }
+
+            applySafeFontSize() {
+                console.log('Applying safe fixed font size');
+                const soldierNames = document.querySelectorAll('.soldier-name');
+                const safeFontSize = 7; // 4px * 1.8 = 7.2px
+                
+                soldierNames.forEach(name => {
+                    name.style.fontSize = safeFontSize + 'px';
+                });
+                
+                console.log(`Applied safe font size: ${safeFontSize}px to ${soldierNames.length} names`);
+                
+                // Verify it works
+                setTimeout(() => {
+                    const container = document.getElementById('namesContainer');
+                    const isOverflowing = container.scrollHeight > container.clientHeight;
+                    console.log(`Safe font check - overflowing: ${isOverflowing}, scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
+                }, 100);
             }
 
             calculateOptimalFontSize(totalNames) {
                 const container = document.getElementById('namesContainer');
                 const soldierNames = document.querySelectorAll('.soldier-name');
                 const timeline = document.querySelector('.timeline-container');
-                const statsHeader = document.querySelector('.stats-header');
                 
-                console.log(`Simple font calculation for ${totalNames} names`);
-                
-                // Debug container bounds vs actual space
-                const containerRect = container.getBoundingClientRect();
-                const timelineRect = timeline.getBoundingClientRect();
-                const statsRect = statsHeader.getBoundingClientRect();
-                const viewportHeight = window.innerHeight;
-                
-                console.log(`Viewport height: ${viewportHeight}px`);
-                console.log(`Stats header: top=${statsRect.top}, bottom=${statsRect.bottom}, height=${statsRect.height}`);
-                console.log(`Container: top=${containerRect.top}, bottom=${containerRect.bottom}, height=${containerRect.height}`);
-                console.log(`Timeline: top=${timelineRect.top}, bottom=${timelineRect.bottom}, height=${timelineRect.height}`);
-                console.log(`Available space for names: ${containerRect.height}px`);
-                console.log(`Gap between container bottom and timeline top: ${timelineRect.top - containerRect.bottom}px`);
+                console.log(`Font calculation for ${totalNames} names with buffer protection`);
                 
                 // Use a conservative font size that should fit within the available height
-                const conservativeFontSize = 8; // Increased from 6px now that we have proper spacing
+                const conservativeFontSize = 7; // 4px * 1.8 = 7.2px
                 
                 soldierNames.forEach(name => {
                     name.style.fontSize = conservativeFontSize + 'px';
@@ -554,11 +988,56 @@
                 
                 console.log(`Using conservative font size: ${conservativeFontSize}px`);
                 
-                // Check if it actually fits
+                // Verify fit with buffer
                 setTimeout(() => {
-                    const finalCheck = container.scrollHeight > container.clientHeight;
-                    console.log(`Final check - is overflowing: ${finalCheck}`);
+                    const isOverflowing = container.scrollHeight > container.clientHeight;
+                    console.log(`Font verification - overflowing: ${isOverflowing}, scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
+                    
+                    if (isOverflowing) {
+                        console.log('Still overflowing, reducing to 9px');
+                        soldierNames.forEach(name => {
+                            name.style.fontSize = '9px';
+                        });
+                    }
                 }, 100);
+            }
+            
+            debugOverflow(container, soldierNames, checkNumber) {
+                const isOverflowing = container.scrollHeight > container.clientHeight;
+                console.log(`\n--- OVERFLOW CHECK ${checkNumber} ---`);
+                console.log(`Container scrollHeight: ${container.scrollHeight}px`);
+                console.log(`Container clientHeight: ${container.clientHeight}px`);
+                console.log(`Is overflowing: ${isOverflowing}`);
+                console.log(`Overflow amount: ${container.scrollHeight - container.clientHeight}px`);
+                
+                // Check last visible elements
+                const containerRect = container.getBoundingClientRect();
+                let lastVisibleIndex = -1;
+                
+                soldierNames.forEach((name, index) => {
+                    const rect = name.getBoundingClientRect();
+                    if (rect.bottom <= containerRect.bottom && rect.top >= containerRect.top) {
+                        lastVisibleIndex = index;
+                    }
+                });
+                
+                console.log(`Last visible name index: ${lastVisibleIndex} out of ${soldierNames.length}`);
+                console.log(`Names potentially hidden: ${soldierNames.length - lastVisibleIndex - 1}`);
+                
+                // Show details of names around the cutoff
+                for (let i = Math.max(0, lastVisibleIndex - 2); i < Math.min(soldierNames.length, lastVisibleIndex + 10); i++) {
+                    const name = soldierNames[i];
+                    const rect = name.getBoundingClientRect();
+                    const isVisible = rect.bottom <= containerRect.bottom && rect.top >= containerRect.top;
+                    console.log(`[${i}] "${name.textContent.substring(0, 15)}..." visible: ${isVisible}, bottom: ${rect.bottom}, container bottom: ${containerRect.bottom}`);
+                }
+                
+                if (isOverflowing && checkNumber === 3) {
+                    console.log(`\n!!! FINAL ATTEMPT - SETTING TO 9PX !!!`);
+                    soldierNames.forEach(name => {
+                        name.style.fontSize = '9px';
+                    });
+                }
             }
 
             performFontSizeCalculation(totalNames, availableWidth, availableHeight) {
@@ -604,17 +1083,20 @@
                 console.log(`\n--- Testing with unconstrained container ---`);
                 
                 // First pass: find approximate range
-                const roughSizes = [3, 5, 8, 10, 12, 15, 18, 20, 25, 30];
-                let maxFittingSize = 3;
-                let minOverflowSize = 30;
+                const roughSizes = [11, 14, 18, 22, 27, 32, 36, 45, 54];
+                let maxFittingSize = 11;
+                let minOverflowSize = 54;
                 
-                // Rough pass to find range
-                console.log(`--- Rough pass ---`);
+                // Rough pass to find range WITH BUFFER
+                console.log(`--- Rough pass with 10px buffer ---`);
+                const bufferHeight = 10;
+                const availableHeightWithBuffer = availableHeight - bufferHeight;
+                
                 for (const size of roughSizes) {
                     const naturalHeight = this.testFontSize(testContainer, size);
-                    const fits = naturalHeight <= availableHeight;
+                    const fits = naturalHeight <= availableHeightWithBuffer; // Use buffered height!
                     
-                    console.log(`Rough test ${size}px: height=${naturalHeight}px, fits=${fits}`);
+                    console.log(`Rough test ${size}px: height=${naturalHeight}px, fits=${fits} (with ${bufferHeight}px buffer)`);
                     
                     if (fits) {
                         maxFittingSize = size;
@@ -626,15 +1108,15 @@
                 
                 console.log(`Range found: ${maxFittingSize}px fits, ${minOverflowSize}px overflows`);
                 
-                // Precise pass: test every pixel between maxFitting and minOverflow
-                console.log(`--- Precise pass from ${maxFittingSize}px to ${minOverflowSize}px ---`);
+                // Precise pass: test every pixel between maxFitting and minOverflow WITH BUFFER
+                console.log(`--- Precise pass from ${maxFittingSize}px to ${minOverflowSize}px (with buffer) ---`);
                 let optimalFontSize = maxFittingSize;
                 
                 for (let size = maxFittingSize + 1; size < minOverflowSize; size++) {
                     const naturalHeight = this.testFontSize(testContainer, size);
-                    const fits = naturalHeight <= availableHeight;
+                    const fits = naturalHeight <= availableHeightWithBuffer; // Use buffered height!
                     
-                    console.log(`Precise test ${size}px: height=${naturalHeight}px, fits=${fits}`);
+                    console.log(`Precise test ${size}px: height=${naturalHeight}px, fits=${fits} (with buffer)`);
                     
                     if (fits) {
                         optimalFontSize = size;
@@ -650,9 +1132,9 @@
                 for (const fraction of fractions) {
                     const size = optimalFontSize + fraction;
                     const naturalHeight = this.testFontSize(testContainer, size);
-                    const fits = naturalHeight <= availableHeight;
+                    const fits = naturalHeight <= availableHeightWithBuffer; // Use buffered height!
                     
-                    console.log(`Fractional test ${size}px: height=${naturalHeight}px, fits=${fits}`);
+                    console.log(`Fractional test ${size}px: height=${naturalHeight}px, fits=${fits} (with buffer)`);
                     
                     if (fits) {
                         optimalFontSize = size;
@@ -746,36 +1228,50 @@
                 testContainer.offsetHeight;
                 testContainer.getBoundingClientRect();
                 
-                // Check if content overflows the fixed height container
+                // Check if content overflows the fixed height container WITH BUFFER
                 const containerHeight = testContainer.clientHeight;
                 const scrollHeight = testContainer.scrollHeight;
                 
-                // Return scroll height to check if it exceeds container height
+                // Add 10px buffer to prevent overflow - this is the key fix!
+                const bufferHeight = 10;
+                const availableHeightWithBuffer = containerHeight - bufferHeight;
+                
+                // Return scroll height to check if it exceeds available height WITH buffer
                 return scrollHeight;
             }
 
             updateVisualization() {
-                const totalCount = document.getElementById('totalCount');
-                
                 // Update all soldier name elements
                 const soldierElements = document.querySelectorAll('.soldier-name');
                 let aliveCount = 0;
+                
+                console.log('updateVisualization called, currentEndDate:', this.currentEndDate);
                 
                 soldierElements.forEach(el => {
                     const deathDate = new Date(parseInt(el.dataset.deathDate));
                     
                     if (deathDate > this.currentEndDate) {
-                        // This soldier would still be alive
+                        // This soldier would still be alive at currentEndDate
                         el.className = 'soldier-name alive';
                         aliveCount++;
                     } else {
-                        // This soldier would still have died
+                        // This soldier had already died by currentEndDate
                         el.className = 'soldier-name fallen';
                     }
                 });
                 
-                // Update count
-                totalCount.textContent = aliveCount;
+                console.log('Alive count:', aliveCount, 'out of', soldierElements.length);
+                
+                // Update count in draggable container
+                const aliveCountSpan = document.getElementById('aliveCount');
+                if (aliveCountSpan) {
+                    aliveCountSpan.textContent = aliveCount;
+                }
+                
+                // Update narrative content to refresh placeholders
+                if (this.narrative) {
+                    this.narrative.updateNarrativeContent();
+                }
             }
         }
 

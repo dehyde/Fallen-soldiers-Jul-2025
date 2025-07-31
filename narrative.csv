@@ -1,0 +1,7 @@
+id,timeline_point,timeline_type,content_hebrew,cta_continue_he,cta_back_he,navigation_type,navigation_target,conditions
+loaded,0,days_from_today,{{months_since_start}} חודשים עברו מאז תחילת התמרון של ישראל בעזה באוקטובר 2023. מאז נהרגו <strong>{{fallen_count}}</strong> חיילים. בממוצע כל חודש נהרגים <strong>{{average_monthly_casualties}}</strong> חיילים.,התחל,,navigate_to,first_month,
+first_month,246,days_from_today,חודש ראשון: {{fallen_since_date:30}} חיילים נפלו בחודש האחרון. {{alive_count}} עדיין יכולים להינצל.,הבא,התחלה,navigate_to,major_loss,
+major_loss,200,days_from_today,{{date_hebrew:200}} - תקופה קשה: {{fallen_since_date:50}} חיילים נפלו ב-50 הימים האחרונים.,המשך,קודם,navigate_to,recovery,
+recovery,120,days_from_today,לאחר {{days_since_start}} ימים של מלחמה. {{percentage_fallen}}% מהחיילים כבר נפלו.,קדימה,אחורה,navigate_to,recent,
+recent,30,days_from_today,החודש האחרון: {{fallen_since_date:30}} חיילים נוספים נפלו. {{soldier_name:latest}} הוא האחרון שנפל.,היום,אחורה,navigate_to,today,
+today,0,days_from_today,היום: {{alive_count}} חיילים יכלו עדיין להיות בחיים אם המלחמה הייתה נעצרת. {{fallen_count}} נפלו בסך הכל.,סיום,חזור,,
