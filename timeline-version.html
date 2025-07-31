@@ -87,6 +87,16 @@
             background: rgba(100,255,100,0.2);
         }
 
+        .soldier-name.dying {
+            opacity: 1;
+            background: rgba(139, 0, 0, 0.8) !important; /* Dark red background */
+            color: rgb(255, 69, 69) !important; /* Bright red text */
+            font-weight: bold;
+            z-index: 100;
+            position: relative;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
         .timeline-container {
             position: fixed;
             bottom: 0;
@@ -621,6 +631,7 @@
                 this.currentEndDate = new Date('2025-07-29'); // Start at today so all soldiers are "fallen"
                 this.navigationState = 'month_back'; // 'month_back' or 'today'
                 this.narrative = new NarrativeEngine(this);
+                this.dyingTimeouts = new Map(); // Track timeouts for performance
                 this.init();
             }
 
@@ -1247,8 +1258,14 @@
                 
                 console.log('updateVisualization called, currentEndDate:', this.currentEndDate);
                 
+                // First pass: clear all dying timeouts when navigating
+                this.dyingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+                this.dyingTimeouts.clear();
+                
                 soldierElements.forEach(el => {
                     const deathDate = new Date(parseInt(el.dataset.deathDate));
+                    const wasAlive = el.classList.contains('alive');
+                    const elementId = el.dataset.deathDate; // Use as unique ID
                     
                     if (deathDate > this.currentEndDate) {
                         // This soldier would still be alive at currentEndDate
@@ -1256,7 +1273,25 @@
                         aliveCount++;
                     } else {
                         // This soldier had already died by currentEndDate
-                        el.className = 'soldier-name fallen';
+                        if (wasAlive) {
+                            // Transitioning from alive to dead - start red dying state
+                            el.className = 'soldier-name dying';
+                            aliveCount++; // Count as alive during transition
+                            
+                            // Set new timeout and track it
+                            const timeoutId = setTimeout(() => {
+                                // Only change if still dying (not interrupted)
+                                if (el.classList.contains('dying')) {
+                                    el.className = 'soldier-name fallen';
+                                }
+                                this.dyingTimeouts.delete(elementId);
+                            }, 400);
+                            
+                            this.dyingTimeouts.set(elementId, timeoutId);
+                        } else {
+                            // Already dead, just apply fallen state
+                            el.className = 'soldier-name fallen';
+                        }
                     }
                 });
                 
