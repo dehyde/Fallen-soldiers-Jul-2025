@@ -43,14 +43,14 @@
 
         .names-container {
             position: fixed;
-            top: 60px;
+            top: 20px;
             bottom: 60px;
             left: 5px;
             right: 5px;
             display: flex;
             flex-wrap: wrap;
-            align-items: flex-start;
-            align-content: flex-start;
+            align-items: center;
+            align-content: center;
             gap: 3.3px;
             overflow: hidden;
             justify-content: center;
@@ -65,7 +65,7 @@
             background: rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             cursor: pointer;
-            line-height: 1.1;
+            line-height: 1.1; /* This matches the calculation */
             text-decoration: none;
             -webkit-text-decoration-line: none;
             text-decoration-line: none;
@@ -84,7 +84,8 @@
 
         .soldier-name.alive {
             opacity: 1;
-            background: rgba(100,255,100,0.2);
+            background: rgba(0,56,168,0.9);
+            color: white;
         }
 
         .soldier-name.dying {
@@ -249,21 +250,30 @@
             box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             border: 1px solid rgba(0,0,0,0.1);
             z-index: 200;
-            cursor: move;
+            cursor: grab;
             user-select: none;
-            transition: transform 0.2s ease;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+        }
+
+        .draggable-container:hover {
+            cursor: grab;
+            background: rgba(250,250,250,0.95);
+        }
+
+        .draggable-container:active {
+            cursor: grabbing;
         }
 
 
         .draggable-container.dragging {
-            transform: scale(1.05);
-            box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+            box-shadow: 0 20px 64px rgba(0,0,0,0.15);
+            transition: box-shadow 0.1s ease;
         }
 
 
         .draggable-content {
             padding: 20px;
-            cursor: move;
+            cursor: inherit;
             direction: rtl;
             text-align: right;
         }
@@ -274,17 +284,26 @@
             color: #333;
             margin-bottom: 20px;
             font-family: 'Heebo', sans-serif;
+            cursor: inherit;
         }
 
         .cta-buttons {
             display: flex;
             gap: 10px;
             justify-content: flex-start;
-            cursor: default;
+            cursor: grab;
+        }
+
+        .cta-buttons:hover {
+            cursor: grab;
+        }
+
+        .cta-buttons:active {
+            cursor: grabbing;
         }
 
         .cta-primary {
-            background: #007acc;
+            background: #000000;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -297,7 +316,7 @@
         }
 
         .cta-primary:hover {
-            background: #005a99;
+            background: #333333;
             transform: translateY(-1px);
         }
 
@@ -316,6 +335,43 @@
         .cta-tertiary:hover {
             background: rgba(0,0,0,0.05);
             border-color: #bbb;
+        }
+
+        .timeline-tooltip {
+            /* Reset inherited styles */
+            all: initial;
+            /* Apply our intended styles */
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9) !important;
+            color: white !important;
+            padding: 12px 16px !important;
+            border-radius: 4px !important;
+            border-top-left-radius: 4px !important;
+            border-top-right-radius: 4px !important;
+            border-bottom-left-radius: 4px !important;
+            border-bottom-right-radius: 4px !important;
+            font-size: 13px !important;
+            max-width: 400px !important;
+            min-width: 250px !important;
+            z-index: 1000 !important;
+            pointer-events: none !important;
+            direction: rtl !important;
+            text-align: right !important;
+            font-family: 'Heebo', sans-serif !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+            border: 1px solid rgba(0,0,0,0.1) !important;
+            line-height: 1.4 !important;
+            backdrop-filter: blur(10px) !important;
+            display: block !important;
+        }
+
+        .timeline-tooltip strong {
+            display: block !important;
+            margin-bottom: 8px !important;
+            color: white !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            font-family: 'Heebo', sans-serif !important;
         }
     </style>
 </head>
@@ -536,7 +592,7 @@
 
             getMonthsSinceStart() {
                 const startDate = this.timeline.oct26Date;
-                const currentDate = this.timeline.currentEndDate;
+                const currentDate = this.timeline.todayDate; // Use today's date instead of timeline date
                 
                 const yearDiff = currentDate.getFullYear() - startDate.getFullYear();
                 const monthDiff = currentDate.getMonth() - startDate.getMonth();
@@ -607,8 +663,9 @@
                 ctaContinue.textContent = point.cta_continue_he || 'המשך';
                 ctaBack.textContent = point.cta_back_he || 'חזור';
                 
-                // Show/hide buttons based on navigation
-                ctaBack.style.display = point.navigation_target ? 'inline-block' : 'none';
+                // Show/hide buttons based on navigation - hide back button for first narrative point
+                const currentIndex = this.narrativePoints.findIndex(p => p.id === this.currentPointId);
+                ctaBack.style.display = (currentIndex > 0) ? 'inline-block' : 'none';
                 ctaContinue.style.display = this.getNextPoint() ? 'inline-block' : 'none';
             }
 
@@ -626,6 +683,7 @@
         class TimelineMemorial {
             constructor() {
                 this.soldiers = [];
+                this.timelineEvents = [];
                 this.oct26Date = new Date('2023-10-26');
                 this.todayDate = new Date('2025-07-29');
                 this.currentEndDate = new Date('2025-07-29'); // Start at today so all soldiers are "fallen"
@@ -637,6 +695,7 @@
 
             async init() {
                 await this.loadData();
+                await this.loadTimelineEvents(); // Load timeline events
                 await this.narrative.loadNarrative(); // Load narrative data
                 this.setupEventListeners();
                 this.generateTimelineAxis();
@@ -679,6 +738,37 @@
                 } catch (error) {
                     console.error('Error loading data:', error);
                     document.getElementById('namesContainer').innerHTML = '<div class="loading">Error loading memorial data</div>';
+                }
+            }
+
+            async loadTimelineEvents() {
+                try {
+                    console.log('Attempting to load timeline-events.csv...');
+                    const response = await fetch('timeline-events.csv');
+                    console.log('Response status:', response.status, response.statusText);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const csvText = await response.text();
+                    console.log('CSV text loaded:', csvText.substring(0, 200) + '...');
+                    this.parseTimelineEvents(csvText);
+                    console.log(`Loaded ${this.timelineEvents.length} timeline events`);
+                } catch (error) {
+                    console.error('Error loading timeline events:', error);
+                    // Create test events if CSV fails to load
+                    console.log('Creating test timeline events...');
+                    this.timelineEvents = [
+                        {
+                            id: 'test_event',
+                            date: '2025-07-29',
+                            title_hebrew: 'אירוע מבחן',
+                            description_hebrew: 'זהו אירוע מבחן',
+                            eventDate: new Date('2025-07-29')
+                        }
+                    ];
+                    console.log('Test events created:', this.timelineEvents.length);
                 }
             }
 
@@ -784,6 +874,32 @@
                 };
             }
 
+            parseTimelineEvents(csvText) {
+                const lines = csvText.split('\n');
+                const headers = this.narrative.parseCsvLine(lines[0]);
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const values = this.narrative.parseCsvLine(line);
+                    const event = {};
+                    
+                    headers.forEach((header, index) => {
+                        event[header.trim()] = values[index] ? values[index].trim() : '';
+                    });
+                    
+                    // Parse date
+                    if (event.date) {
+                        event.eventDate = new Date(event.date);
+                        console.log('Timeline event parsed:', event.title_hebrew, 'Date:', event.eventDate);
+                    }
+                    
+                    this.timelineEvents.push(event);
+                }
+                console.log('Total timeline events loaded:', this.timelineEvents.length);
+            }
+
             generateTimelineAxis() {
                 const axisContainer = document.getElementById('timelineAxis');
                 axisContainer.innerHTML = '';
@@ -836,6 +952,133 @@
                         axisContainer.appendChild(tick);
                     }
                 });
+
+                // Add timeline events markers
+                console.log('Adding timeline event markers, total events:', this.timelineEvents.length);
+                console.log('Timeline range:', startDate.toLocaleDateString(), 'to', endDate.toLocaleDateString());
+                
+                
+                this.timelineEvents.forEach(event => {
+                    console.log('Processing event:', event.title_hebrew, 'Date:', event.eventDate);
+                    if (event.eventDate) {
+                        // Calculate position based on date (0% = endDate/today, 100% = startDate/oldest)
+                        const daysDiff = Math.floor((endDate - event.eventDate) / (1000 * 60 * 60 * 24));
+                        const position = (daysDiff / totalDays) * 100;
+                        console.log(`Event position: ${position}% (${daysDiff} days from start, total days: ${totalDays})`);
+                        
+                        if (position >= 0 && position <= 100) {
+                            // Create event marker
+                            const marker = document.createElement('div');
+                            marker.className = 'timeline-event-marker';
+                            marker.style.position = 'absolute';
+                            marker.style.left = position + '%';
+                            marker.style.top = '0px';
+                            marker.style.width = '12px';
+                            marker.style.height = '12px';
+                            marker.style.transform = 'translateX(-50%)'; // Center on position
+                            // Set color based on category
+                            let markerColor = '#ff4444'; // default red
+                            switch(event.category) {
+                                case 'military': markerColor = '#cc0000'; break; // dark red
+                                case 'political': markerColor = '#ff4444'; break; // red  
+                                case 'diplomatic': markerColor = '#0066cc'; break; // blue
+                                case 'legal': markerColor = '#9900cc'; break; // purple
+                                default: markerColor = '#666666'; // gray
+                            }
+                            marker.style.background = markerColor;
+                            marker.style.border = '2px solid #ffffff';
+                            marker.style.borderRadius = '50%';
+                            marker.style.cursor = 'pointer';
+                            marker.style.zIndex = '100';
+                            marker.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+                            marker.style.pointerEvents = 'auto';
+                            
+                            // Create custom immediate tooltip
+                            let currentTooltip = null;
+                            
+                            marker.onmouseenter = (e) => {
+                                // Remove any existing tooltips
+                                document.querySelectorAll('.timeline-tooltip').forEach(t => t.remove());
+                                
+                                // Scale up marker
+                                marker.style.transform = 'translateX(-50%) scale(1.5)';
+                                marker.style.zIndex = '200';
+                                
+                                // Create tooltip
+                                const tooltip = document.createElement('div');
+                                tooltip.className = 'timeline-tooltip';
+                                tooltip.innerHTML = `<strong>${event.title_hebrew}</strong>${event.description_hebrew}`;
+                                currentTooltip = tooltip;
+                                
+                                // Append to body and set initial position
+                                document.body.appendChild(tooltip);
+                                tooltip.style.position = 'fixed';
+                                tooltip.style.visibility = 'hidden';
+                                tooltip.style.left = '0px';
+                                tooltip.style.top = '0px';
+                                
+                                // Get marker position
+                                const markerRect = marker.getBoundingClientRect();
+                                const screenWidth = window.innerWidth;
+                                
+                                // Use setTimeout to ensure CSS is fully applied and text is wrapped
+                                setTimeout(() => {
+                                    // Get tooltip dimensions after everything is rendered
+                                    const tooltipRect = tooltip.getBoundingClientRect();
+                                    console.log('Tooltip dimensions:', tooltipRect.width, 'x', tooltipRect.height);
+                                    
+                                    // Position all tooltips at same distance from timeline track (not marker)
+                                    // Find the timeline track position
+                                    const timelineTrack = document.querySelector('.timeline-track');
+                                    const trackRect = timelineTrack.getBoundingClientRect();
+                                    
+                                    // Position tooltip a fixed distance above the timeline track
+                                    const fixedGapFromTrack = 120; // Fixed distance from timeline track
+                                    const topPos = trackRect.top - fixedGapFromTrack;
+                                    let leftPos = markerRect.left + markerRect.width / 2;
+                                    let transform = 'translateX(-50%)';
+                                    
+                                    // Check left edge overflow
+                                    if (leftPos - tooltipRect.width / 2 < 10) {
+                                        leftPos = markerRect.left;
+                                        transform = 'translateX(0%)';
+                                    }
+                                    // Check right edge overflow  
+                                    else if (leftPos + tooltipRect.width / 2 > screenWidth - 10) {
+                                        leftPos = markerRect.right;
+                                        transform = 'translateX(-100%)';
+                                    }
+                                    
+                                    // Apply final position
+                                    tooltip.style.left = leftPos + 'px';
+                                    tooltip.style.top = topPos + 'px';
+                                    tooltip.style.transform = transform;
+                                    tooltip.style.visibility = 'visible';
+                                    console.log('Positioned tooltip at:', leftPos, topPos, 'for:', event.title_hebrew);
+                                }, 0);
+                            };
+                            
+                            marker.onmouseleave = () => {
+                                // Remove the specific tooltip for this marker
+                                if (currentTooltip && currentTooltip.parentNode) {
+                                    currentTooltip.remove();
+                                    currentTooltip = null;
+                                }
+                                
+                                marker.style.transform = 'translateX(-50%) scale(1)';
+                                marker.style.zIndex = '100';
+                            };
+                            
+                            // Also add onclick for mobile/debugging
+                            marker.onclick = () => {
+                                alert(`${event.title_hebrew}\n\n${event.description_hebrew}`);
+                            };
+                            
+                            axisContainer.appendChild(marker);
+                            console.log('Added marker for:', event.title_hebrew, 'at position', position + '%');
+                        }
+                    }
+                });
             }
 
             setupEventListeners() {
@@ -864,8 +1107,15 @@
 
                 // Recalculate font size when window is resized with buffer
                 window.addEventListener('resize', () => {
+                    const container = document.getElementById('namesContainer');
                     const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
-                    this.calculateOptimalFontSize(relevantSoldiers.length);
+                    setTimeout(() => {
+                        const availableWidth = container.clientWidth;
+                        const availableHeight = container.clientHeight;
+                        if (availableWidth > 0 && availableHeight > 0) {
+                            this.performFontSizeCalculation(relevantSoldiers.length, availableWidth, availableHeight);
+                        }
+                    }, 100);
                 });
             }
 
@@ -875,9 +1125,11 @@
                 let dragOffset = { x: 0, y: 0 };
 
                 container.addEventListener('mousedown', (e) => {
-                    if (e.target.tagName === 'BUTTON' || e.target.closest('.cta-buttons')) return; // Don't drag when clicking buttons
+                    if (e.target.tagName === 'BUTTON') return; // Don't drag when clicking buttons directly
                     
                     isDragging = true;
+                    
+                    // Apply dragging class immediately for shadow feedback
                     container.classList.add('dragging');
                     
                     const rect = container.getBoundingClientRect();
@@ -900,10 +1152,14 @@
                     const constrainedX = Math.max(0, Math.min(x, maxX));
                     const constrainedY = Math.max(0, Math.min(y, maxY));
                     
+                    // Only change positioning method on first movement, not on mousedown
+                    if (container.style.left === '' || container.style.left === 'auto') {
+                        container.style.right = 'auto';
+                        container.style.transform = 'none';
+                    }
+                    
                     container.style.left = constrainedX + 'px';
                     container.style.top = constrainedY + 'px';
-                    container.style.right = 'auto'; // Remove right positioning when dragging
-                    container.style.transform = 'none'; // Remove transform when dragging
                 });
 
                 document.addEventListener('mouseup', () => {
@@ -984,33 +1240,17 @@
             }
 
             calculateOptimalFontSize(totalNames) {
+                // This function is now deprecated - redirect to the proper calculation
                 const container = document.getElementById('namesContainer');
-                const soldierNames = document.querySelectorAll('.soldier-name');
-                const timeline = document.querySelector('.timeline-container');
+                console.log('calculateOptimalFontSize called - redirecting to performFontSizeCalculation');
                 
-                console.log(`Font calculation for ${totalNames} names with buffer protection`);
-                
-                // Use a conservative font size that should fit within the available height
-                const conservativeFontSize = 7; // 4px * 1.8 = 7.2px
-                
-                soldierNames.forEach(name => {
-                    name.style.fontSize = conservativeFontSize + 'px';
-                });
-                
-                console.log(`Using conservative font size: ${conservativeFontSize}px`);
-                
-                // Verify fit with buffer
                 setTimeout(() => {
-                    const isOverflowing = container.scrollHeight > container.clientHeight;
-                    console.log(`Font verification - overflowing: ${isOverflowing}, scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
-                    
-                    if (isOverflowing) {
-                        console.log('Still overflowing, reducing to 9px');
-                        soldierNames.forEach(name => {
-                            name.style.fontSize = '9px';
-                        });
+                    const availableWidth = container.clientWidth;
+                    const availableHeight = container.clientHeight;
+                    if (availableWidth > 0 && availableHeight > 0) {
+                        this.performFontSizeCalculation(totalNames, availableWidth, availableHeight);
                     }
-                }, 100);
+                }, 50);
             }
             
             debugOverflow(container, soldierNames, checkNumber) {
@@ -1054,201 +1294,123 @@
             performFontSizeCalculation(totalNames, availableWidth, availableHeight) {
                 const soldierNames = document.querySelectorAll('.soldier-name');
                 
-                console.log(`\n=== FONT SIZE CALCULATION START ===`);
+                console.log(`\n=== MATHEMATICAL FONT CALCULATION ===`);
                 console.log(`Names: ${totalNames}, Available: ${availableWidth}x${availableHeight}px`);
                 
-                // Create a test container that exactly matches the real container
-                const testContainer = document.createElement('div');
-                testContainer.style.position = 'absolute';
-                testContainer.style.top = '-9999px';
-                testContainer.style.left = '-9999px';
-                testContainer.style.width = availableWidth + 'px';
-                testContainer.style.height = availableHeight + 'px';
-                testContainer.style.display = 'flex';
-                testContainer.style.flexWrap = 'wrap';
-                testContainer.style.alignItems = 'flex-start';
-                testContainer.style.alignContent = 'flex-start';
-                testContainer.style.gap = '3.3px';
-                testContainer.style.justifyContent = 'center';
-                testContainer.style.direction = 'rtl';
-                testContainer.style.visibility = 'hidden';
-                testContainer.style.overflow = 'hidden';
+                // Use mathematical approach instead of trial-and-error
+                const optimalFontSize = this.calculateOptimalFontSizeMathematically(
+                    Array.from(soldierNames).map(el => el.textContent),
+                    availableWidth,
+                    availableHeight
+                );
                 
-                // Create fresh elements with only essential styling
-                soldierNames.forEach(name => {
-                    const clone = document.createElement('div');
-                    clone.textContent = name.textContent;
-                    // Apply only essential styles, avoid copying CSS that might override font-size
-                    clone.style.padding = '2px 4px';
-                    clone.style.background = 'rgba(0,0,0,0.1)';
-                    clone.style.cursor = 'pointer';
-                    clone.style.lineHeight = '1';
-                    clone.style.fontWeight = '400';
-                    clone.style.fontFamily = 'Handjet, monospace';
-                    // Don't set font-size yet - we'll override it in the loop
-                    testContainer.appendChild(clone);
-                });
+                console.log(`Calculated optimal font size: ${optimalFontSize}px`);
                 
-                document.body.appendChild(testContainer);
-                
-                console.log(`\n--- Testing with unconstrained container ---`);
-                
-                // First pass: find approximate range
-                const roughSizes = [11, 14, 18, 22, 27, 32, 36, 45, 54];
-                let maxFittingSize = 11;
-                let minOverflowSize = 54;
-                
-                // Rough pass to find range WITH BUFFER
-                console.log(`--- Rough pass with 10px buffer ---`);
-                const bufferHeight = 10;
-                const availableHeightWithBuffer = availableHeight - bufferHeight;
-                
-                for (const size of roughSizes) {
-                    const naturalHeight = this.testFontSize(testContainer, size);
-                    const fits = naturalHeight <= availableHeightWithBuffer; // Use buffered height!
-                    
-                    console.log(`Rough test ${size}px: height=${naturalHeight}px, fits=${fits} (with ${bufferHeight}px buffer)`);
-                    
-                    if (fits) {
-                        maxFittingSize = size;
-                    } else {
-                        minOverflowSize = size;
-                        break;
-                    }
-                }
-                
-                console.log(`Range found: ${maxFittingSize}px fits, ${minOverflowSize}px overflows`);
-                
-                // Precise pass: test every pixel between maxFitting and minOverflow WITH BUFFER
-                console.log(`--- Precise pass from ${maxFittingSize}px to ${minOverflowSize}px (with buffer) ---`);
-                let optimalFontSize = maxFittingSize;
-                
-                for (let size = maxFittingSize + 1; size < minOverflowSize; size++) {
-                    const naturalHeight = this.testFontSize(testContainer, size);
-                    const fits = naturalHeight <= availableHeightWithBuffer; // Use buffered height!
-                    
-                    console.log(`Precise test ${size}px: height=${naturalHeight}px, fits=${fits} (with buffer)`);
-                    
-                    if (fits) {
-                        optimalFontSize = size;
-                    } else {
-                        break;
-                    }
-                }
-                
-                // Also test fractional sizes for maximum precision
-                console.log(`--- Ultra-precise fractional test around ${optimalFontSize}px ---`);
-                const fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
-                
-                for (const fraction of fractions) {
-                    const size = optimalFontSize + fraction;
-                    const naturalHeight = this.testFontSize(testContainer, size);
-                    const fits = naturalHeight <= availableHeightWithBuffer; // Use buffered height!
-                    
-                    console.log(`Fractional test ${size}px: height=${naturalHeight}px, fits=${fits} (with buffer)`);
-                    
-                    if (fits) {
-                        optimalFontSize = size;
-                    } else {
-                        break;
-                    }
-                }
-                
-                // Clean up test container
-                document.body.removeChild(testContainer);
-                
-                console.log(`\n--- Final optimal size: ${optimalFontSize}px ---`);
-
-                // Apply the final optimal font size
+                // Apply the calculated font size
                 soldierNames.forEach(name => {
                     name.style.fontSize = optimalFontSize + 'px';
                 });
-
-                console.log(`Applied optimal font size: ${optimalFontSize}px to ${soldierNames.length} elements`);
                 
-                // Debug: log some sample names to see if they're being rendered
-                console.log('Sample names being rendered:');
-                const sampleNames = Array.from(soldierNames).slice(0, 10).map(el => el.textContent);
-                console.log(sampleNames);
-                
-                // Check if container is overflowing
-                const container = document.getElementById('namesContainer');
-                console.log('Container scroll info:', {
-                    scrollHeight: container.scrollHeight,
-                    clientHeight: container.clientHeight,
-                    isOverflowing: container.scrollHeight > container.clientHeight
-                });
-                
-                // Check if all names are actually visible
-                const allNames = document.querySelectorAll('.soldier-name');
-                const visibleNames = Array.from(allNames).filter(name => {
-                    const rect = name.getBoundingClientRect();
-                    const containerRect = container.getBoundingClientRect();
-                    return rect.top >= containerRect.top && rect.bottom <= containerRect.bottom &&
-                           rect.left >= containerRect.left && rect.right <= containerRect.right;
-                });
-                console.log(`Total names: ${allNames.length}, Visible names: ${visibleNames.length}`);
-                
-                // Log last few visible names
-                const lastVisible = Array.from(allNames).slice(-10).map(el => el.textContent);
-                console.log('Last 10 names in DOM:', lastVisible);
-                
-                // Find where "רונן שפירו" is in the list
-                const ronenIndex = Array.from(allNames).findIndex(el => el.textContent.includes('רונן שפירו'));
-                console.log(`רונן שפירו is at index: ${ronenIndex} of ${allNames.length}`);
-                
-                // Check names around רונן שפירו with detailed positioning
-                if (ronenIndex >= 0) {
-                    const startIdx = Math.max(0, ronenIndex - 2);
-                    const endIdx = Math.min(allNames.length, ronenIndex + 10);
+                // Verify the result
+                setTimeout(() => {
+                    const container = document.getElementById('namesContainer');
+                    const scrollHeight = container.scrollHeight;
+                    const clientHeight = container.clientHeight;
+                    const fillRatio = scrollHeight / clientHeight;
                     
-                    console.log(`Checking names from index ${startIdx} to ${endIdx}:`);
-                    for (let i = startIdx; i < endIdx; i++) {
-                        const name = allNames[i];
-                        const rect = name.getBoundingClientRect();
-                        const containerRect = container.getBoundingClientRect();
-                        
-                        const isVisible = rect.top >= containerRect.top && rect.bottom <= containerRect.bottom &&
-                                         rect.left >= containerRect.left && rect.right <= containerRect.right;
-                        
-                        console.log(`[${i}] "${name.textContent}": pos(${Math.round(rect.left)}, ${Math.round(rect.top)}) size(${Math.round(rect.width)}x${Math.round(rect.height)}) visible=${isVisible}`);
-                        
-                        if (rect.width === 0 && rect.height === 0) {
-                            console.log(`  ⚠️ Name has zero dimensions!`);
-                        }
-                        if (rect.top > containerRect.bottom) {
-                            console.log(`  ⚠️ Name is below container bottom (${Math.round(containerRect.bottom)})`);
-                        }
-                        if (rect.left > containerRect.right) {
-                            console.log(`  ⚠️ Name is to the right of container`);
-                        }
+                    console.log(`Verification: scrollHeight=${scrollHeight}px, clientHeight=${clientHeight}px`);
+                    console.log(`Fill ratio: ${(fillRatio * 100).toFixed(1)}% (target: 90-98%)`);
+                    
+                    if (fillRatio < 0.85) {
+                        console.log('⚠️ Under-filled, could use larger font');
+                    } else if (fillRatio > 1.02) {
+                        console.log('⚠️ Overflowing, need smaller font');
+                        // Auto-correct if overflowing
+                        const correctedSize = optimalFontSize * 0.95;
+                        console.log(`Auto-correcting to ${correctedSize.toFixed(1)}px`);
+                        soldierNames.forEach(name => {
+                            name.style.fontSize = correctedSize + 'px';
+                        });
+                    } else {
+                        console.log('✅ Good fill ratio achieved');
+                    }
+                }, 100);
+            }
+            
+            calculateOptimalFontSizeMathematically(names, availableWidth, availableHeight) {
+                // Step 1: Analyze the actual content
+                const totalCharacters = names.reduce((sum, name) => sum + name.length, 0);
+                const avgNameLength = totalCharacters / names.length;
+                
+                console.log(`Content analysis: ${totalCharacters} chars, avg ${avgNameLength.toFixed(1)} per name`);
+                
+                // Step 2: Font and layout constants (measured from Handjet font)
+                const charWidthRatio = 0.55; // Character width relative to font size
+                const lineHeight = 1.1; // From CSS
+                const padding = 8; // 2px + 4px horizontal padding
+                const gap = 3.3; // Gap between names
+                
+                // Step 3: Target fill ratio - aim to fill 95% of available space
+                const targetFillRatio = 0.95;
+                const targetHeight = availableHeight * targetFillRatio;
+                
+                console.log(`Target height: ${targetHeight}px (${(targetFillRatio*100).toFixed(0)}% of ${availableHeight}px)`);
+                
+                // Step 4: Binary search for optimal font size (much more efficient than old method)
+                let minFont = 8;
+                let maxFont = Math.min(200, availableHeight / 5); // Reasonable upper bound
+                let bestFont = minFont;
+                
+                console.log(`Binary search range: ${minFont}px - ${maxFont}px`);
+                
+                for (let iteration = 0; iteration < 20; iteration++) {
+                    const testFont = (minFont + maxFont) / 2;
+                    const predictedHeight = this.predictLayoutHeight(names, testFont, availableWidth, charWidthRatio, lineHeight, padding, gap);
+                    
+                    console.log(`  Test ${testFont.toFixed(1)}px → height ${predictedHeight.toFixed(1)}px`);
+                    
+                    if (predictedHeight <= targetHeight) {
+                        bestFont = testFont;
+                        minFont = testFont;
+                    } else {
+                        maxFont = testFont;
+                    }
+                    
+                    // Stop if we're close enough
+                    if (maxFont - minFont < 0.5) break;
+                }
+                
+                console.log(`Binary search result: ${bestFont.toFixed(1)}px`);
+                
+                // Step 5: Ensure reasonable bounds
+                return Math.max(8, Math.min(150, bestFont));
+            }
+            
+            predictLayoutHeight(names, fontSize, containerWidth, charWidthRatio, lineHeight, padding, gap) {
+                // Predict how tall the layout will be at a given font size
+                let currentRowWidth = 0;
+                let rowCount = 1;
+                const effectiveWidth = containerWidth - 10; // Small margin for centering
+                
+                for (const name of names) {
+                    const nameWidth = (name.length * fontSize * charWidthRatio) + padding;
+                    
+                    // Check if this name fits on current row
+                    if (currentRowWidth > 0 && currentRowWidth + gap + nameWidth > effectiveWidth) {
+                        // Start new row
+                        rowCount++;
+                        currentRowWidth = nameWidth;
+                    } else {
+                        // Add to current row
+                        currentRowWidth += (currentRowWidth > 0 ? gap : 0) + nameWidth;
                     }
                 }
-            }
-
-            testFontSize(testContainer, size) {
-                const children = Array.from(testContainer.children);
-                children.forEach((element) => {
-                    element.style.removeProperty('font-size');
-                    element.style.setProperty('font-size', size + 'px', 'important');
-                    const currentStyle = element.style.cssText;
-                    element.style.cssText = currentStyle + `; font-size: ${size}px !important;`;
-                });
                 
-                // Force layout recalculation
-                testContainer.offsetHeight;
-                testContainer.getBoundingClientRect();
+                // Calculate total height
+                const rowHeight = fontSize * lineHeight;
+                const totalHeight = rowCount * rowHeight + (rowCount - 1) * gap;
                 
-                // Check if content overflows the fixed height container WITH BUFFER
-                const containerHeight = testContainer.clientHeight;
-                const scrollHeight = testContainer.scrollHeight;
-                
-                // Add 10px buffer to prevent overflow - this is the key fix!
-                const bufferHeight = 10;
-                const availableHeightWithBuffer = containerHeight - bufferHeight;
-                
-                // Return scroll height to check if it exceeds available height WITH buffer
-                return scrollHeight;
+                return totalHeight;
             }
 
             updateVisualization() {
