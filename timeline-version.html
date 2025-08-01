@@ -132,7 +132,7 @@
             width: 0%;
             background: #000;
             border-radius: 2px;
-            transition: width 0.2s ease;
+            transition: none;
             z-index: 1;
             pointer-events: none;
         }
@@ -193,7 +193,7 @@
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
-            opacity: 1;
+            opacity: 0;
             z-index: 30;
         }
 
@@ -214,7 +214,7 @@
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
-            opacity: 1;
+            opacity: 0;
             transition: opacity 0.2s ease;
         }
 
@@ -229,6 +229,40 @@
             font-size: 13px;
             font-weight: 500;
             color: #555;
+        }
+
+        .timeline-handle-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            transform: translateX(-50%);
+            top: -45px;
+            font-family: 'Heebo', sans-serif;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .timeline-handle-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .timeline-container:hover .timeline-handle-tooltip {
+            opacity: 1;
         }
 
 
@@ -397,10 +431,14 @@
             <div class="timeline-progress" id="timelineProgress"></div>
             <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="643" value="0">
             <div class="timeline-axis" id="timelineAxis"></div>
+            <div class="timeline-handle-tooltip" id="timelineTooltip">
+                <div id="tooltipDate">29/07/25</div>
+                <div id="tooltipAlive">0 soldiers alive</div>
+            </div>
         </div>
         <div class="timeline-labels">
-            <span>Oct 26, 2023</span>
             <span>Today (Jul 29, 2025)</span>
+            <span>Oct 26, 2023</span>
         </div>
     </div>
 
@@ -1016,6 +1054,10 @@
                 // Initialize with war overview narrative point (at today - 0 days back)
                 this.narrative.navigateToPoint('war_overview');
                 
+                // Initialize timeline progress bar (show full timeline initially)
+                const initialProgress = ((643 - 0) / 643) * 100;
+                document.getElementById('timelineProgress').style.width = initialProgress + '%';
+                
                 // Recalculate font size after timeline changes with buffer
                 setTimeout(() => {
                     const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
@@ -1233,7 +1275,7 @@
                         const tickDate = new Date(startDate);
                         tickDate.setMonth(tickDate.getMonth() + monthOffset);
                         
-                        const position = (monthOffset / monthsTotal) * 100;
+                        const position = ((monthsTotal - monthOffset) / monthsTotal) * 100;
                         
                         // Create tick mark
                         const tick = document.createElement('div');
@@ -1256,7 +1298,7 @@
                 // Minor ticks
                 minorTickMonths.forEach(monthOffset => {
                     if (monthOffset <= monthsTotal) {
-                        const position = (monthOffset / monthsTotal) * 100;
+                        const position = ((monthsTotal - monthOffset) / monthsTotal) * 100;
                         
                         const tick = document.createElement('div');
                         tick.className = 'timeline-tick';
@@ -1404,9 +1446,12 @@
                     newEndDate.setDate(newEndDate.getDate() - days);
                     this.currentEndDate = newEndDate;
                     
-                    // Update timeline progress (show war period on right)
+                    // Update timeline progress (show war period from right, RTL)
                     const progress = ((643 - days) / 643) * 100;
                     document.getElementById('timelineProgress').style.width = progress + '%';
+                    
+                    // Update tooltip
+                    this.updateTooltip(days, newEndDate);
                     
                     this.updateVisualization();
                 });
@@ -1501,6 +1546,38 @@
                 });
             }
 
+            updateTooltip(days, currentDate) {
+                const tooltip = document.getElementById('timelineTooltip');
+                const tooltipDate = document.getElementById('tooltipDate');
+                const tooltipAlive = document.getElementById('tooltipAlive');
+                const slider = document.getElementById('timelineSlider');
+                
+                if (!tooltip || !tooltipDate || !tooltipAlive || !slider || !this.soldiers) {
+                    return; // Elements or data not ready yet
+                }
+                
+                // Format date as dd/mm/yy
+                const day = currentDate.getDate().toString().padStart(2, '0');
+                const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+                const year = currentDate.getFullYear().toString().slice(-2);
+                const formattedDate = `${day}/${month}/${year}`;
+                
+                // Calculate alive soldiers count
+                const aliveSoldiers = this.soldiers.filter(s => 
+                    s.death_date >= this.oct26Date && 
+                    s.death_date > currentDate
+                ).length;
+                
+                // Update tooltip content
+                tooltipDate.textContent = formattedDate;
+                tooltipAlive.textContent = `${aliveSoldiers} soldiers alive`;
+                
+                // Position tooltip above the slider handle
+                const sliderValue = parseInt(slider.value);
+                const sliderPercent = (sliderValue / 643) * 100; // Position matches slider handle
+                tooltip.style.left = sliderPercent + '%';
+            }
+
 
             renderAllNames() {
                 const container = document.getElementById('namesContainer');
@@ -1521,6 +1598,9 @@
                 ).join('');
 
                 container.innerHTML = namesHtml;
+                
+                // Initialize tooltip now that data is loaded
+                this.updateTooltip(0, this.todayDate);
                 
                 // Wait for DOM to settle then calculate optimal font size with buffer
                 setTimeout(() => {
