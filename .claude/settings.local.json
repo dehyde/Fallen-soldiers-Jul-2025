@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(find:*)",
@@ -7,7 +8,11 @@
       "Bash(python:*)",
       "Bash(start \"G:\\My Drive\\Tom''s Files\\code\\Fallen soldiers Jul 2025\\timeline-version.html\")",
       "Bash(cmd /c start \"\" \"G:\\My Drive\\Tom''s Files\\code\\Fallen soldiers Jul 2025\\timeline-version.html\")",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(start /min python -m http.server 8001)",
+      "Bash(node:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }

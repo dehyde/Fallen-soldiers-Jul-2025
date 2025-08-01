@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Narrative Order</title>
+</head>
+<body>
+    <div id="output"></div>
+    <script>
+        async function testNarrativeOrder() {
+            try {
+                const response = await fetch('narrative.csv');
+                const csvText = await response.text();
+                
+                const lines = csvText.split('\n');
+                const headers = lines[0].split(',');
+                const narrativePoints = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const values = parseCsvLine(line);
+                    if (values.length === headers.length) {
+                        const point = {};
+                        headers.forEach((header, index) => {
+                            point[header.trim()] = values[index].trim();
+                        });
+                        narrativePoints.push(point);
+                    }
+                }
+                
+                let output = '<h2>Narrative Points Order:</h2><ol>';
+                narrativePoints.forEach((point, index) => {
+                    output += `<li><strong>${point.id}</strong>: ${point.content_hebrew.substring(0, 50)}...</li>`;
+                });
+                output += '</ol>';
+                
+                // Test navigation from personal_enlisted
+                const personalIndex = narrativePoints.findIndex(p => p.id === 'personal_enlisted');
+                const nextFromPersonal = personalIndex < narrativePoints.length - 1 ? narrativePoints[personalIndex + 1] : null;
+                const prevFromPersonal = personalIndex > 0 ? narrativePoints[personalIndex - 1] : null;
+                
+                output += `<h3>Navigation from personal_enlisted (index ${personalIndex}):</h3>`;
+                output += `<p>Previous: ${prevFromPersonal ? prevFromPersonal.id : 'none'}</p>`;
+                output += `<p>Next: ${nextFromPersonal ? nextFromPersonal.id : 'none'}</p>`;
+                
+                document.getElementById('output').innerHTML = output;
+                
+            } catch (error) {
+                document.getElementById('output').innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        function parseCsvLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result;
+        }
+        
+        testNarrativeOrder();
+    </script>
+</body>
+</html>

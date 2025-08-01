@@ -550,6 +550,12 @@
                     case 'fallen_last_month':
                         return `<strong>${this.getFallenLastMonth()}</strong>`;
                     
+                    case 'last_month_names':
+                        return this.getLastMonthNames();
+                    
+                    case 'last_month_remaining_count':
+                        return `<strong>${this.getLastMonthRemainingCount()}</strong>`;
+                    
                     default:
                         return `{{${placeholder}}}`;
                 }
@@ -613,13 +619,13 @@
                 switch(type) {
                     case 'first':
                         const first = relevantSoldiers.sort((a, b) => a.death_date - b.death_date)[0];
-                        return first ? first.name : 'לא ידוע';
+                        return first ? `<strong>${first.name}</strong>` : 'לא ידוע';
                     
                     case 'latest':
                         const latest = relevantSoldiers
                             .filter(s => s.death_date <= this.timeline.currentEndDate)
                             .sort((a, b) => b.death_date - a.death_date)[0];
-                        return latest ? latest.name : 'לא ידוע';
+                        return latest ? `<strong>${latest.name}</strong>` : 'לא ידוע';
                     
                     default:
                         return 'לא ידוע';
@@ -688,12 +694,12 @@
                 );
                 
                 if (soldiersOnLatestDate.length === 1) {
-                    return `נהרג ${soldiersOnLatestDate[0].name}`;
+                    return `נהרג <strong>${soldiersOnLatestDate[0].name}</strong>`;
                 } else if (soldiersOnLatestDate.length === 2) {
-                    return `נהרגו ${soldiersOnLatestDate[0].name} ו-${soldiersOnLatestDate[1].name}`;
+                    return `נהרגו <strong>${soldiersOnLatestDate[0].name}</strong> ו-<strong>${soldiersOnLatestDate[1].name}</strong>`;
                 } else if (soldiersOnLatestDate.length > 2) {
-                    const names = soldiersOnLatestDate.slice(0, -1).map(s => s.name).join(', ');
-                    const lastName = soldiersOnLatestDate[soldiersOnLatestDate.length - 1].name;
+                    const names = soldiersOnLatestDate.slice(0, -1).map(s => `<strong>${s.name}</strong>`).join(', ');
+                    const lastName = `<strong>${soldiersOnLatestDate[soldiersOnLatestDate.length - 1].name}</strong>`;
                     return `נהרגו ${names} ו-${lastName}`;
                 }
                 
@@ -821,11 +827,11 @@
                     return s.death_date > decisionDate && s.death_date >= this.timeline.oct26Date;
                 });
                 
-                // Select 3 random names
+                // Select 3 random names and make them bold
                 const shuffled = couldBeAliveSoldiers.sort(() => 0.5 - Math.random());
                 const selected = shuffled.slice(0, 3);
                 
-                return selected.map(s => `- ${s.name}`).join('<br>');
+                return selected.map(s => `- <strong>${s.name}</strong>`).join('<br>');
             }
 
             getFallenSinceJanuary() {
@@ -848,6 +854,35 @@
                 ).length;
             }
 
+            getLastMonthNames() {
+                const oneMonthAgo = new Date(this.timeline.todayDate);
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                
+                const lastMonthSoldiers = this.timeline.soldiers.filter(s => 
+                    s.death_date >= oneMonthAgo && 
+                    s.death_date <= this.timeline.todayDate &&
+                    s.death_date >= this.timeline.oct26Date
+                );
+                
+                // Get first 3 names and make them bold
+                const names = lastMonthSoldiers.slice(0, 3).map(s => `<strong>${s.name}</strong>`);
+                return names.join(', ');
+            }
+
+            getLastMonthRemainingCount() {
+                const oneMonthAgo = new Date(this.timeline.todayDate);
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                
+                const lastMonthSoldiers = this.timeline.soldiers.filter(s => 
+                    s.death_date >= oneMonthAgo && 
+                    s.death_date <= this.timeline.todayDate &&
+                    s.death_date >= this.timeline.oct26Date
+                );
+                
+                // Return count of remaining soldiers beyond the first 3
+                return Math.max(0, lastMonthSoldiers.length - 3);
+            }
+
             // Navigation methods
             getCurrentPoint() {
                 return this.narrativePoints.find(p => p.id === this.currentPointId) || this.narrativePoints[0];
@@ -859,23 +894,69 @@
                 
                 this.currentPointId = pointId;
                 
-                // Update timeline position
-                const timelinePoint = parseInt(point.timeline_point);
-                const newEndDate = new Date(this.timeline.todayDate);
-                newEndDate.setDate(newEndDate.getDate() - timelinePoint);
-                this.timeline.currentEndDate = newEndDate;
+                // Get current and target timeline points
+                const currentTimelinePoint = parseInt(document.getElementById('timelineSlider').value);
+                const targetTimelinePoint = parseInt(point.timeline_point);
                 
-                // Update slider
-                const slider = document.getElementById('timelineSlider');
-                slider.value = timelinePoint;
-                
-                // Update timeline progress
-                const progress = ((643 - timelinePoint) / 643) * 100;
-                document.getElementById('timelineProgress').style.width = progress + '%';
-                
-                // Update content
+                // Update content immediately
                 this.updateNarrativeContent();
-                this.timeline.updateVisualization();
+                
+                // Start gradual animation if there's a difference
+                if (currentTimelinePoint !== targetTimelinePoint) {
+                    this.animateToTimelinePoint(currentTimelinePoint, targetTimelinePoint);
+                } else {
+                    // If already at target, just update visualization
+                    this.timeline.updateVisualization();
+                }
+            }
+
+            animateToTimelinePoint(startPoint, endPoint) {
+                const slider = document.getElementById('timelineSlider');
+                const progressBar = document.getElementById('timelineProgress');
+                
+                // Determine direction and speed
+                const isMovingBack = endPoint > startPoint; // Moving back in time (higher days back)
+                const isMovingForward = endPoint < startPoint; // Moving forward in time (lower days back)
+                
+                // Set different speeds: slower for forward, faster for backward
+                const forwardSpeed = 25; // ms per day when moving forward in time (SLOWER)
+                const backwardSpeed = 15;  // ms per day when moving back in time (SLOWER)
+                
+                const speed = isMovingForward ? forwardSpeed : backwardSpeed;
+                const step = isMovingBack ? 1 : -1;
+                
+                let current = startPoint;
+                
+                const animate = () => {
+                    // Update current timeline point
+                    current += step;
+                    
+                    // Update slider
+                    slider.value = current;
+                    
+                    // Update timeline progress
+                    const progress = ((643 - current) / 643) * 100;
+                    progressBar.style.width = progress + '%';
+                    
+                    // Update timeline date
+                    const newEndDate = new Date(this.timeline.todayDate);
+                    newEndDate.setDate(newEndDate.getDate() - current);
+                    this.timeline.currentEndDate = newEndDate;
+                    
+                    // Update visualization
+                    this.timeline.updateVisualization();
+                    
+                    // Check if we've reached the target
+                    const reachedTarget = isMovingBack ? (current >= endPoint) : (current <= endPoint);
+                    
+                    if (!reachedTarget) {
+                        // Continue animation
+                        setTimeout(animate, speed);
+                    }
+                };
+                
+                // Start animation
+                setTimeout(animate, speed);
             }
 
             updateNarrativeContent() {
