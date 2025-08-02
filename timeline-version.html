@@ -481,6 +481,8 @@
                 this.timeline = timeline;
                 this.narrativePoints = [];
                 this.currentPointId = 'loaded';
+                this.isNavigating = false; // Flag to prevent conflicting navigation
+                this.currentAnimationId = null; // Track current animation
             }
 
             async loadNarrative() {
@@ -963,6 +965,14 @@
                 const point = this.narrativePoints.find(p => p.id === pointId);
                 if (!point) return;
                 
+                // Cancel any ongoing animation immediately (allows override)
+                if (this.currentAnimationId) {
+                    clearTimeout(this.currentAnimationId);
+                    this.currentAnimationId = null;
+                    console.log('Previous navigation cancelled, starting new one');
+                }
+                
+                this.isNavigating = true;
                 this.currentPointId = pointId;
                 
                 // Get current and target timeline points
@@ -981,8 +991,9 @@
                 if (currentTimelinePoint !== targetTimelinePoint) {
                     this.animateToTimelinePoint(currentTimelinePoint, targetTimelinePoint);
                 } else {
-                    // If already at target, just update visualization
+                    // If already at target, just update visualization and unlock navigation
                     this.timeline.updateVisualization();
+                    this.isNavigating = false;
                 }
             }
 
@@ -1004,6 +1015,12 @@
                 let current = startPoint;
                 
                 const animate = () => {
+                    // Check if animation was cancelled
+                    if (!this.isNavigating) {
+                        console.log('Animation cancelled during execution');
+                        return;
+                    }
+                    
                     // Update current timeline point
                     current += step;
                     
@@ -1029,13 +1046,17 @@
                     const reachedTarget = isMovingBack ? (current >= endPoint) : (current <= endPoint);
                     
                     if (!reachedTarget) {
-                        // Continue animation
-                        setTimeout(animate, speed);
+                        // Continue animation with tracked timeout
+                        this.currentAnimationId = setTimeout(animate, speed);
+                    } else {
+                        // Animation complete - unlock navigation
+                        this.isNavigating = false;
+                        this.currentAnimationId = null;
                     }
                 };
                 
-                // Start animation
-                setTimeout(animate, speed);
+                // Start animation with tracked timeout
+                this.currentAnimationId = setTimeout(animate, speed);
             }
 
             updateNarrativeContent() {
@@ -1069,6 +1090,7 @@
                 const currentIndex = this.narrativePoints.findIndex(p => p.id === this.currentPointId);
                 return currentIndex > 0 ? this.narrativePoints[currentIndex - 1] : null;
             }
+
         }
 
         class TimelineMemorial {
