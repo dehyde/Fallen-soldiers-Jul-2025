@@ -797,7 +797,7 @@
                     .sort((a, b) => b - a)[0];
                 
                 // Calculate days from today back to most recent death
-                return Math.round((this.timeline.todayDate - latestDeathDate) / (1000 * 60 * 60 * 24));
+                return Math.floor((this.timeline.todayDate - latestDeathDate) / (1000 * 60 * 60 * 24));
             }
 
             getLastDeathsText() {
@@ -1032,7 +1032,7 @@
                 
                 // Special handling for recent_deaths: use actual days since last deaths
                 if (pointId === 'recent_deaths') {
-                    targetTimelinePoint = this.timeline.narrative.getDaysSinceLastDeaths();
+                    targetTimelinePoint = this.timeline.narrative.getDaysSinceLastDeaths() + 1;
                 }
                 
                 // Update content immediately
@@ -1166,8 +1166,8 @@
 
             getTotalTimelineDays() {
                 // Calculate days from start date (Oct 27, 2023) to today
-                // Subtract 1 so that max slider value gives us exactly the start date
-                return Math.ceil((this.todayDate - this.startDate) / (1000 * 60 * 60 * 24)) - 1;
+                // Add 1 to include today as day 0 in the slider range
+                return Math.floor((this.todayDate - this.startDate) / (1000 * 60 * 60 * 24)) + 1;
             }
 
 
@@ -1183,11 +1183,12 @@
                 const totalDays = this.getTotalTimelineDays();
                 document.getElementById('timelineSlider').max = totalDays;
                 
-                // Initialize with war overview narrative point (at today - 0 days back)
-                this.narrative.navigateToPoint('war_overview');
+                // Initialize with recent deaths narrative point (at today - 7 days back)
+                this.narrative.navigateToPoint('recent_deaths');
                 
-                // Initialize timeline progress bar (show full timeline initially)
-                const initialProgress = ((totalDays - 0) / totalDays) * 100;
+                // Initialize timeline progress bar (at current date - 0 days back)
+                const initialDaysBack = 0;
+                const initialProgress = ((totalDays - initialDaysBack) / totalDays) * 100;
                 document.getElementById('timelineProgress').style.width = initialProgress + '%';
                 
                 // Recalculate font size after timeline changes with buffer
