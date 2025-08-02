@@ -96,7 +96,15 @@
             font-weight: bold;
             z-index: 100;
             position: relative;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: opacity 0.6s ease-out, background-color 0.6s ease-out, color 0.6s ease-out;
+        }
+
+        .soldier-name.dying-fade {
+            opacity: 0.2;
+            background: rgba(255,100,100,0.1) !important;
+            color: inherit !important;
+            font-weight: normal !important;
+            z-index: auto !important;
         }
 
         .timeline-container {
@@ -2216,15 +2224,23 @@
                     
                     console.log(`Started dying animation for soldier ${el.textContent} (${deathDate.toDateString()})`);
                     
-                    // Set timeout and track it
+                    // Set timeout to start fade transition after initial highlight
                     const timeoutId = setTimeout(() => {
                         if (el.classList.contains('dying')) {
-                            el.className = 'soldier-name fallen';
-                            this.soldierStates.set(elementId, 'fallen');
-                            console.log(`Completed dying animation for soldier ${el.textContent}`);
+                            // Start gradual fade by adding dying-fade class
+                            el.className = 'soldier-name dying dying-fade';
                         }
+                        
+                        // Set final timeout to complete transition
+                        const finalTimeoutId = setTimeout(() => {
+                            if (el.classList.contains('dying-fade')) {
+                                el.className = 'soldier-name fallen';
+                                this.soldierStates.set(elementId, 'fallen');
+                            }
+                        }, 600); // Match CSS transition duration
+                        
                         this.dyingTimeouts.delete(elementId);
-                    }, 400);
+                    }, 250); // Reduced from 300ms for better performance
                     
                     this.dyingTimeouts.set(elementId, timeoutId);
                 });
