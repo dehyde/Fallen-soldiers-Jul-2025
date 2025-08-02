@@ -284,20 +284,22 @@
             pointer-events: none;
             opacity: 1;
             transform: translateX(-50%);
-            top: -65px;
+            bottom: 15px; /* Changed from top: -65px to grow upwards */
             font-family: 'Heebo', sans-serif;
             text-align: center;
             line-height: 1.3;
+            max-width: 300px; /* Allow for wider content when showing events */
+            white-space: normal; /* Allow text wrapping for event details */
         }
 
         .timeline-handle-tooltip::after {
             content: '';
             position: absolute;
-            top: 100%;
+            bottom: -10px; /* Changed from top: 100% to bottom of tooltip */
             left: 50%;
             margin-left: -5px;
             border: 5px solid transparent;
-            border-top-color: rgba(0, 0, 0, 0.9);
+            border-top-color: rgba(0, 0, 0, 0.9); /* Triangle points down from tooltip */
             transition: left 0.1s ease;
         }
 
@@ -1001,6 +1003,9 @@
                 const slider = document.getElementById('timelineSlider');
                 const progressBar = document.getElementById('timelineProgress');
                 
+                // Mark timeline as animating
+                this.timeline.isTimelineAnimating = true;
+                
                 // Determine direction and speed
                 const isMovingBack = endPoint > startPoint; // Moving back in time (higher days back)
                 const isMovingForward = endPoint < startPoint; // Moving forward in time (lower days back)
@@ -1049,9 +1054,10 @@
                         // Continue animation with tracked timeout
                         this.currentAnimationId = setTimeout(animate, speed);
                     } else {
-                        // Animation complete - unlock navigation
+                        // Animation complete - unlock navigation and stop animating
                         this.isNavigating = false;
                         this.currentAnimationId = null;
+                        this.timeline.isTimelineAnimating = false;
                     }
                 };
                 
@@ -1103,6 +1109,8 @@
                 this.navigationState = 'month_back'; // 'month_back' or 'today'
                 this.narrative = new NarrativeEngine(this);
                 this.dyingTimeouts = new Map(); // Track timeouts for performance
+                this.isTimelineAnimating = false; // Track if timeline is actively animating
+                this.lastTooltipUpdate = 0; // Track last manual tooltip update
                 this.init();
             }
 
@@ -1440,10 +1448,10 @@
                                 marker.style.transform = 'translate(-50%, -50%) scale(1.5)';
                                 marker.style.zIndex = '200';
                                 
-                                // Create tooltip
+                                // Create tooltip - only show title
                                 const tooltip = document.createElement('div');
                                 tooltip.className = 'timeline-tooltip';
-                                tooltip.innerHTML = `<strong>${event.title_hebrew}</strong>${event.description_hebrew}`;
+                                tooltip.innerHTML = `<strong>${event.title_hebrew}</strong>`;
                                 currentTooltip = tooltip;
                                 
                                 // Append to body and set initial position
@@ -1514,9 +1522,9 @@
                                 marker.style.zIndex = '100';
                             };
                             
-                            // Also add onclick for mobile/debugging
+                            // Click to jump to event date
                             marker.onclick = () => {
-                                alert(`${event.title_hebrew}\n\n${event.description_hebrew}`);
+                                this.jumpToEventDate(event.eventDate);
                             };
                             
                             axisContainer.appendChild(marker);
@@ -1535,11 +1543,61 @@
                 console.log(`\n📊 Timeline markers summary: ${markersAdded} added, ${markersSkipped} skipped, ${this.timelineEvents.length} total`);
             }
 
+            getEventAtDate(currentDate) {
+                // Find timeline event that matches the current date (within same day)
+                const currentDateOnly = new Date(currentDate);
+                currentDateOnly.setHours(0, 0, 0, 0);
+                
+                return this.timelineEvents.find(event => {
+                    if (!event.eventDate) return false;
+                    
+                    const eventDateOnly = new Date(event.eventDate);
+                    eventDateOnly.setHours(0, 0, 0, 0);
+                    
+                    return Math.abs(currentDateOnly - eventDateOnly) < 24 * 60 * 60 * 1000; // Same day
+                });
+            }
+
+            jumpToEventDate(eventDate) {
+                // Calculate days back from today to the event date
+                const daysBack = Math.floor((this.todayDate - eventDate) / (1000 * 60 * 60 * 24));
+                
+                // Ensure the value is within slider bounds
+                const constrainedDays = Math.max(0, Math.min(643, daysBack));
+                
+                // Update slider and timeline
+                const slider = document.getElementById('timelineSlider');
+                slider.value = constrainedDays;
+                
+                // Mark as manual input (not animating)
+                this.isTimelineAnimating = false;
+                this.lastTooltipUpdate = Date.now();
+                
+                // Calculate new end date
+                const newEndDate = new Date(this.todayDate);
+                newEndDate.setDate(newEndDate.getDate() - constrainedDays);
+                this.currentEndDate = newEndDate;
+                
+                // Update timeline progress
+                const progress = ((643 - constrainedDays) / 643) * 100;
+                document.getElementById('timelineProgress').style.width = progress + '%';
+                
+                // Update tooltip and visualization
+                this.updateTooltip(constrainedDays, newEndDate);
+                this.updateVisualization();
+                
+                console.log(`Jumped to event date: ${eventDate.toLocaleDateString()}, days back: ${constrainedDays}`);
+            }
+
             setupEventListeners() {
                 const slider = document.getElementById('timelineSlider');
                 
                 slider.addEventListener('input', (e) => {
                     const days = parseInt(e.target.value);
+                    
+                    // Mark as manual input (not animating)
+                    this.isTimelineAnimating = false;
+                    this.lastTooltipUpdate = Date.now();
                     
                     // Calculate end date going back from today
                     const newEndDate = new Date(this.todayDate);
@@ -1669,9 +1727,25 @@
                     s.death_date > currentDate
                 ).length;
                 
-                // Update tooltip content
-                tooltipDate.textContent = formattedDate;
-                tooltipAlive.textContent = `${aliveSoldiers} soldiers alive`;
+                // Check if we're over a timeline event (when STOPPED, not transitioning)
+                const eventAtDate = this.getEventAtDate(currentDate);
+                const isStoppedOverEvent = eventAtDate && !this.isTimelineAnimating;
+                
+                if (isStoppedOverEvent) {
+                    // Show event details in tooltip
+                    tooltipDate.textContent = formattedDate;
+                    tooltipAlive.innerHTML = `
+                        <div style="margin-bottom: 6px;">${aliveSoldiers} soldiers alive</div>
+                        <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 6px;">
+                            <strong style="color: #ffcc00;">${eventAtDate.title_hebrew}</strong><br>
+                            <span style="font-size: 11px; opacity: 0.9;">${eventAtDate.description_hebrew}</span>
+                        </div>
+                    `;
+                } else {
+                    // Regular tooltip content
+                    tooltipDate.textContent = formattedDate;
+                    tooltipAlive.textContent = `${aliveSoldiers} soldiers alive`;
+                }
                 
                 // Calculate handle position
                 const sliderValue = parseInt(slider.value);
