@@ -63,7 +63,6 @@
             font-weight: 400;
             padding: 2px 4px;
             background: rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
             cursor: pointer;
             line-height: 1.1; /* This matches the calculation */
             text-decoration: none;
@@ -73,8 +72,10 @@
         }
 
         .soldier-name:hover {
-            background: rgba(0,0,0,0.3);
-            transform: scale(1.05);
+            background: rgba(0,0,0,0.8) !important;
+            color: white !important;
+            z-index: 10;
+            position: relative;
         }
 
         .soldier-name.fallen {
@@ -445,6 +446,48 @@
             font-size: 14px !important;
             font-family: 'Heebo', sans-serif !important;
         }
+
+        .soldier-tooltip {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.95) !important;
+            color: #333 !important;
+            padding: 6px 8px !important;
+            border-radius: 3px !important;
+            font-size: 11px !important;
+            width: auto !important;
+            white-space: nowrap !important;
+            z-index: 1000 !important;
+            pointer-events: none !important;
+            text-align: center !important;
+            font-family: 'Heebo', sans-serif !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+            border: 1px solid rgba(0,0,0,0.1) !important;
+            line-height: 1.2 !important;
+            backdrop-filter: blur(5px) !important;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .soldier-tooltip.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        .soldier-tooltip strong {
+            display: block !important;
+            margin-bottom: 2px !important;
+            color: #333 !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            font-family: 'Heebo', sans-serif !important;
+        }
+
+        .soldier-tooltip .soldier-details {
+            font-size: 10px !important;
+            color: #555 !important;
+            line-height: 1.2 !important;
+        }
     </style>
 </head>
 <body>
@@ -462,6 +505,12 @@
 
     <div class="names-container" id="namesContainer">
         <div class="loading">Loading memorial data...</div>
+    </div>
+
+    <!-- Custom soldier tooltip -->
+    <div class="soldier-tooltip" id="soldierTooltip">
+        <strong id="soldierName"></strong>
+        <div class="soldier-details" id="soldierDetails"></div>
     </div>
 
     <div class="timeline-container">
@@ -1279,12 +1328,12 @@
                 let unit = 'Unknown';
                 
                 // Extract name: look for pattern with Hebrew text followed by ז"ל
-                const namePattern = /\s+([א-ת\s']+)\s+ז""ל/;
+                const namePattern = /\s+([א-ת\s'\-\(\)׳]+)\s+ז""ל/;
                 const nameMatch = line.match(namePattern);
                 if (nameMatch) {
                     const fullName = nameMatch[1].trim();
                     // Remove rank prefix if it exists
-                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם)\s+/, '');
+                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם|אל""ם|\([^)]*\))\s+/, '');
                     name = cleanName.trim();
                 }
                 
@@ -1824,6 +1873,15 @@
             }
 
 
+            escapeHtml(text) {
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#x27;');
+            }
+
             renderAllNames() {
                 const container = document.getElementById('namesContainer');
                 
@@ -1838,11 +1896,14 @@
                 // Sort by death date
                 relevantSoldiers.sort((a, b) => a.death_date - b.death_date);
 
-                const namesHtml = relevantSoldiers.map(soldier => 
-                    `<div class="soldier-name" data-death-date="${soldier.death_date.getTime()}" title="${soldier.rank} - ${soldier.unit} - ${soldier.death_date.toLocaleDateString()}">${soldier.name}</div>`
-                ).join('');
+                const namesHtml = relevantSoldiers.map(soldier => {
+                    return `<div class="soldier-name" data-death-date="${soldier.death_date.getTime()}" data-rank="${this.escapeHtml(soldier.rank)}" data-unit="${this.escapeHtml(soldier.unit)}">${soldier.name}</div>`;
+                }).join('');
 
                 container.innerHTML = namesHtml;
+                
+                // Setup custom tooltips for soldier names
+                this.setupSoldierTooltips();
                 
                 // Initialize tooltip now that data is loaded
                 this.updateTooltip(0, this.todayDate);
@@ -1855,6 +1916,70 @@
                         this.performFontSizeCalculation(relevantSoldiers.length, availableWidth, availableHeight);
                     }
                 }, 50);
+            }
+
+            setupSoldierTooltips() {
+                const soldierNames = document.querySelectorAll('.soldier-name');
+                const tooltip = document.getElementById('soldierTooltip');
+                const soldierNameEl = document.getElementById('soldierName');
+                const soldierDetailsEl = document.getElementById('soldierDetails');
+                
+                soldierNames.forEach(nameEl => {
+                    nameEl.addEventListener('mouseenter', (e) => {
+                        const name = nameEl.textContent;
+                        const rank = nameEl.dataset.rank;
+                        const unit = nameEl.dataset.unit;
+                        const deathDate = new Date(parseInt(nameEl.dataset.deathDate));
+                        
+                        // Format date in Hebrew style
+                        const formattedDate = deathDate.toLocaleDateString('he-IL');
+                        
+                        // Update tooltip content (compact format)
+                        soldierNameEl.textContent = name;
+                        soldierDetailsEl.innerHTML = `
+                            <div>${rank}</div>
+                            <div>${unit}</div>
+                            <div style="opacity: 0.8;">${formattedDate}</div>
+                        `;
+                        
+                        // Position tooltip
+                        this.positionSoldierTooltip(e, tooltip);
+                        
+                        // Show tooltip
+                        tooltip.classList.add('visible');
+                    });
+                    
+                    nameEl.addEventListener('mouseleave', () => {
+                        tooltip.classList.remove('visible');
+                    });
+                    
+                    nameEl.addEventListener('mousemove', (e) => {
+                        if (tooltip.classList.contains('visible')) {
+                            this.positionSoldierTooltip(e, tooltip);
+                        }
+                    });
+                });
+            }
+
+            positionSoldierTooltip(mouseEvent, tooltip) {
+                const mouseX = mouseEvent.clientX;
+                const mouseY = mouseEvent.clientY;
+                const tooltipWidth = tooltip.offsetWidth;
+                const tooltipHeight = tooltip.offsetHeight;
+                const screenWidth = window.innerWidth;
+                const screenHeight = window.innerHeight;
+                
+                // Position tooltip above the cursor with some offset
+                let x = mouseX - tooltipWidth / 2;
+                let y = mouseY - tooltipHeight - 15;
+                
+                // Adjust if tooltip would go off screen
+                if (x < 10) x = 10;
+                if (x + tooltipWidth > screenWidth - 10) x = screenWidth - tooltipWidth - 10;
+                if (y < 10) y = mouseY + 15; // Show below cursor if no room above
+                
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
             }
 
             applySafeFontSize() {
