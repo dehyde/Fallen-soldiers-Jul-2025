@@ -2240,7 +2240,7 @@
                         }, 600); // Match CSS transition duration
                         
                         this.dyingTimeouts.delete(elementId);
-                    }, 250); // Reduced from 300ms for better performance
+                    }, 500); // Hold red highlight for 500ms
                     
                     this.dyingTimeouts.set(elementId, timeoutId);
                 });
