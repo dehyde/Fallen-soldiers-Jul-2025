@@ -44,7 +44,7 @@
         .names-container {
             position: fixed;
             top: 20px;
-            bottom: 60px;
+            bottom: 110px;
             left: 5px;
             right: 5px;
             display: flex;
@@ -103,7 +103,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 60px;
+            height: 110px;
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(15px);
             /* Remove top border */
@@ -113,7 +113,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 10px 50px;
+            padding: 10px 50px 60px 50px;
             z-index: 100;
         }
 
@@ -1306,10 +1306,13 @@
                         event[header.trim()] = values[index] ? values[index].trim() : '';
                     });
                     
-                    // Parse date
+                    // Parse date - handle d/m/yyyy format correctly
                     if (event.date) {
-                        event.eventDate = new Date(event.date);
-                        console.log('Timeline event parsed:', event.title_hebrew, 'Date:', event.eventDate);
+                        // Convert d/m/yyyy to m/d/yyyy for proper JavaScript parsing
+                        const [day, month, year] = event.date.split('/');
+                        const correctedDateString = `${month}/${day}/${year}`;
+                        event.eventDate = new Date(correctedDateString);
+                        console.log('Timeline event parsed:', event.title_hebrew, 'Original date:', event.date, 'Parsed date:', event.eventDate);
                     }
                     
                     this.timelineEvents.push(event);
@@ -1373,15 +1376,18 @@
                 // Add timeline events markers
                 console.log('Adding timeline event markers, total events:', this.timelineEvents.length);
                 console.log('Timeline range:', startDate.toLocaleDateString(), 'to', endDate.toLocaleDateString());
+                console.log('Total timeline days:', totalDays);
                 
+                let markersAdded = 0;
+                let markersSkipped = 0;
                 
                 this.timelineEvents.forEach(event => {
                     console.log('Processing event:', event.title_hebrew, 'Date:', event.eventDate);
-                    if (event.eventDate) {
+                    if (event.eventDate && !isNaN(event.eventDate.getTime())) {
                         // Calculate position based on date (0% = endDate/today, 100% = startDate/oldest)
                         const daysDiff = Math.floor((endDate - event.eventDate) / (1000 * 60 * 60 * 24));
                         const position = (daysDiff / totalDays) * 100;
-                        console.log(`Event position: ${position}% (${daysDiff} days from start, total days: ${totalDays})`);
+                        console.log(`Event "${event.title_hebrew}": eventDate=${event.eventDate.toISOString()}, daysDiff=${daysDiff}, position=${position.toFixed(1)}%`);
                         
                         if (position >= 0 && position <= 100) {
                             // Create event marker
@@ -1389,10 +1395,22 @@
                             marker.className = 'timeline-event-marker';
                             marker.style.position = 'absolute';
                             marker.style.left = position + '%';
-                            marker.style.top = '0px';
+                            
+                            // Position political events above timeline, military events below
+                            const isPolitical = event.category === 'political';
+                            const markerDistance = '15px'; // Distance from timeline track
+                            
+                            if (isPolitical) {
+                                marker.style.top = `-${markerDistance}`;
+                                marker.style.transform = 'translate(-50%, -50%)'; // Center on position, adjust for above placement
+                            } else {
+                                marker.style.top = markerDistance;
+                                marker.style.transform = 'translate(-50%, -50%)'; // Center on position, adjust for below placement  
+                            }
+                            
                             marker.style.width = '8px';
                             marker.style.height = '8px';
-                            marker.style.transform = 'translateX(-50%)'; // Center on position
+                            
                             // Set color based on category
                             let markerColor = '#ff4444'; // default red
                             switch(event.category) {
@@ -1418,8 +1436,8 @@
                                 // Remove any existing tooltips
                                 document.querySelectorAll('.timeline-tooltip').forEach(t => t.remove());
                                 
-                                // Scale up marker
-                                marker.style.transform = 'translateX(-50%) scale(1.5)';
+                                // Scale up marker while maintaining Y position
+                                marker.style.transform = 'translate(-50%, -50%) scale(1.5)';
                                 marker.style.zIndex = '200';
                                 
                                 // Create tooltip
@@ -1450,9 +1468,18 @@
                                     const timelineTrack = document.querySelector('.timeline-track');
                                     const trackRect = timelineTrack.getBoundingClientRect();
                                     
-                                    // Position tooltip a fixed distance above the timeline track
+                                    // Position tooltip based on marker position (above/below timeline)
                                     const fixedGapFromTrack = 120; // Fixed distance from timeline track
-                                    const topPos = trackRect.top - fixedGapFromTrack;
+                                    const isMarkerAbove = markerRect.top < trackRect.top;
+                                    
+                                    let topPos;
+                                    if (isMarkerAbove) {
+                                        // For markers above timeline, position tooltip further above
+                                        topPos = trackRect.top - fixedGapFromTrack - 20;
+                                    } else {
+                                        // For markers below timeline, position tooltip above the track (consistent)
+                                        topPos = trackRect.top - fixedGapFromTrack;
+                                    }
                                     let leftPos = markerRect.left + markerRect.width / 2;
                                     let transform = 'translateX(-50%)';
                                     
@@ -1483,7 +1510,7 @@
                                     currentTooltip = null;
                                 }
                                 
-                                marker.style.transform = 'translateX(-50%) scale(1)';
+                                marker.style.transform = 'translate(-50%, -50%) scale(1)';
                                 marker.style.zIndex = '100';
                             };
                             
@@ -1493,10 +1520,19 @@
                             };
                             
                             axisContainer.appendChild(marker);
-                            console.log('Added marker for:', event.title_hebrew, 'at position', position + '%');
+                            console.log(`✅ Successfully added marker for: ${event.title_hebrew} (${event.category}) at position ${position.toFixed(1)}% - ${isPolitical ? 'ABOVE' : 'BELOW'} timeline`);
+                            markersAdded++;
+                        } else {
+                            console.log(`❌ Skipping event "${event.title_hebrew}" - position out of range: ${position.toFixed(1)}%`);
+                            markersSkipped++;
                         }
+                    } else {
+                        console.log(`❌ Skipping event "${event.title_hebrew}" - invalid date:`, event.eventDate);
+                        markersSkipped++;
                     }
                 });
+                
+                console.log(`\n📊 Timeline markers summary: ${markersAdded} added, ${markersSkipped} skipped, ${this.timelineEvents.length} total`);
             }
 
             setupEventListeners() {
