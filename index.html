@@ -187,13 +187,19 @@
             constructor() {
                 this.soldiers = [];
                 this.oct26Date = new Date('2023-10-26');
-                this.todayDate = new Date('2025-07-29');
+                this.todayDate = new Date();
                 this.init();
             }
 
             async init() {
                 await this.loadData();
                 this.setupEventListeners();
+                
+                // Set max date to today
+                const targetDateInput = document.getElementById('targetDate');
+                const today = new Date().toISOString().split('T')[0];
+                targetDateInput.max = today;
+                
                 this.updateAnalysis();
             }
 

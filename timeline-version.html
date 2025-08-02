@@ -106,32 +106,34 @@
             height: 60px;
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(15px);
-            border-top: 2px solid rgba(0,0,0,0.3);
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            /* Remove top border */
+            /* border-top: 2px solid rgba(0,0,0,0.3); */
+            /* Remove shadow */
+            /* box-shadow: 0 -4px 20px rgba(0,0,0,0.1); */
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 10px;
+            padding: 10px 50px;
             z-index: 100;
         }
 
         .timeline-track {
             position: relative;
-            height: 4px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 2px;
+            height: 1px;
+            background: #333;
+            border-radius: 0;
             margin: 5px 0 15px 0;
-            border: 1px solid rgba(0,0,0,0.4);
+            border: none;
         }
 
         .timeline-progress {
             position: absolute;
-            top: 0;
+            top: -1px;
             right: 0;
             height: 4px;
             width: 0%;
             background: #000;
-            border-radius: 2px;
+            border-radius: 0;
             transition: none;
             z-index: 1;
             pointer-events: none;
@@ -183,6 +185,23 @@
             z-index: 20;
         }
 
+        .timeline-slider::-webkit-slider-track {
+            -webkit-appearance: none;
+            height: 2px;
+            background: #333;
+            border: none;
+            outline: none;
+        }
+
+        #timelineSlider::-webkit-slider-track {
+            -webkit-appearance: none;
+            height: 2px;
+            background: #333 !important;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
         .timeline-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 12px;
@@ -204,6 +223,27 @@
         .timeline-slider::-webkit-slider-thumb:hover {
             transform: scale(1.1);
             box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.2);
+        }
+
+        .timeline-slider::-moz-range-track {
+            height: 2px;
+            background: #333;
+            border: none;
+            outline: none;
+        }
+
+        #timelineSlider::-moz-range-track {
+            height: 2px;
+            background: #333 !important;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        #timelineSlider {
+            background: transparent !important;
+            border: none !important;
+            outline: none !important;
         }
 
         .timeline-slider::-moz-range-thumb {
@@ -236,16 +276,15 @@
             background: rgba(0, 0, 0, 0.9);
             color: white;
             padding: 8px 12px;
-            border-radius: 4px;
+            border-radius: 2px;
             font-size: 12px;
             font-weight: 500;
             white-space: nowrap;
             z-index: 50;
             pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s ease;
+            opacity: 1;
             transform: translateX(-50%);
-            top: -45px;
+            top: -65px;
             font-family: 'Heebo', sans-serif;
             text-align: center;
             line-height: 1.3;
@@ -259,10 +298,7 @@
             margin-left: -5px;
             border: 5px solid transparent;
             border-top-color: rgba(0, 0, 0, 0.9);
-        }
-
-        .timeline-container:hover .timeline-handle-tooltip {
-            opacity: 1;
+            transition: left 0.1s ease;
         }
 
 
@@ -436,10 +472,7 @@
                 <div id="tooltipAlive">0 soldiers alive</div>
             </div>
         </div>
-        <div class="timeline-labels">
-            <span>Today (Jul 29, 2025)</span>
-            <span>Oct 26, 2023</span>
-        </div>
+        <!-- Removed timeline labels -->
     </div>
 
     <script>
@@ -934,7 +967,12 @@
                 
                 // Get current and target timeline points
                 const currentTimelinePoint = parseInt(document.getElementById('timelineSlider').value);
-                const targetTimelinePoint = parseInt(point.timeline_point);
+                let targetTimelinePoint = parseInt(point.timeline_point);
+                
+                // Special handling for recent_deaths: use actual days since last deaths
+                if (pointId === 'recent_deaths') {
+                    targetTimelinePoint = this.timeline.narrative.getDaysSinceLastDeaths();
+                }
                 
                 // Update content immediately
                 this.updateNarrativeContent();
@@ -980,6 +1018,9 @@
                     const newEndDate = new Date(this.timeline.todayDate);
                     newEndDate.setDate(newEndDate.getDate() - current);
                     this.timeline.currentEndDate = newEndDate;
+                    
+                    // Update tooltip during animation
+                    this.timeline.updateTooltip(current, newEndDate);
                     
                     // Update visualization
                     this.timeline.updateVisualization();
@@ -1035,8 +1076,8 @@
                 this.soldiers = [];
                 this.timelineEvents = [];
                 this.oct26Date = new Date('2023-10-26');
-                this.todayDate = new Date('2025-07-29');
-                this.currentEndDate = new Date('2025-07-29'); // Start at today so all soldiers are "fallen"
+                this.todayDate = new Date();
+                this.currentEndDate = new Date(); // Start at today so all soldiers are "fallen"
                 this.navigationState = 'month_back'; // 'month_back' or 'today'
                 this.narrative = new NarrativeEngine(this);
                 this.dyingTimeouts = new Map(); // Track timeouts for performance
@@ -1258,9 +1299,9 @@
                 const axisContainer = document.getElementById('timelineAxis');
                 axisContainer.innerHTML = '';
                 
-                const totalDays = 643; // From today back to Oct 26, 2023
                 const startDate = new Date('2023-10-26');
-                const endDate = new Date('2025-07-29');
+                const endDate = new Date();
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)); // From today back to Oct 26, 2023
                 
                 // Generate major ticks every 3 months and minor ticks every month
                 const majorTickMonths = [0, 3, 6, 9, 12, 15, 18, 21]; // Every 3 months
@@ -1327,8 +1368,8 @@
                             marker.style.position = 'absolute';
                             marker.style.left = position + '%';
                             marker.style.top = '0px';
-                            marker.style.width = '12px';
-                            marker.style.height = '12px';
+                            marker.style.width = '8px';
+                            marker.style.height = '8px';
                             marker.style.transform = 'translateX(-50%)'; // Center on position
                             // Set color based on category
                             let markerColor = '#ff4444'; // default red
@@ -1344,7 +1385,8 @@
                             marker.style.borderRadius = '50%';
                             marker.style.cursor = 'pointer';
                             marker.style.zIndex = '100';
-                            marker.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+                            // Remove shadow
+                            // marker.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
                             marker.style.pointerEvents = 'auto';
                             
                             // Create custom immediate tooltip
@@ -1551,8 +1593,9 @@
                 const tooltipDate = document.getElementById('tooltipDate');
                 const tooltipAlive = document.getElementById('tooltipAlive');
                 const slider = document.getElementById('timelineSlider');
+                const track = document.querySelector('.timeline-track');
                 
-                if (!tooltip || !tooltipDate || !tooltipAlive || !slider || !this.soldiers) {
+                if (!tooltip || !tooltipDate || !tooltipAlive || !slider || !this.soldiers || !track) {
                     return; // Elements or data not ready yet
                 }
                 
@@ -1572,10 +1615,47 @@
                 tooltipDate.textContent = formattedDate;
                 tooltipAlive.textContent = `${aliveSoldiers} soldiers alive`;
                 
-                // Position tooltip above the slider handle
+                // Calculate handle position
                 const sliderValue = parseInt(slider.value);
-                const sliderPercent = (sliderValue / 643) * 100; // Position matches slider handle
-                tooltip.style.left = sliderPercent + '%';
+                const handlePercent = (sliderValue / 643) * 100;
+                
+                // Get tooltip dimensions
+                const tooltipWidth = tooltip.offsetWidth;
+                const trackWidth = track.offsetWidth;
+                
+                // Calculate ideal tooltip position (centered on handle)
+                const idealLeft = (handlePercent / 100) * trackWidth - (tooltipWidth / 2);
+                
+                // Constrain tooltip within track bounds
+                const minLeft = 0;
+                const maxLeft = trackWidth - tooltipWidth;
+                const constrainedLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
+                
+                // Position tooltip
+                tooltip.style.left = constrainedLeft + 'px';
+                tooltip.style.transform = 'none'; // Remove center transform since we're positioning manually
+                
+                // Calculate triangle position relative to tooltip
+                const handlePixelPos = (handlePercent / 100) * trackWidth;
+                const triangleOffset = handlePixelPos - constrainedLeft;
+                const trianglePercent = (triangleOffset / tooltipWidth) * 100;
+                
+                // Update triangle position
+                const triangleElement = tooltip.querySelector('::after') || tooltip;
+                tooltip.style.setProperty('--triangle-left', Math.max(5, Math.min(95, trianglePercent)) + '%');
+                
+                // Update CSS custom property for triangle positioning
+                const style = document.createElement('style');
+                style.textContent = `
+                    #timelineTooltip::after {
+                        left: ${Math.max(5, Math.min(95, trianglePercent))}% !important;
+                    }
+                `;
+                // Remove previous style if exists
+                const oldStyle = document.getElementById('tooltip-triangle-style');
+                if (oldStyle) oldStyle.remove();
+                style.id = 'tooltip-triangle-style';
+                document.head.appendChild(style);
             }
 
 

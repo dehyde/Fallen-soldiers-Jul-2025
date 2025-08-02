@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Date Test</title>
+</head>
+<body>
+    <h1>Date Calculation Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Test the date calculations
+        const resultsDiv = document.getElementById('results');
+        
+        // Simulate the current date calculation
+        const todayDate = new Date();
+        const july26 = new Date('2025-07-26');
+        
+        const daysDiff = Math.round((todayDate - july26) / (1000 * 60 * 60 * 24));
+        
+        resultsDiv.innerHTML = `
+            <p>Today's date: ${todayDate.toLocaleDateString()}</p>
+            <p>July 26th, 2025: ${july26.toLocaleDateString()}</p>
+            <p>Days difference: ${daysDiff}</p>
+            <p>Expected for Aug 2nd: 7 days</p>
+        `;
+    </script>
+</body>
+</html>
