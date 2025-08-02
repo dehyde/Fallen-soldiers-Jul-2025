@@ -128,7 +128,7 @@
 
         .timeline-progress {
             position: absolute;
-            top: -1px;
+            top: -1.5px; /* Center the 4px progress bar on the 1px track */
             right: 0;
             height: 4px;
             width: 0%;
@@ -179,7 +179,7 @@
             background: transparent;
             outline: none;
             position: absolute;
-            top: 0;
+            top: -1.5px; /* Center slider on track to align thumb with progress bar */
             cursor: pointer;
             -webkit-appearance: none;
             z-index: 20;
@@ -281,7 +281,7 @@
             font-weight: 500;
             white-space: nowrap;
             z-index: 50;
-            pointer-events: none;
+            pointer-events: auto;
             opacity: 1;
             transform: translateX(-50%);
             bottom: 15px; /* Changed from top: -65px to grow upwards */
@@ -467,10 +467,10 @@
     <div class="timeline-container">
         <div class="timeline-track">
             <div class="timeline-progress" id="timelineProgress"></div>
-            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="643" value="0">
+            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="1" value="0">
             <div class="timeline-axis" id="timelineAxis"></div>
             <div class="timeline-handle-tooltip" id="timelineTooltip">
-                <div id="tooltipDate">29/07/25</div>
+                <div id="tooltipDate">27/07/25</div>
                 <div id="tooltipAlive">0 soldiers alive</div>
             </div>
         </div>
@@ -552,7 +552,7 @@
                 
                 switch(type) {
                     case 'total_count':
-                        return `<strong>${this.timeline.soldiers.filter(s => s.death_date >= this.timeline.oct26Date).length}</strong>`;
+                        return `<strong>${this.timeline.soldiers.filter(s => s.death_date >= this.timeline.startDate).length}</strong>`;
                     
                     case 'alive_count':
                         return `<strong>${this.getAliveCount()}</strong>`;
@@ -573,10 +573,10 @@
                         return this.formatHebrewDate(daysBack);
                     
                     case 'days_since_start':
-                        return `<strong>${Math.round((this.timeline.currentEndDate - this.timeline.oct26Date) / (1000 * 60 * 60 * 24))}</strong>`;
+                        return `<strong>${Math.round((this.timeline.currentEndDate - this.timeline.startDate) / (1000 * 60 * 60 * 24))}</strong>`;
                     
                     case 'percentage_fallen':
-                        const total = this.timeline.soldiers.filter(s => s.death_date >= this.timeline.oct26Date).length;
+                        const total = this.timeline.soldiers.filter(s => s.death_date >= this.timeline.startDate).length;
                         const fallen = this.getFallenCount();
                         return `<strong>${Math.round((fallen / total) * 100)}</strong>`;
                     
@@ -638,14 +638,14 @@
 
             getAliveCount() {
                 return this.timeline.soldiers.filter(s => 
-                    s.death_date >= this.timeline.oct26Date && 
+                    s.death_date >= this.timeline.startDate && 
                     s.death_date > this.timeline.currentEndDate
                 ).length;
             }
 
             getFallenCount() {
                 return this.timeline.soldiers.filter(s => 
-                    s.death_date >= this.timeline.oct26Date && 
+                    s.death_date >= this.timeline.startDate && 
                     s.death_date <= this.timeline.currentEndDate
                 ).length;
             }
@@ -655,7 +655,7 @@
                 sinceDate.setDate(sinceDate.getDate() - daysBack);
                 
                 return this.timeline.soldiers.filter(s => 
-                    s.death_date >= this.timeline.oct26Date && 
+                    s.death_date >= this.timeline.startDate && 
                     s.death_date <= this.timeline.currentEndDate &&
                     s.death_date >= sinceDate
                 ).length;
@@ -689,7 +689,7 @@
             }
 
             getSoldierName(type) {
-                const relevantSoldiers = this.timeline.soldiers.filter(s => s.death_date >= this.timeline.oct26Date);
+                const relevantSoldiers = this.timeline.soldiers.filter(s => s.death_date >= this.timeline.startDate);
                 
                 switch(type) {
                     case 'first':
@@ -708,7 +708,7 @@
             }
 
             getMonthsSinceStart() {
-                const startDate = this.timeline.oct26Date;
+                const startDate = this.timeline.startDate;
                 const currentDate = this.timeline.todayDate; // Use today's date instead of timeline date
                 
                 const yearDiff = currentDate.getFullYear() - startDate.getFullYear();
@@ -737,7 +737,7 @@
             getDaysSinceLastDeaths() {
                 // Use today's date, not currentEndDate, for this calculation
                 const relevantSoldiers = this.timeline.soldiers.filter(s => 
-                    s.death_date >= this.timeline.oct26Date
+                    s.death_date >= this.timeline.startDate
                 );
                 
                 if (relevantSoldiers.length === 0) return 0;
@@ -754,7 +754,7 @@
             getLastDeathsText() {
                 // Use all soldiers to find the most recent deaths (up to today)
                 const relevantSoldiers = this.timeline.soldiers.filter(s => 
-                    s.death_date >= this.timeline.oct26Date
+                    s.death_date >= this.timeline.startDate
                 );
                 
                 if (relevantSoldiers.length === 0) return '';
@@ -793,7 +793,7 @@
 
             getLastDeathsOnMostRecentDate() {
                 const relevantSoldiers = this.timeline.soldiers.filter(s => 
-                    s.death_date >= this.timeline.oct26Date && 
+                    s.death_date >= this.timeline.startDate && 
                     s.death_date <= this.timeline.currentEndDate
                 );
                 
@@ -886,7 +886,7 @@
                 
                 return this.timeline.soldiers.filter(s => 
                     s.death_date > decisionDate && 
-                    s.death_date >= this.timeline.oct26Date
+                    s.death_date >= this.timeline.startDate
                 ).length;
             }
 
@@ -899,7 +899,7 @@
                     if (!netanyahuEvent) return false;
                     
                     const decisionDate = new Date(netanyahuEvent.date);
-                    return s.death_date > decisionDate && s.death_date >= this.timeline.oct26Date;
+                    return s.death_date > decisionDate && s.death_date >= this.timeline.startDate;
                 });
                 
                 // Select 3 random names and make them bold
@@ -914,7 +914,7 @@
                 
                 return this.timeline.soldiers.filter(s => 
                     s.death_date >= januaryDate && 
-                    s.death_date >= this.timeline.oct26Date
+                    s.death_date >= this.timeline.startDate
                 ).length;
             }
 
@@ -925,7 +925,7 @@
                 return this.timeline.soldiers.filter(s => 
                     s.death_date >= oneMonthAgo && 
                     s.death_date <= this.timeline.todayDate &&
-                    s.death_date >= this.timeline.oct26Date
+                    s.death_date >= this.timeline.startDate
                 ).length;
             }
 
@@ -936,7 +936,7 @@
                 const lastMonthSoldiers = this.timeline.soldiers.filter(s => 
                     s.death_date >= oneMonthAgo && 
                     s.death_date <= this.timeline.todayDate &&
-                    s.death_date >= this.timeline.oct26Date
+                    s.death_date >= this.timeline.startDate
                 );
                 
                 // Get first 3 names and make them bold
@@ -951,7 +951,7 @@
                 const lastMonthSoldiers = this.timeline.soldiers.filter(s => 
                     s.death_date >= oneMonthAgo && 
                     s.death_date <= this.timeline.todayDate &&
-                    s.death_date >= this.timeline.oct26Date
+                    s.death_date >= this.timeline.startDate
                 );
                 
                 // Return count of remaining soldiers beyond the first 3
@@ -1033,7 +1033,8 @@
                     slider.value = current;
                     
                     // Update timeline progress
-                    const progress = ((643 - current) / 643) * 100;
+                    const totalDays = this.timeline.getTotalTimelineDays();
+                    const progress = ((totalDays - current) / totalDays) * 100;
                     progressBar.style.width = progress + '%';
                     
                     // Update timeline date
@@ -1103,7 +1104,7 @@
             constructor() {
                 this.soldiers = [];
                 this.timelineEvents = [];
-                this.oct26Date = new Date('2023-10-26');
+                this.startDate = new Date('2023-10-27');
                 this.todayDate = new Date();
                 this.currentEndDate = new Date(); // Start at today so all soldiers are "fallen"
                 this.navigationState = 'month_back'; // 'month_back' or 'today'
@@ -1114,6 +1115,13 @@
                 this.init();
             }
 
+            getTotalTimelineDays() {
+                // Calculate days from start date (Oct 27, 2023) to today
+                // Subtract 1 so that max slider value gives us exactly the start date
+                return Math.ceil((this.todayDate - this.startDate) / (1000 * 60 * 60 * 24)) - 1;
+            }
+
+
             async init() {
                 await this.loadData();
                 await this.loadTimelineEvents(); // Load timeline events
@@ -1122,16 +1130,20 @@
                 this.generateTimelineAxis();
                 this.renderAllNames();
                 
+                // Set timeline slider max value dynamically
+                const totalDays = this.getTotalTimelineDays();
+                document.getElementById('timelineSlider').max = totalDays;
+                
                 // Initialize with war overview narrative point (at today - 0 days back)
                 this.narrative.navigateToPoint('war_overview');
                 
                 // Initialize timeline progress bar (show full timeline initially)
-                const initialProgress = ((643 - 0) / 643) * 100;
+                const initialProgress = ((totalDays - 0) / totalDays) * 100;
                 document.getElementById('timelineProgress').style.width = initialProgress + '%';
                 
                 // Recalculate font size after timeline changes with buffer
                 setTimeout(() => {
-                    const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
+                    const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.startDate);
                     console.log('Forcing font recalculation for', relevantSoldiers.length, 'soldiers');
                     
                     // Force container dimensions update
@@ -1157,8 +1169,8 @@
                         const dates = this.soldiers.map(s => s.death_date).sort((a,b) => a - b);
                         console.log('Date range:', dates[0].toLocaleDateString(), 'to', dates[dates.length-1].toLocaleDateString());
                         
-                        const afterOct26 = this.soldiers.filter(s => s.death_date >= this.oct26Date);
-                        console.log(`${afterOct26.length} soldiers died after Oct 26, 2023`);
+                        const afterOct26 = this.soldiers.filter(s => s.death_date >= this.startDate);
+                        console.log(`${afterOct26.length} soldiers died after Oct 27, 2023`);
                     }
                 } catch (error) {
                     console.error('Error loading data:', error);
@@ -1314,6 +1326,16 @@
                         event[header.trim()] = values[index] ? values[index].trim() : '';
                     });
                     
+                    
+                    // Fix URLs that ended up in description field
+                    if (event.description_hebrew && event.description_hebrew.includes('http')) {
+                        const parts = event.description_hebrew.split('http');
+                        if (parts.length > 1) {
+                            event.description_hebrew = parts[0].trim();
+                            event.source = 'http' + parts[1].trim();
+                        }
+                    }
+                    
                     // Parse date - handle d/m/yyyy format correctly
                     if (event.date) {
                         // Convert d/m/yyyy to m/d/yyyy for proper JavaScript parsing
@@ -1332,9 +1354,9 @@
                 const axisContainer = document.getElementById('timelineAxis');
                 axisContainer.innerHTML = '';
                 
-                const startDate = new Date('2023-10-26');
+                const startDate = this.startDate;
                 const endDate = new Date();
-                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)); // From today back to Oct 26, 2023
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)); // From today back to Oct 27, 2023
                 
                 // Generate major ticks every 3 months and minor ticks every month
                 const majorTickMonths = [0, 3, 6, 9, 12, 15, 18, 21]; // Every 3 months
@@ -1393,7 +1415,9 @@
                     console.log('Processing event:', event.title_hebrew, 'Date:', event.eventDate);
                     if (event.eventDate && !isNaN(event.eventDate.getTime())) {
                         // Calculate position based on date (0% = endDate/today, 100% = startDate/oldest)
+                        // Use same day scale as progress bar and slider for alignment
                         const daysDiff = Math.floor((endDate - event.eventDate) / (1000 * 60 * 60 * 24));
+                        const totalDays = this.getTotalTimelineDays();
                         const position = (daysDiff / totalDays) * 100;
                         console.log(`Event "${event.title_hebrew}": eventDate=${event.eventDate.toISOString()}, daysDiff=${daysDiff}, position=${position.toFixed(1)}%`);
                         
@@ -1404,16 +1428,21 @@
                             marker.style.position = 'absolute';
                             marker.style.left = position + '%';
                             
-                            // Position political events above timeline, military events below
-                            const isPolitical = event.category === 'political';
-                            const markerDistance = '15px'; // Distance from timeline track
+                            // Position escalation events above timeline, de-escalation events below
+                            // Note: markers are positioned relative to the axis (which is 5px below track)
+                            // So we need to adjust positions to align with the track itself
+                            const isEscalation = event.stance === 'escalation';
+                            const trackOffsetFromAxis = -5; // Axis is 5px below track, so track is -5px from axis
+                            const markerDistance = 15; // Distance from timeline track
                             
-                            if (isPolitical) {
-                                marker.style.top = `-${markerDistance}`;
-                                marker.style.transform = 'translate(-50%, -50%)'; // Center on position, adjust for above placement
+                            if (isEscalation) {
+                                // Above track: track position minus marker distance
+                                marker.style.top = `${trackOffsetFromAxis - markerDistance}px`;
+                                marker.style.transform = 'translate(-50%, -50%)';
                             } else {
-                                marker.style.top = markerDistance;
-                                marker.style.transform = 'translate(-50%, -50%)'; // Center on position, adjust for below placement  
+                                // Below track: track position plus marker distance  
+                                marker.style.top = `${trackOffsetFromAxis + markerDistance}px`;
+                                marker.style.transform = 'translate(-50%, -50%)';
                             }
                             
                             marker.style.width = '8px';
@@ -1422,9 +1451,9 @@
                             // Set color based on category
                             let markerColor = '#ff4444'; // default red
                             switch(event.category) {
-                                case 'military': markerColor = '#cc0000'; break; // dark red
-                                case 'political': markerColor = '#ff4444'; break; // red  
-                                case 'diplomatic': markerColor = '#0066cc'; break; // blue
+                                case 'military': markerColor = '#808000'; break; // olive green
+                                case 'political': markerColor = '#666666'; break; // gray
+                                case 'diplomatic': markerColor = '#666666'; break; // gray
                                 case 'legal': markerColor = '#9900cc'; break; // purple
                                 default: markerColor = '#666666'; // gray
                             }
@@ -1528,7 +1557,7 @@
                             };
                             
                             axisContainer.appendChild(marker);
-                            console.log(`✅ Successfully added marker for: ${event.title_hebrew} (${event.category}) at position ${position.toFixed(1)}% - ${isPolitical ? 'ABOVE' : 'BELOW'} timeline`);
+                            console.log(`✅ Successfully added marker for: ${event.title_hebrew} (${event.stance}) at position ${position.toFixed(1)}% - ${isEscalation ? 'ABOVE' : 'BELOW'} timeline`);
                             markersAdded++;
                         } else {
                             console.log(`❌ Skipping event "${event.title_hebrew}" - position out of range: ${position.toFixed(1)}%`);
@@ -1563,7 +1592,8 @@
                 const daysBack = Math.floor((this.todayDate - eventDate) / (1000 * 60 * 60 * 24));
                 
                 // Ensure the value is within slider bounds
-                const constrainedDays = Math.max(0, Math.min(643, daysBack));
+                const totalDays = this.getTotalTimelineDays();
+                const constrainedDays = Math.max(0, Math.min(totalDays, daysBack));
                 
                 // Update slider and timeline
                 const slider = document.getElementById('timelineSlider');
@@ -1579,7 +1609,7 @@
                 this.currentEndDate = newEndDate;
                 
                 // Update timeline progress
-                const progress = ((643 - constrainedDays) / 643) * 100;
+                const progress = ((totalDays - constrainedDays) / totalDays) * 100;
                 document.getElementById('timelineProgress').style.width = progress + '%';
                 
                 // Update tooltip and visualization
@@ -1605,7 +1635,8 @@
                     this.currentEndDate = newEndDate;
                     
                     // Update timeline progress (show war period from right, RTL)
-                    const progress = ((643 - days) / 643) * 100;
+                    const totalDays = this.getTotalTimelineDays();
+                    const progress = ((totalDays - days) / totalDays) * 100;
                     document.getElementById('timelineProgress').style.width = progress + '%';
                     
                     // Update tooltip
@@ -1623,7 +1654,7 @@
                 // Recalculate font size when window is resized with buffer
                 window.addEventListener('resize', () => {
                     const container = document.getElementById('namesContainer');
-                    const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
+                    const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.startDate);
                     setTimeout(() => {
                         const availableWidth = container.clientWidth;
                         const availableHeight = container.clientHeight;
@@ -1723,7 +1754,7 @@
                 
                 // Calculate alive soldiers count
                 const aliveSoldiers = this.soldiers.filter(s => 
-                    s.death_date >= this.oct26Date && 
+                    s.death_date >= this.startDate && 
                     s.death_date > currentDate
                 ).length;
                 
@@ -1733,12 +1764,13 @@
                 
                 if (isStoppedOverEvent) {
                     // Show event details in tooltip
-                    tooltipDate.textContent = formattedDate;
+                    const titleLink = eventAtDate.source && eventAtDate.source.startsWith('http')
+                        ? `<a href="${eventAtDate.source}" target="_blank" style="color: #ffcc00; text-decoration: underline; cursor: pointer; font-weight: normal;">${eventAtDate.title_hebrew}</a>`
+                        : `<span style="color: #ffcc00; font-weight: normal;">${eventAtDate.title_hebrew}</span>`;
+                    tooltipDate.innerHTML = titleLink;
                     tooltipAlive.innerHTML = `
-                        <div style="margin-bottom: 6px;">${aliveSoldiers} soldiers alive</div>
                         <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 6px;">
-                            <strong style="color: #ffcc00;">${eventAtDate.title_hebrew}</strong><br>
-                            <span style="font-size: 11px; opacity: 0.9;">${eventAtDate.description_hebrew}</span>
+                            ${formattedDate}<br>${aliveSoldiers} soldiers alive
                         </div>
                     `;
                 } else {
@@ -1749,7 +1781,8 @@
                 
                 // Calculate handle position
                 const sliderValue = parseInt(slider.value);
-                const handlePercent = (sliderValue / 643) * 100;
+                const totalDays = this.getTotalTimelineDays();
+                const handlePercent = (sliderValue / totalDays) * 100;
                 
                 // Get tooltip dimensions
                 const tooltipWidth = tooltip.offsetWidth;
@@ -1794,8 +1827,8 @@
             renderAllNames() {
                 const container = document.getElementById('namesContainer');
                 
-                // Filter soldiers who died after Oct 26, 2023
-                const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.oct26Date);
+                // Filter soldiers who died after Oct 27, 2023
+                const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.startDate);
                 
                 if (relevantSoldiers.length === 0) {
                     container.innerHTML = '<div class="loading">No memorial data found</div>';
