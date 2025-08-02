@@ -1327,28 +1327,32 @@
                 let rank = 'Unknown'; 
                 let unit = 'Unknown';
                 
-                // Extract name: look for pattern with Hebrew text followed by ז"ל
-                const namePattern = /\s+([א-ת\s'\-\(\)׳]+)\s+ז""ל/;
+                // IMPROVED: Better name extraction - include more Hebrew name characters
+                const namePattern = /\s+([א-ת\s'\-\(\)׳״""]+?)\s+ז""ל/;
                 const nameMatch = line.match(namePattern);
                 if (nameMatch) {
                     const fullName = nameMatch[1].trim();
-                    // Remove rank prefix if it exists
-                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם|אל""ם|\([^)]*\))\s+/, '');
+                    // Remove rank prefix if it exists - expanded list
+                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם|אל""ם|רס""ן|תא""ל|אל""ף)\s*\([^)]*\)?\s*/, '');
                     name = cleanName.trim();
                 }
                 
-                // Extract rank: look for common rank patterns at start
-                const rankPattern = /","(רס""[א-ת\(\)\\s]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם[^"]*)/;
-                const rankMatch = line.match(rankPattern);
-                if (rankMatch) {
-                    rank = rankMatch[1].trim();
+                // IMPROVED: Extract rank and unit from proper CSV fields instead of regex
+                const fields = line.split('","');
+                if (fields.length >= 4) {
+                    // Field 3 contains rank
+                    const rankField = fields[3];
+                    if (rankField && rankField.trim()) {
+                        rank = rankField.trim();
+                    }
                 }
                 
-                // Extract unit: appears after ז"ל and before נפל
-                const unitPattern = /ז""ל","([^"]+)","([^"]+)","נפל/;
-                const unitMatch = line.match(unitPattern);  
-                if (unitMatch) {
-                    unit = unitMatch[2].trim();
+                if (fields.length >= 5) {
+                    // Field 4 contains unit
+                    const unitField = fields[4];
+                    if (unitField && unitField.trim()) {
+                        unit = unitField.trim();
+                    }
                 }
 
                 return {
