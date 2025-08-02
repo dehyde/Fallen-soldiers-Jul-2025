@@ -10,7 +10,7 @@ could_be_alive,300,days_from_today,אם המלחמה הייתה מסתיימת �
 random_names,320,days_from_today,{{random_names}},המשך,חזור,navigate_to,personal_enlisted,
 personal_enlisted,643,days_from_today,אני התגייסתי אחרי השביעי באוקטובר ושמעתי כמעט את כל מה שקרה בגזרת האוגדה שלי במשמרת שלי.,המשך,חזור,navigate_to,radio_reports,
 radio_reports,580,days_from_today,"במשך שלושה חודשים, כל היום הייתי שומע ברדיו מאמצי חילוץ שמתארים חיילים עולים באש בטנקים חיילים קטועי גפיים מועלים על מסוקים ומאמצי חילוץ שבוטלו כי הפרחים הפכו להרדופים.",המשך,חזור,navigate_to,january_service_end,
-january_service_end,456,days_from_today,סיימתי את הסבב שלי בינואר 2024 הייתי משוכנע שזה הסוף וכולם הולכים סוף סוף הביתה.,המשך,חזור,navigate_to,fallen_since_january,
+january_service_end,574,days_from_today,סיימתי את הסבב שלי בינואר 2024 הייתי משוכנע שזה הסוף וכולם הולכים סוף סוף הביתה.,המשך,חזור,navigate_to,fallen_since_january,
 fallen_since_january,0,days_from_today,מאז נהרגו עוד {{fallen_since_january}} חיילים.,המשך,חזור,navigate_to,fallen_last_month,
 fallen_last_month,30,days_from_today,"רק לפני חודש, {{last_month_names}} ועוד {{last_month_remaining_count}} חיילים עוד היו בחיים",המשך,חזור,navigate_to,monthly_average,
 monthly_average,0,days_from_today,"כל חודש שהמלחמה מתמשכת, נהרגים בממוצע {{average_monthly_casualties}} חיילים",סיום,חזור,,,

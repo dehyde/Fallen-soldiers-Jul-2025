@@ -12,7 +12,8 @@
       "Bash(start /min python -m http.server 8001)",
       "Bash(node:*)",
       "Bash(grep:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
