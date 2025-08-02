@@ -1159,6 +1159,7 @@
                 this.navigationState = 'month_back'; // 'month_back' or 'today'
                 this.narrative = new NarrativeEngine(this);
                 this.dyingTimeouts = new Map(); // Track timeouts for performance
+                this.soldierStates = new Map(); // Track actual soldier states independently of CSS
                 this.isTimelineAnimating = false; // Track if timeline is actively animating
                 this.lastTooltipUpdate = 0; // Track last manual tooltip update
                 this.init();
@@ -2186,45 +2187,83 @@
                 let aliveCount = 0;
                 
                 console.log('updateVisualization called, currentEndDate:', this.currentEndDate);
+                let dyingStarted = 0;
                 
-                // First pass: clear all dying timeouts when navigating
-                this.dyingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-                this.dyingTimeouts.clear();
+                // First pass: identify soldiers who should start dying
+                const soldiersToStartDying = [];
                 
                 soldierElements.forEach(el => {
                     const deathDate = new Date(parseInt(el.dataset.deathDate));
-                    const wasAlive = el.classList.contains('alive');
-                    const elementId = el.dataset.deathDate; // Use as unique ID
+                    const elementId = el.dataset.deathDate;
+                    const previousState = this.soldierStates.get(elementId) || 'unknown';
                     
-                    if (deathDate > this.currentEndDate) {
-                        // This soldier would still be alive at currentEndDate
-                        el.className = 'soldier-name alive';
-                        aliveCount++;
-                    } else {
+                    if (deathDate <= this.currentEndDate) {
                         // This soldier had already died by currentEndDate
-                        if (wasAlive) {
-                            // Transitioning from alive to dead - start red dying state
-                            el.className = 'soldier-name dying';
-                            aliveCount++; // Count as alive during transition
-                            
-                            // Set new timeout and track it
-                            const timeoutId = setTimeout(() => {
-                                // Only change if still dying (not interrupted)
-                                if (el.classList.contains('dying')) {
-                                    el.className = 'soldier-name fallen';
-                                }
-                                this.dyingTimeouts.delete(elementId);
-                            }, 400);
-                            
-                            this.dyingTimeouts.set(elementId, timeoutId);
-                        } else {
-                            // Already dead, just apply fallen state
-                            el.className = 'soldier-name fallen';
+                        if ((previousState === 'alive' || previousState === 'unknown') && !this.dyingTimeouts.has(elementId)) {
+                            soldiersToStartDying.push(el);
                         }
                     }
                 });
                 
-                console.log('Alive count:', aliveCount, 'out of', soldierElements.length);
+                // Second pass: start all dying animations simultaneously
+                soldiersToStartDying.forEach(el => {
+                    const deathDate = new Date(parseInt(el.dataset.deathDate));
+                    const elementId = el.dataset.deathDate;
+                    
+                    el.className = 'soldier-name dying';
+                    this.soldierStates.set(elementId, 'dying');
+                    dyingStarted++;
+                    
+                    console.log(`Started dying animation for soldier ${el.textContent} (${deathDate.toDateString()})`);
+                    
+                    // Set timeout and track it
+                    const timeoutId = setTimeout(() => {
+                        if (el.classList.contains('dying')) {
+                            el.className = 'soldier-name fallen';
+                            this.soldierStates.set(elementId, 'fallen');
+                            console.log(`Completed dying animation for soldier ${el.textContent}`);
+                        }
+                        this.dyingTimeouts.delete(elementId);
+                    }, 400);
+                    
+                    this.dyingTimeouts.set(elementId, timeoutId);
+                });
+                
+                // Third pass: handle all other states
+                soldierElements.forEach(el => {
+                    const deathDate = new Date(parseInt(el.dataset.deathDate));
+                    const elementId = el.dataset.deathDate;
+                    const wasAlive = el.classList.contains('alive');
+                    const isDying = el.classList.contains('dying');
+                    const wasFallen = el.classList.contains('fallen');
+                    const previousState = this.soldierStates.get(elementId) || 'unknown';
+                    
+                    if (deathDate > this.currentEndDate) {
+                        // This soldier would still be alive at currentEndDate
+                        this.soldierStates.set(elementId, 'alive');
+                        if (!wasAlive) {
+                            // Clear any dying timeout if soldier comes back to life
+                            if (this.dyingTimeouts.has(elementId)) {
+                                clearTimeout(this.dyingTimeouts.get(elementId));
+                                this.dyingTimeouts.delete(elementId);
+                            }
+                            el.className = 'soldier-name alive';
+                        }
+                        aliveCount++;
+                    } else {
+                        // This soldier had already died by currentEndDate
+                        if (isDying) {
+                            // Currently dying, count as alive during highlight
+                            aliveCount++;
+                        } else if (!wasFallen && !isDying && previousState !== 'dying') {
+                            // Should be fallen - handle case where soldier was never alive in this session
+                            el.className = 'soldier-name fallen';
+                            this.soldierStates.set(elementId, 'fallen');
+                        }
+                    }
+                });
+                
+                console.log('Alive count:', aliveCount, 'out of', soldierElements.length, '| Dying animations started:', dyingStarted);
                 
                 // Update count in draggable container
                 const aliveCountSpan = document.getElementById('aliveCount');
