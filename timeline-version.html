@@ -96,7 +96,7 @@
             font-weight: bold;
             z-index: 100;
             position: relative;
-            transition: opacity 0.6s ease-out, background-color 0.6s ease-out, color 0.6s ease-out;
+            /* No transition on initial red state - instant change from blue to red */
         }
 
         .soldier-name.dying-fade {
@@ -105,6 +105,7 @@
             color: inherit !important;
             font-weight: normal !important;
             z-index: auto !important;
+            transition: opacity 0.6s ease-out, background-color 0.6s ease-out, color 0.6s ease-out;
         }
 
         .timeline-container {
@@ -826,13 +827,13 @@
                 );
                 
                 if (soldiersOnLatestDate.length === 1) {
-                    return `נהרג <strong>${soldiersOnLatestDate[0].name}</strong>`;
+                    return `<strong>${soldiersOnLatestDate[0].name}</strong>`;
                 } else if (soldiersOnLatestDate.length === 2) {
-                    return `נהרגו <strong>${soldiersOnLatestDate[0].name}</strong> ו-<strong>${soldiersOnLatestDate[1].name}</strong>`;
+                    return `<strong>${soldiersOnLatestDate[0].name}</strong> ו-<strong>${soldiersOnLatestDate[1].name}</strong>`;
                 } else if (soldiersOnLatestDate.length > 2) {
                     const names = soldiersOnLatestDate.slice(0, -1).map(s => `<strong>${s.name}</strong>`).join(', ');
                     const lastName = `<strong>${soldiersOnLatestDate[soldiersOnLatestDate.length - 1].name}</strong>`;
-                    return `נהרגו ${names} ו-${lastName}`;
+                    return `${names} ו-${lastName}`;
                 }
                 
                 return '';
@@ -1343,7 +1344,7 @@
                 if (nameMatch) {
                     const fullName = nameMatch[1].trim();
                     // Remove rank prefix if it exists - expanded list
-                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם|אל""ם|רס""ן|תא""ל|אל""ף)\s*\([^)]*\)?\s*/, '');
+                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם|אל""ם|רס""ן|תא""ל|אל""ף)\s*\([^)]*\)?\s*/, '').replace(/\s*\(במיל'\)\s*/g, '');
                     name = cleanName.trim();
                 }
                 
@@ -2240,7 +2241,7 @@
                         }, 600); // Match CSS transition duration
                         
                         this.dyingTimeouts.delete(elementId);
-                    }, 500); // Hold red highlight for 500ms
+                    }, 100); // Hold red highlight for 100ms
                     
                     this.dyingTimeouts.set(elementId, timeoutId);
                 });

@@ -309,7 +309,7 @@
                 if (nameMatch) {
                     const fullName = nameMatch[1].trim();
                     // Remove rank prefix if it exists
-                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם)\s+/, '');
+                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם)\s+/, '').replace(/\s*\(במיל'\)\s*/g, '');
                     name = cleanName.trim();
                 }
                 
