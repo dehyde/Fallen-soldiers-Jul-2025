@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fallen Soldiers - What If Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            max-width: 300px;
+        }
+
+        input[type="date"] {
+            padding: 8px;
+            border-radius: 5px;
+            border: none;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .could-be-alive {
+            color: #4CAF50;
+        }
+
+        .total-fallen {
+            color: #ff6b6b;
+        }
+
+        .date-display {
+            color: #ffd93d;
+        }
+
+        .visualization {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .soldiers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .soldier-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .soldier-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .soldier-details {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fallen Soldiers Memorial - What If Analysis</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="daysBack">Days from today back to:</label>
+                <input type="range" id="daysBack" min="0" max="643" value="276">
+                <span id="daysValue">276</span> days
+            </div>
+            
+            <div class="control-group">
+                <label for="targetDate">If war ended on:</label>
+                <input type="date" id="targetDate" value="2024-10-26" min="2023-10-26" max="2025-07-29">
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number total-fallen" id="totalFallen">0</div>
+                <div class="stat-label">Total Fallen Since Oct 26</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number could-be-alive" id="couldBeAlive">0</div>
+                <div class="stat-label">Could Still Be Alive</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number date-display" id="alternateDate">Oct 26, 2024</div>
+                <div class="stat-label">If War Ended On</div>
+            </div>
+        </div>
+
+        <div class="visualization">
+            <h3 style="margin-bottom: 20px;">Soldiers Who Could Still Be Alive</h3>
+            <div id="soldiersContainer" class="loading">Loading data...</div>
+        </div>
+    </div>
+
+    <script>
+        class FallenSoldiersAnalysis {
+            constructor() {
+                this.soldiers = [];
+                this.oct26Date = new Date('2023-10-26');
+                this.todayDate = new Date();
+                this.init();
+            }
+
+            async init() {
+                await this.loadData();
+                this.setupEventListeners();
+                
+                // Set max date to today
+                const targetDateInput = document.getElementById('targetDate');
+                const today = new Date().toISOString().split('T')[0];
+                targetDateInput.max = today;
+                
+                this.updateAnalysis();
+            }
+
+            async loadData() {
+                try {
+                    const response = await fetch('idf-url-increment.csv');
+                    const csvText = await response.text();
+                    this.parseCsvData(csvText);
+                    console.log(`Loaded ${this.soldiers.length} soldiers`);
+                    
+                    // Debug: show date range
+                    if (this.soldiers.length > 0) {
+                        const dates = this.soldiers.map(s => s.death_date).sort((a,b) => a - b);
+                        console.log('Date range:', dates[0].toLocaleDateString(), 'to', dates[dates.length-1].toLocaleDateString());
+                        
+                        // Count soldiers after Oct 26, 2023
+                        const afterOct26 = this.soldiers.filter(s => s.death_date >= this.oct26Date);
+                        console.log(`${afterOct26.length} soldiers died after Oct 26, 2023`);
+                    }
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    document.getElementById('soldiersContainer').innerHTML = 'Error loading data';
+                }
+            }
+
+            parseCsvData(csvText) {
+                // The CSV has multiline entries, so we need to reconstruct proper CSV lines
+                const lines = csvText.split('\n');
+                let currentRecord = '';
+                let inQuotes = false;
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    // Check if this line starts a new record (starts with quote and number)
+                    if (line.match(/^"\d+-\d+"/)) {
+                        // Process previous record if exists
+                        if (currentRecord) {
+                            const soldier = this.parseCsvLine(currentRecord);
+                            if (soldier && soldier.death_date) {
+                                this.soldiers.push(soldier);
+                            }
+                        }
+                        currentRecord = line;
+                    } else {
+                        // Continue building current record
+                        currentRecord += ' ' + line;
+                    }
+                }
+                
+                // Process last record
+                if (currentRecord) {
+                    const soldier = this.parseCsvLine(currentRecord);
+                    if (soldier && soldier.death_date) {
+                        this.soldiers.push(soldier);
+                    }
+                }
+            }
+
+            parseCsvLine(line) {
+                // Parse the entire line to extract the death date
+                const deathDateField = line;
+                
+                // Hebrew month mappings
+                const hebrewMonths = {
+                    'באוקטובר': 9,
+                    'בנובמבר': 10,
+                    'בדצמבר': 11,
+                    'בינואר': 0,
+                    'בפברואר': 1,
+                    'במרץ': 2,
+                    'באפריל': 3,
+                    'במאי': 4,
+                    'ביוני': 5,
+                    'ביולי': 6,
+                    'באוגוסט': 7,
+                    'בספטמבר': 8
+                };
+
+                // Try to match Hebrew month format: DD בMONTH YYYY
+                let deathDate = null;
+                let matchedDateStr = '';
+                
+                for (const [hebrewMonth, monthIndex] of Object.entries(hebrewMonths)) {
+                    const pattern = new RegExp(`(\\d{1,2}) ${hebrewMonth} (\\d{4})`);
+                    const match = deathDateField.match(pattern);
+                    if (match) {
+                        const day = parseInt(match[1]);
+                        const year = parseInt(match[2]);
+                        deathDate = new Date(year, monthIndex, day);
+                        matchedDateStr = match[0];
+                        break;
+                    }
+                }
+
+                if (!deathDate) return null;
+
+                // Simple approach: extract from the whole line using simpler patterns
+                let name = 'Unknown';
+                let rank = 'Unknown'; 
+                let unit = 'Unknown';
+                
+                // Extract name: look for pattern with Hebrew text followed by ז"ל
+                const namePattern = /\s+([א-ת\s']+)\s+ז""ל/;
+                const nameMatch = line.match(namePattern);
+                if (nameMatch) {
+                    const fullName = nameMatch[1].trim();
+                    // Remove rank prefix if it exists
+                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם)\s+/, '').replace(/\s*\(במיל'\)\s*/g, '');
+                    name = cleanName.trim();
+                }
+                
+                // Extract rank: look for common rank patterns at start
+                const rankPattern = /","(רס""[א-ת\(\)\\s]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם[^"]*)/;
+                const rankMatch = line.match(rankPattern);
+                if (rankMatch) {
+                    rank = rankMatch[1].trim();
+                }
+                
+                // Extract unit: appears after ז"ל and before נפל
+                const unitPattern = /ז""ל","([^"]+)","([^"]+)","נפל/;
+                const unitMatch = line.match(unitPattern);  
+                if (unitMatch) {
+                    unit = unitMatch[2].trim();
+                }
+
+                return {
+                    name: name,
+                    rank: rank,
+                    unit: unit,
+                    death_date: deathDate,
+                    death_date_string: matchedDateStr
+                };
+            }
+
+
+            setupEventListeners() {
+                const daysSlider = document.getElementById('daysBack');
+                const dateInput = document.getElementById('targetDate');
+                const daysValue = document.getElementById('daysValue');
+
+                daysSlider.addEventListener('input', (e) => {
+                    const days = parseInt(e.target.value);
+                    daysValue.textContent = days;
+                    
+                    // Update date input based on slider (going back from today)
+                    const newDate = new Date(this.todayDate);
+                    newDate.setDate(newDate.getDate() - days);
+                    dateInput.value = newDate.toISOString().split('T')[0];
+                    
+                    this.updateAnalysis();
+                });
+
+                dateInput.addEventListener('change', (e) => {
+                    const selectedDate = new Date(e.target.value);
+                    const diffTime = this.todayDate - selectedDate;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    daysSlider.value = Math.max(0, diffDays);
+                    daysValue.textContent = Math.max(0, diffDays);
+                    
+                    this.updateAnalysis();
+                });
+            }
+
+            updateAnalysis() {
+                const targetDateInput = document.getElementById('targetDate');
+                const targetDate = new Date(targetDateInput.value);
+                
+                // Filter soldiers who died from Oct 26, 2023 onwards
+                const totalFallenSinceOct26 = this.soldiers.filter(s => 
+                    s.death_date >= this.oct26Date
+                );
+
+                // Filter soldiers who died after the selected date (could still be alive)
+                const soldiersWhoCouldLive = this.soldiers.filter(s => 
+                    s.death_date > targetDate && s.death_date >= this.oct26Date
+                );
+
+                // Update stats
+                document.getElementById('totalFallen').textContent = totalFallenSinceOct26.length;
+                document.getElementById('couldBeAlive').textContent = soldiersWhoCouldLive.length;
+                document.getElementById('alternateDate').textContent = targetDate.toLocaleDateString();
+
+                // Update visualization
+                this.renderSoldiers(soldiersWhoCouldLive);
+            }
+
+            renderSoldiers(soldiers) {
+                const container = document.getElementById('soldiersContainer');
+                
+                if (soldiers.length === 0) {
+                    container.innerHTML = '<p>No soldiers would be saved with this date change.</p>';
+                    return;
+                }
+
+                const soldiersHtml = soldiers.map(soldier => `
+                    <div class="soldier-card">
+                        <div class="soldier-name">${soldier.name}</div>
+                        <div class="soldier-details">
+                            <div><strong>Rank:</strong> ${soldier.rank}</div>
+                            <div><strong>Unit:</strong> ${soldier.unit}</div>
+                            <div><strong>Date:</strong> ${soldier.death_date.toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="soldiers-grid">
+                        ${soldiersHtml}
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize the application
+        new FallenSoldiersAnalysis();
+    </script>
+</body>
+</html>
