@@ -805,6 +805,9 @@
                     case 'last_month_remaining_count':
                         return `<strong>${this.getLastMonthRemainingCount()}</strong>`;
                     
+                    case 'soldiers_died_last_31_days':
+                        return `<strong>${this.getFallenSinceTodayExcludingRecent(31)}</strong>`;
+                    
                     default:
                         return `{{${placeholder}}}`;
                 }
@@ -833,6 +836,44 @@
                     s.death_date <= this.timeline.currentEndDate &&
                     s.death_date >= sinceDate
                 ).length;
+            }
+
+            getFallenSinceToday(daysBack) {
+                const sinceDate = new Date(this.timeline.todayDate);
+                sinceDate.setDate(sinceDate.getDate() - daysBack);
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date <= this.timeline.todayDate &&
+                    s.death_date >= sinceDate
+                ).length;
+            }
+
+            getFallenSinceTodayExcludingRecent(daysBack) {
+                const sinceDate = new Date(this.timeline.todayDate);
+                sinceDate.setDate(sinceDate.getDate() - daysBack);
+                
+                // Get all soldiers who died in the last 31 days
+                const soldiersInPeriod = this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date <= this.timeline.todayDate &&
+                    s.death_date >= sinceDate
+                );
+                
+                // Find the most recent death date
+                if (soldiersInPeriod.length === 0) return 0;
+                
+                const latestDeathDate = soldiersInPeriod
+                    .map(s => s.death_date)
+                    .sort((a, b) => b - a)[0];
+                
+                // Count soldiers who died on the most recent date
+                const soldiersOnLatestDate = soldiersInPeriod.filter(s => 
+                    Math.abs(s.death_date - latestDeathDate) < 24 * 60 * 60 * 1000 // Same day
+                );
+                
+                // Return total minus recent deaths
+                return soldiersInPeriod.length - soldiersOnLatestDate.length;
             }
 
             getFallenOnDate(daysFromToday) {
@@ -1168,6 +1209,11 @@
                 const currentTimelinePoint = parseInt(document.getElementById('timelineSlider').value);
                 let targetTimelinePoint = parseInt(point.timeline_point);
                 
+                // Special handling for "max" timeline_point: use maximum timeline value
+                if (point.timeline_point === 'max') {
+                    targetTimelinePoint = this.timeline.getTotalTimelineDays();
+                }
+                
                 // Special handling for recent_deaths: use actual days since last deaths
                 if (pointId === 'recent_deaths') {
                     targetTimelinePoint = this.timeline.narrative.getDaysSinceLastDeaths() + 1;
@@ -1199,7 +1245,7 @@
                 
                 // Set different speeds: slower for forward, faster for backward
                 const forwardSpeed = 25; // ms per day when moving forward in time (SLOWER)
-                const backwardSpeed = 15;  // ms per day when moving back in time (SLOWER)
+                const backwardSpeed = 10;  // ms per day when moving back in time (1.5x FASTER)
                 
                 const speed = isMovingForward ? forwardSpeed : backwardSpeed;
                 const step = isMovingBack ? 1 : -1;
