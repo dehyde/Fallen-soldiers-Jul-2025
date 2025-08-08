@@ -92,7 +92,7 @@ function parseCsvData(csvText) {
 console.log('=== ANALYZING TOOLTIP DATA FOR SPECIAL CHARACTERS ===\n');
 
 try {
-    const csvContent = fs.readFileSync('idf-url-increment.csv', 'utf8');
+    const csvContent = fs.readFileSync('../data/idf-url-increment.csv', 'utf8');
     const soldiers = parseCsvData(csvContent);
     
     console.log(`Total soldiers: ${soldiers.length}\n`);

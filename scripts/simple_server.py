@@ -18,13 +18,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 def start_server():
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         print(f"Server started at http://localhost:{PORT}")
-        print(f"Timeline page: http://localhost:{PORT}/timeline-version.html")
+        print(f"Timeline page: http://localhost:{PORT}/index.html")
         print("Press Ctrl+C to stop the server")
         
         # Try to open browser automatically
         time.sleep(1)
         try:
-            webbrowser.open(f'http://localhost:{PORT}/timeline-version.html')
+            webbrowser.open(f'http://localhost:{PORT}/index.html')
         except:
             print("Could not open browser automatically")
         

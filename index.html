@@ -606,7 +606,7 @@
 
             async loadNarrative() {
                 try {
-                    const response = await fetch('narrative.csv');
+                    const response = await fetch('data/narrative.csv');
                     const csvText = await response.text();
                     console.log('CSV loaded:', csvText.substring(0, 200) + '...');
                     this.parseNarrativeCsv(csvText);
@@ -1279,7 +1279,7 @@
 
             async loadData() {
                 try {
-                    const response = await fetch('idf-url-increment.csv');
+                    const response = await fetch('data/idf-url-increment.csv');
                     const csvText = await response.text();
                     this.parseCsvData(csvText);
                     console.log(`Loaded ${this.soldiers.length} soldiers`);
@@ -1300,7 +1300,7 @@
             async loadTimelineEvents() {
                 try {
                     console.log('Attempting to load timeline-events.csv...');
-                    const response = await fetch('timeline-events.csv');
+                    const response = await fetch('data/timeline-events.csv');
                     console.log('Response status:', response.status, response.statusText);
                     
                     if (!response.ok) {

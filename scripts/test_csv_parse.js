@@ -21,7 +21,7 @@ function parseCsvLine(line) {
 }
 
 // Test the final lines
-const csvContent = fs.readFileSync('narrative.csv', 'utf8');
+const csvContent = fs.readFileSync('../data/narrative.csv', 'utf8');
 const lines = csvContent.split('\n').filter(line => line.trim()); // Remove empty lines
 
 console.log('Total lines:', lines.length);

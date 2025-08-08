@@ -1,8 +1,7 @@
-// Verify that the HTML parsing fix works
+// Test improved parsing with better regex patterns
 const fs = require('fs');
 
-// Copy the EXACT parsing function from the updated HTML
-function parseCsvLine(line) {
+function parseCsvLineImproved(line) {
     const deathDateField = line;
     
     const hebrewMonths = {
@@ -37,12 +36,11 @@ function parseCsvLine(line) {
 
     if (!deathDate) return null;
 
-    // Simple approach: extract from the whole line using simpler patterns
     let name = 'Unknown';
     let rank = 'Unknown'; 
     let unit = 'Unknown';
     
-    // IMPROVED: Better name extraction - include more Hebrew name characters
+    // IMPROVED: Better name extraction - include hyphens, parentheses, and other common Hebrew name characters
     const namePattern = /\s+([א-ת\s'\-\(\)׳״""]+?)\s+ז""ל/;
     const nameMatch = line.match(namePattern);
     if (nameMatch) {
@@ -52,7 +50,7 @@ function parseCsvLine(line) {
         name = cleanName.trim();
     }
     
-    // IMPROVED: Extract rank and unit from proper CSV fields instead of regex
+    // IMPROVED: Extract rank from proper CSV field (field 3)
     const fields = line.split('","');
     if (fields.length >= 4) {
         // Field 3 contains rank
@@ -62,6 +60,7 @@ function parseCsvLine(line) {
         }
     }
     
+    // IMPROVED: Extract unit from proper CSV field (field 4) 
     if (fields.length >= 5) {
         // Field 4 contains unit
         const unitField = fields[4];
@@ -79,7 +78,7 @@ function parseCsvLine(line) {
     };
 }
 
-function parseCsvData(csvText) {
+function parseCsvDataImproved(csvText) {
     const lines = csvText.split('\n');
     let currentRecord = '';
     const soldiers = [];
@@ -93,11 +92,15 @@ function parseCsvData(csvText) {
         
         if (line.match(/^"\d+-\d+"/)) {
             if (currentRecord) {
-                const soldier = parseCsvLine(currentRecord);
+                const soldier = parseCsvLineImproved(currentRecord);
                 if (soldier && soldier.death_date) {
                     soldiers.push(soldier);
                     
-                    if (soldier.name === 'Unknown') unknownNameCount++;
+                    // Count unknowns
+                    if (soldier.name === 'Unknown') {
+                        unknownNameCount++;
+                        console.log(`❌ UNKNOWN NAME: ${currentRecord.substring(0, 150)}...`);
+                    }
                     if (soldier.rank === 'Unknown') unknownRankCount++;
                     if (soldier.unit === 'Unknown') unknownUnitCount++;
                 }
@@ -110,11 +113,14 @@ function parseCsvData(csvText) {
     
     // Process final record
     if (currentRecord) {
-        const soldier = parseCsvLine(currentRecord);
+        const soldier = parseCsvLineImproved(currentRecord);
         if (soldier && soldier.death_date) {
             soldiers.push(soldier);
             
-            if (soldier.name === 'Unknown') unknownNameCount++;
+            if (soldier.name === 'Unknown') {
+                unknownNameCount++;
+                console.log(`❌ UNKNOWN NAME: ${currentRecord.substring(0, 150)}...`);
+            }
             if (soldier.rank === 'Unknown') unknownRankCount++;
             if (soldier.unit === 'Unknown') unknownUnitCount++;
         }
@@ -128,31 +134,34 @@ function parseCsvData(csvText) {
     };
 }
 
-// Test with the HTML parsing function
-console.log('=== VERIFYING HTML PARSING FIX ===\n');
+// Test the improved parsing
+console.log('=== TESTING IMPROVED PARSING ===\n');
 
 try {
-    const csvContent = fs.readFileSync('idf-url-increment.csv', 'utf8');
-    const result = parseCsvData(csvContent);
+    const csvContent = fs.readFileSync('../data/idf-url-increment.csv', 'utf8');
+    const result = parseCsvDataImproved(csvContent);
     
-    console.log(`✅ VERIFICATION RESULTS:`);
+    console.log(`\n=== IMPROVED RESULTS ===`);
     console.log(`Total soldiers processed: ${result.soldiers.length}`);
-    console.log(`Unknown names: ${result.unknownNameCount}`);
-    console.log(`Unknown ranks: ${result.unknownRankCount}`);
-    console.log(`Unknown units: ${result.unknownUnitCount}`);
+    console.log(`Unknown names: ${result.unknownNameCount} (was 9)`);
+    console.log(`Unknown ranks: ${result.unknownRankCount} (was 33)`);
+    console.log(`Unknown units: ${result.unknownUnitCount} (was 642)`);
     
-    if (result.unknownNameCount === 0 && result.unknownUnitCount <= 5) {
-        console.log(`\n🎉 SUCCESS! The fix should work in the HTML application.`);
-    } else {
-        console.log(`\n⚠️  There may still be issues that need addressing.`);
-    }
-    
-    // Show a few examples
-    console.log(`\n=== SAMPLE RESULTS ===`);
-    for (let i = 0; i < Math.min(10, result.soldiers.length); i++) {
+    console.log(`\n=== SAMPLE PARSED NAMES (IMPROVED) ===`);
+    for (let i = 0; i < Math.min(15, result.soldiers.length); i++) {
         const soldier = result.soldiers[i];
         console.log(`${i+1}. "${soldier.name}" (${soldier.rank}) - ${soldier.unit}`);
     }
+    
+    // Test specific problematic records
+    console.log(`\n=== TESTING PREVIOUSLY PROBLEMATIC RECORDS ===`);
+    const problematicIds = ['1753822441-132', '1753822458-206', '1753822507-402'];
+    
+    result.soldiers.forEach(soldier => {
+        if (soldier.name.includes('ליאון בר') || soldier.name.includes('שילה הר') || soldier.name.includes('משה אברהם')) {
+            console.log(`✅ Fixed: "${soldier.name}" (${soldier.rank}) - ${soldier.unit}`);
+        }
+    });
     
 } catch (error) {
     console.error('Error reading CSV:', error);
