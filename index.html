@@ -506,7 +506,7 @@
         }
 
         .area-path {
-            fill: rgba(180, 180, 180, 0.2);
+            fill: rgba(180, 180, 180, 0.35);
             stroke: none;
         }
 
@@ -1221,6 +1221,7 @@
             constructor() {
                 this.soldiers = [];
                 this.timelineEvents = [];
+                this.militaryEvents = [];
                 this.startDate = new Date('2023-10-27');
                 this.todayDate = new Date();
                 this.currentEndDate = new Date(); // Start at today so all soldiers are "fallen"
@@ -1243,6 +1244,7 @@
             async init() {
                 await this.loadData();
                 await this.loadTimelineEvents(); // Load timeline events
+                await this.loadMilitaryEvents(); // Load military events
                 await this.narrative.loadNarrative(); // Load narrative data
                 this.setupEventListeners();
                 this.generateTimelineAxis();
@@ -1325,6 +1327,26 @@
                         }
                     ];
                     console.log('Test events created:', this.timelineEvents.length);
+                }
+            }
+            
+            async loadMilitaryEvents() {
+                try {
+                    console.log('Attempting to load military_events.csv...');
+                    const response = await fetch('data/military_events.csv');
+                    console.log('Response status:', response.status, response.statusText);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const csvText = await response.text();
+                    console.log('CSV text loaded:', csvText.substring(0, 200) + '...');
+                    this.parseMilitaryEvents(csvText);
+                    console.log(`Loaded ${this.militaryEvents.length} military events`);
+                } catch (error) {
+                    console.error('Error loading military events:', error);
+                    this.militaryEvents = [];
                 }
             }
 
@@ -1471,6 +1493,51 @@
                     this.timelineEvents.push(event);
                 }
                 console.log('Total timeline events loaded:', this.timelineEvents.length);
+            }
+            
+            parseMilitaryEvents(csvText) {
+                const lines = csvText.split('\n');
+                const headers = this.narrative.parseCsvLine(lines[0]);
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const values = this.narrative.parseCsvLine(line);
+                    const event = {};
+                    
+                    headers.forEach((header, index) => {
+                        event[header.trim()] = values[index] ? values[index].trim() : '';
+                    });
+                    
+                    // Parse date
+                    if (event.Date) {
+                        event.eventDate = new Date(event.Date);
+                    }
+                    
+                    // Parse penetration depth - use the numeric value
+                    if (event.Penetration_km) {
+                        event.penetrationKm = parseFloat(event.Penetration_km) || 0;
+                    } else {
+                        event.penetrationKm = 0;
+                    }
+                    
+                    // Map qualitative levels to numeric intensity for better visualization
+                    const qualitativeMap = {
+                        'Low': 1,
+                        'Medium': 2, 
+                        'High': 3
+                    };
+                    event.intensityLevel = qualitativeMap[event.Penetration_qualitative] || 1;
+                    
+                    // Combine penetration depth and intensity for final combat intensity score
+                    event.combatIntensity = event.penetrationKm + (event.intensityLevel * 2);
+                    
+                    console.log('Military event parsed:', event.Date, event.Event_Type, 'Intensity:', event.combatIntensity);
+                    
+                    this.militaryEvents.push(event);
+                }
+                console.log('Total military events loaded:', this.militaryEvents.length);
             }
 
             generateTimelineAxis() {
@@ -1863,6 +1930,127 @@
                 }
                 
                 console.log(`RTL Area chart generated: ${weeklyData.length} weeks, max fallen: ${maxFallen}`);
+                
+                // Generate military events chart
+                this.generateMilitaryEventsChart();
+            }
+            
+            generateMilitaryEventsChart() {
+                console.log('Generating military events combat intensity bar chart');
+                
+                if (!this.militaryEvents || this.militaryEvents.length === 0) {
+                    console.log('No military events data available');
+                    return;
+                }
+                
+                const svg = document.querySelector('#timelineAreaChart svg');
+                const totalDays = this.getTotalTimelineDays();
+                const viewBoxWidth = 100;
+                const viewBoxHeight = 40;
+                
+                // Clear existing military visualizations
+                const existingMilitaryElements = svg.querySelectorAll('.military-bar, .military-path');
+                existingMilitaryElements.forEach(element => element.remove());
+                
+                // Sort military events by date
+                const sortedEvents = [...this.militaryEvents].sort((a, b) => a.eventDate - b.eventDate);
+                
+                // Create time periods for bar chart
+                const timePeriods = [];
+                let currentIntensity = 0; // Start with 0 intensity before first event
+                
+                // Add initial period from war start to first event
+                if (sortedEvents.length > 0) {
+                    const firstEventX = Math.floor((this.todayDate - sortedEvents[0].eventDate) / (1000 * 60 * 60 * 24));
+                    const startX = Math.floor((this.todayDate - this.startDate) / (1000 * 60 * 60 * 24));
+                    
+                    timePeriods.push({
+                        startDaysFromToday: startX,
+                        endDaysFromToday: firstEventX,
+                        intensity: 0, // No combat intensity before first event
+                        startDate: this.startDate,
+                        endDate: sortedEvents[0].eventDate
+                    });
+                }
+                
+                // Create periods between events
+                sortedEvents.forEach((event, index) => {
+                    const eventDaysFromToday = Math.floor((this.todayDate - event.eventDate) / (1000 * 60 * 60 * 24));
+                    const nextEvent = sortedEvents[index + 1];
+                    const endDaysFromToday = nextEvent ? 
+                        Math.floor((this.todayDate - nextEvent.eventDate) / (1000 * 60 * 60 * 24)) : 0; // End at today if no next event
+                    
+                    currentIntensity = event.combatIntensity;
+                    
+                    timePeriods.push({
+                        startDaysFromToday: eventDaysFromToday,
+                        endDaysFromToday: endDaysFromToday,
+                        intensity: currentIntensity,
+                        startDate: event.eventDate,
+                        endDate: nextEvent ? nextEvent.eventDate : this.todayDate,
+                        event: event
+                    });
+                });
+                
+                // Create SVG rectangles for each time period
+                timePeriods.forEach((period, index) => {
+                    if (period.intensity === 0) return; // Skip zero-intensity periods for cleaner visualization
+                    
+                    // Calculate bar position and dimensions
+                    const barStartX = (period.endDaysFromToday / totalDays) * viewBoxWidth;
+                    const barEndX = (period.startDaysFromToday / totalDays) * viewBoxWidth;
+                    const barWidth = barEndX - barStartX;
+                    
+                    // Calculate bar height based on intensity (scale to max 16km penetration)
+                    // Leave more padding at top to ensure top border is always visible
+                    const maxIntensity = 16;
+                    const topPadding = 3; // Reserve 3px at top for border visibility
+                    const availableHeight = viewBoxHeight - topPadding;
+                    const barHeight = (period.intensity / maxIntensity) * availableHeight;
+                    const barY = Math.max(topPadding, viewBoxHeight - barHeight); // Ensure minimum distance from top
+                    
+                    // Skip very narrow bars or bars that extend beyond viewbox
+                    if (barWidth < 0.1 || barStartX < 0 || barEndX > viewBoxWidth) return;
+                    
+                    // Clamp bar boundaries to viewbox
+                    const clampedStartX = Math.max(0, barStartX);
+                    const clampedEndX = Math.min(viewBoxWidth, barEndX);
+                    const clampedWidth = clampedEndX - clampedStartX;
+                    
+                    if (clampedWidth < 0.1) return; // Skip if clamped bar is too narrow
+                    
+                    // Create rectangle element using clamped coordinates
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('class', 'military-bar');
+                    rect.setAttribute('x', clampedStartX);
+                    rect.setAttribute('y', barY);
+                    rect.setAttribute('width', clampedWidth);
+                    rect.setAttribute('height', barHeight);
+                    
+                    // Style the bar with more transparent red
+                    rect.style.fill = 'rgba(255, 100, 100, 0.06)'; // Even more transparent red
+                    rect.style.stroke = 'none'; // No border on rectangle
+                    rect.style.zIndex = '-1'; // Ensure behind area chart
+                    
+                    // Create top border line using clamped coordinates
+                    const topBorder = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    topBorder.setAttribute('class', 'military-bar-border');
+                    topBorder.setAttribute('x1', clampedStartX);
+                    topBorder.setAttribute('y1', barY);
+                    topBorder.setAttribute('x2', clampedEndX);
+                    topBorder.setAttribute('y2', barY);
+                    topBorder.style.stroke = 'rgba(255, 100, 100, 0.9)'; // Very opaque red border
+                    topBorder.style.strokeWidth = '1'; // Thicker border for visibility
+                    topBorder.style.zIndex = '-1'; // Ensure behind area chart
+                    
+                    // Add both elements behind the area chart
+                    svg.insertBefore(rect, svg.firstChild);
+                    svg.insertBefore(topBorder, svg.firstChild);
+                    
+                    console.log(`Bar ${index}: X=${barStartX}-${barEndX} (width=${barWidth}), Height=${barHeight}, Intensity=${period.intensity}`);
+                });
+                
+                console.log(`Military events bar chart generated: ${timePeriods.length} periods, ${timePeriods.filter(p => p.intensity > 0).length} visible bars`);
             }
 
             setupEventListeners() {
