@@ -552,6 +552,30 @@
             line-height: 1.2 !important;
         }
     </style>
+
+    <script>
+        // Protocol-aware fetch wrapper for file:// support
+        async function safeFetch(url) {
+            try {
+                // Try normal fetch first (works for localhost and https)
+                const response = await fetch(url);
+                if (response.ok) {
+                    return response;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            } catch (error) {
+                // If fetch fails and we're on file:// protocol, try alternative approaches
+                if (window.location.protocol === 'file:') {
+                    console.warn(`Fetch failed for ${url} on file:// protocol:`, error.message);
+                    console.warn('Please use a local server (e.g., python -m http.server) for full functionality');
+                    
+                    // For file:// protocol, we need to inform the user
+                    throw new Error(`File loading requires a local server. Please run:\npython -m http.server\nor\nnpx serve\nThen access via http://localhost:8000/`);
+                }
+                throw error;
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="draggable-container" id="draggableContainer">
@@ -606,7 +630,7 @@
 
             async loadNarrative() {
                 try {
-                    const response = await fetch('data/narrative.csv');
+                    const response = await safeFetch('data/narrative.csv');
                     const csvText = await response.text();
                     console.log('CSV loaded:', csvText.substring(0, 200) + '...');
                     this.parseNarrativeCsv(csvText);
@@ -1281,7 +1305,7 @@
 
             async loadData() {
                 try {
-                    const response = await fetch('data/idf-url-increment.csv');
+                    const response = await safeFetch('data/idf-url-increment.csv');
                     const csvText = await response.text();
                     this.parseCsvData(csvText);
                     console.log(`Loaded ${this.soldiers.length} soldiers`);
@@ -1302,7 +1326,7 @@
             async loadTimelineEvents() {
                 try {
                     console.log('Attempting to load timeline-events.csv...');
-                    const response = await fetch('data/timeline-events.csv');
+                    const response = await safeFetch('data/timeline-events.csv');
                     console.log('Response status:', response.status, response.statusText);
                     
                     if (!response.ok) {
@@ -1333,7 +1357,7 @@
             async loadMilitaryEvents() {
                 try {
                     console.log('Attempting to load military_events.csv...');
-                    const response = await fetch('data/military_events.csv');
+                    const response = await safeFetch('data/military_events.csv');
                     console.log('Response status:', response.status, response.statusText);
                     
                     if (!response.ok) {
@@ -1658,83 +1682,148 @@
                             
                             // Create custom immediate tooltip
                             let currentTooltip = null;
+                            let currentTooltipStyle = null;
                             
                             marker.onmouseenter = (e) => {
-                                // Remove any existing tooltips
+                                // Hide the main timeline handle tooltip
+                                const mainTooltip = document.getElementById('timelineTooltip');
+                                if (mainTooltip) {
+                                    mainTooltip.style.display = 'none';
+                                }
+                                
+                                // Remove any existing event tooltips
                                 document.querySelectorAll('.timeline-tooltip').forEach(t => t.remove());
                                 
                                 // Scale up marker while maintaining Y position
                                 marker.style.transform = 'translate(-50%, -50%) scale(1.5)';
                                 marker.style.zIndex = '200';
                                 
-                                // Create tooltip - only show title
+                                // Format event date
+                                const eventDay = event.eventDate.getDate().toString().padStart(2, '0');
+                                const eventMonth = (event.eventDate.getMonth() + 1).toString().padStart(2, '0');
+                                const eventYear = event.eventDate.getFullYear().toString().slice(-2);
+                                const formattedEventDate = `${eventDay}/${eventMonth}/${eventYear}`;
+                                
+                                // Create tooltip with timeline handle style - show title and date
                                 const tooltip = document.createElement('div');
-                                tooltip.className = 'timeline-tooltip';
-                                tooltip.innerHTML = `<strong>${event.title_hebrew}</strong>`;
+                                tooltip.className = 'timeline-handle-tooltip';
+                                tooltip.innerHTML = `
+                                    <div>${event.title_hebrew}</div>
+                                    <div>${formattedEventDate}</div>
+                                `;
                                 currentTooltip = tooltip;
                                 
-                                // Append to body and set initial position
-                                document.body.appendChild(tooltip);
-                                tooltip.style.position = 'fixed';
-                                tooltip.style.visibility = 'hidden';
-                                tooltip.style.left = '0px';
-                                tooltip.style.top = '0px';
+                                // Determine if this is an escalation event (above timeline) or de-escalation (below)
+                                const isEscalation = event.stance === 'escalation';
                                 
-                                // Get marker position
-                                const markerRect = marker.getBoundingClientRect();
-                                const screenWidth = window.innerWidth;
+                                // Choose container and positioning based on marker position
+                                const timelineTrack = document.querySelector('.timeline-track');
+                                let container, verticalOffset;
                                 
-                                // Use setTimeout to ensure CSS is fully applied and text is wrapped
+                                if (isEscalation) {
+                                    // For markers above timeline: append to body and position further above to avoid main tooltip
+                                    container = document.body;
+                                    verticalOffset = -120; // Position well above the main timeline tooltip
+                                } else {
+                                    // For markers below timeline: use track container (same as main tooltip works fine)
+                                    container = timelineTrack;
+                                    verticalOffset = 0; // Use default track positioning
+                                }
+                                
+                                container.appendChild(tooltip);
+                                
+                                // Calculate event position as percentage of timeline
+                                const totalDays = this.getTotalTimelineDays();
+                                const eventDaysFromToday = Math.floor((this.todayDate - event.eventDate) / (1000 * 60 * 60 * 24));
+                                const eventPercent = (eventDaysFromToday / totalDays) * 100;
+                                
+                                // Use setTimeout to ensure CSS is fully applied and dimensions are calculated
                                 setTimeout(() => {
-                                    // Get tooltip dimensions after everything is rendered
-                                    const tooltipRect = tooltip.getBoundingClientRect();
-                                    console.log('Tooltip dimensions:', tooltipRect.width, 'x', tooltipRect.height);
-                                    
-                                    // Position all tooltips at same distance from timeline track (not marker)
-                                    // Find the timeline track position
-                                    const timelineTrack = document.querySelector('.timeline-track');
+                                    // Get tooltip and track dimensions
+                                    const tooltipWidth = tooltip.offsetWidth;
+                                    const trackWidth = timelineTrack.offsetWidth;
                                     const trackRect = timelineTrack.getBoundingClientRect();
                                     
-                                    // Position tooltip based on marker position (above/below timeline)
-                                    const fixedGapFromTrack = 120; // Fixed distance from timeline track
-                                    const isMarkerAbove = markerRect.top < trackRect.top;
-                                    
-                                    let topPos;
-                                    if (isMarkerAbove) {
-                                        // For markers above timeline, position tooltip further above
-                                        topPos = trackRect.top - fixedGapFromTrack - 20;
+                                    if (isEscalation) {
+                                        // For escalation events: use fixed positioning relative to viewport
+                                        tooltip.style.position = 'fixed';
+                                        
+                                        // Calculate ideal tooltip position (centered on event position)
+                                        const idealLeft = trackRect.left + (eventPercent / 100) * trackWidth - (tooltipWidth / 2);
+                                        
+                                        // Constrain tooltip within screen bounds
+                                        const minLeft = 10;
+                                        const maxLeft = window.innerWidth - tooltipWidth - 10;
+                                        const constrainedLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
+                                        
+                                        tooltip.style.left = constrainedLeft + 'px';
+                                        tooltip.style.top = (trackRect.top + verticalOffset) + 'px';
+                                        tooltip.style.transform = 'none';
+                                        
+                                        // Calculate triangle position for fixed positioning
+                                        const eventPixelPos = trackRect.left + (eventPercent / 100) * trackWidth;
+                                        const triangleOffset = eventPixelPos - constrainedLeft;
+                                        const trianglePercent = (triangleOffset / tooltipWidth) * 100;
+                                        
+                                        tooltip.style.setProperty('--triangle-left', Math.max(5, Math.min(95, trianglePercent)) + '%');
+                                        
+                                        console.log('Positioned escalation event tooltip (fixed) at:', constrainedLeft, (trackRect.top + verticalOffset), 'for:', event.title_hebrew);
                                     } else {
-                                        // For markers below timeline, position tooltip above the track (consistent)
-                                        topPos = trackRect.top - fixedGapFromTrack;
+                                        // For de-escalation events: use track-relative positioning (original logic)
+                                        tooltip.style.position = 'absolute';
+                                        
+                                        // Calculate ideal tooltip position (centered on event position)
+                                        const idealLeft = (eventPercent / 100) * trackWidth - (tooltipWidth / 2);
+                                        
+                                        // Constrain tooltip within track bounds
+                                        const minLeft = 0;
+                                        const maxLeft = trackWidth - tooltipWidth;
+                                        const constrainedLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
+                                        
+                                        tooltip.style.left = constrainedLeft + 'px';
+                                        tooltip.style.transform = 'none';
+                                        
+                                        // Calculate triangle position for track positioning
+                                        const eventPixelPos = (eventPercent / 100) * trackWidth;
+                                        const triangleOffset = eventPixelPos - constrainedLeft;
+                                        const trianglePercent = (triangleOffset / tooltipWidth) * 100;
+                                        
+                                        tooltip.style.setProperty('--triangle-left', Math.max(5, Math.min(95, trianglePercent)) + '%');
+                                        
+                                        console.log('Positioned de-escalation event tooltip (relative) at:', constrainedLeft, 'for:', event.title_hebrew);
                                     }
-                                    let leftPos = markerRect.left + markerRect.width / 2;
-                                    let transform = 'translateX(-50%)';
                                     
-                                    // Check left edge overflow
-                                    if (leftPos - tooltipRect.width / 2 < 10) {
-                                        leftPos = markerRect.left;
-                                        transform = 'translateX(0%)';
-                                    }
-                                    // Check right edge overflow  
-                                    else if (leftPos + tooltipRect.width / 2 > screenWidth - 10) {
-                                        leftPos = markerRect.right;
-                                        transform = 'translateX(-100%)';
-                                    }
-                                    
-                                    // Apply final position
-                                    tooltip.style.left = leftPos + 'px';
-                                    tooltip.style.top = topPos + 'px';
-                                    tooltip.style.transform = transform;
-                                    tooltip.style.visibility = 'visible';
-                                    console.log('Positioned tooltip at:', leftPos, topPos, 'for:', event.title_hebrew);
+                                    // Add dynamic triangle positioning style (using the triangle percent calculated above)
+                                    const tooltipId = 'event-tooltip-' + Date.now();
+                                    tooltip.id = tooltipId;
+                                    const trianglePercent = parseFloat(tooltip.style.getPropertyValue('--triangle-left').replace('%', ''));
+                                    currentTooltipStyle = document.createElement('style');
+                                    currentTooltipStyle.textContent = `
+                                        #${tooltipId}::after {
+                                            left: ${trianglePercent}% !important;
+                                        }
+                                    `;
+                                    document.head.appendChild(currentTooltipStyle);
                                 }, 0);
                             };
                             
                             marker.onmouseleave = () => {
-                                // Remove the specific tooltip for this marker
+                                // Show the main timeline handle tooltip again
+                                const mainTooltip = document.getElementById('timelineTooltip');
+                                if (mainTooltip) {
+                                    mainTooltip.style.display = 'block';
+                                }
+                                
+                                // Remove the specific tooltip for this marker and its dynamic styles
                                 if (currentTooltip && currentTooltip.parentNode) {
                                     currentTooltip.remove();
                                     currentTooltip = null;
+                                }
+                                
+                                // Remove dynamic style if it exists
+                                if (currentTooltipStyle && currentTooltipStyle.parentNode) {
+                                    currentTooltipStyle.remove();
+                                    currentTooltipStyle = null;
                                 }
                                 
                                 marker.style.transform = 'translate(-50%, -50%) scale(1)';
