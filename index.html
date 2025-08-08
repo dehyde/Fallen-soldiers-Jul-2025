@@ -910,18 +910,31 @@
                     Math.abs(s.death_date - latestDeathDate) < 24 * 60 * 60 * 1000 // Same day
                 );
                 
+                // Format Hebrew date
+                const date = new Date(latestDeathDate);
+                const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+                const hebrewMonths = ['בינואר', 'בפברואר', 'במרץ', 'באפריל', 'במאי', 'ביוני', 'ביולי', 'באוגוסט', 'בספטמבר', 'באוקטובר', 'בנובמבר', 'בדצמבר'];
+                const dayOfWeek = hebrewDays[date.getDay()];
+                const day = date.getDate();
+                const month = hebrewMonths[date.getMonth()];
+                const year = date.getFullYear();
+                const hebrewDate = `יום ${dayOfWeek}, ${day} ${month}, ${year}`;
+                
+                // Format names
+                let names = '';
                 if (soldiersOnLatestDate.length === 1) {
-                    return `<strong>${soldiersOnLatestDate[0].name}</strong>`;
+                    names = `<strong>${soldiersOnLatestDate[0].name}</strong>`;
                 } else if (soldiersOnLatestDate.length === 2) {
-                    return `<strong>${soldiersOnLatestDate[0].name}</strong> ו-<strong>${soldiersOnLatestDate[1].name}</strong>`;
+                    names = `<strong>${soldiersOnLatestDate[0].name}</strong> ו-<strong>${soldiersOnLatestDate[1].name}</strong>`;
                 } else if (soldiersOnLatestDate.length > 2) {
-                    const names = soldiersOnLatestDate.slice(0, -1).map(s => `<strong>${s.name}</strong>`).join(', ');
+                    const nameList = soldiersOnLatestDate.slice(0, -1).map(s => `<strong>${s.name}</strong>`).join(', ');
                     const lastName = `<strong>${soldiersOnLatestDate[soldiersOnLatestDate.length - 1].name}</strong>`;
-                    return `${names} ו-${lastName}`;
+                    names = `${nameList} ו-${lastName}`;
                 }
                 
-                return '';
+                return `ביום ${hebrewDate}, נהרגו ${names}. באותו בוקר הם היו עוד חיים.`;
             }
+
 
             getWarContinuationMessage() {
                 const lastDeathsCount = this.getLastDeathsOnMostRecentDate();

@@ -1,5 +1,5 @@
 id,timeline_point,timeline_type,content_hebrew,cta_continue_he,cta_back_he,navigation_type,navigation_target,conditions
-recent_deaths,{{days_since_last_deaths}},days_from_today,לפני {{days_since_last_deaths}} ימים {{last_deaths_text}} עוד היו בחיים.,המשך,התחלה,navigate_to,war_overview,
+recent_deaths,{{days_since_last_deaths}},days_from_today,{{last_deaths_text}},המשך,התחלה,navigate_to,war_overview,
 war_overview,0,days_from_today,{{total_count}} חיילים נהרגו מאז תחילת התמרון של ישראל בעזה,המשך,חזור,navigate_to,war_continuation,
 war_continuation,7,days_from_today,{{war_continuation_message}},המשך,חזור,navigate_to,netanyahu_decision,
 netanyahu_decision,146,days_from_today,בתאריך {{political_event_date}} נתניהו שקל להפסיק את המלחמה,המשך,חזור,navigate_to,coalition_threat,
