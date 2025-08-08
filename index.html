@@ -507,8 +507,40 @@
         }
 
         .area-path {
-            fill: rgba(180, 180, 180, 0.35);
+            fill: rgba(180, 180, 180, 0.175);
             stroke: none;
+            transition: fill 0.2s ease;
+        }
+
+        .timeline-container:hover .area-path {
+            fill: rgba(180, 180, 180, 0.35);
+        }
+
+        .timeline-event-marker {
+            width: 6px !important;
+            height: 6px !important;
+            transition: width 0.2s ease, height 0.2s ease;
+        }
+
+        .timeline-container:hover .timeline-event-marker {
+            width: 8px !important;
+            height: 8px !important;
+        }
+
+        .military-bar {
+            transition: fill 0.2s ease;
+        }
+
+        .timeline-container:not(:hover) .military-bar {
+            fill: rgba(255, 100, 100, 0) !important;
+        }
+
+        .military-bar-border {
+            transition: stroke 0.2s ease;
+        }
+
+        .timeline-container:not(:hover) .military-bar-border {
+            stroke: rgba(255, 100, 100, 0) !important;
         }
 
         .soldier-tooltip {
