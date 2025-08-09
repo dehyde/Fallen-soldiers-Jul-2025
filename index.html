@@ -569,11 +569,11 @@
             position: fixed;
             background: rgba(255, 255, 255, 0.95) !important;
             color: #333 !important;
-            padding: 8px !important;
+            padding: 4px !important;
             border-radius: 6px !important;
             font-size: 11px !important;
             width: auto !important;
-            white-space: nowrap !important;
+            white-space: normal !important;
             z-index: 1000 !important;
             pointer-events: none !important;
             text-align: center !important;
@@ -602,6 +602,9 @@
         .soldier-text {
             margin-top: 8px;
             text-align: right;
+            padding-right: 2px;
+            width: 120px;
+            white-space: normal;
         }
 
         .soldier-tooltip strong {
@@ -664,8 +667,8 @@
     <!-- Custom soldier tooltip -->
     <div class="soldier-tooltip" id="soldierTooltip">
         <div class="soldier-photo" id="soldierPhoto" style="display: none;">
-            <div class="image-placeholder" style="width: 120px; height: 160px; background: #f0f0f0; border-radius: 6px; position: relative; overflow: hidden;">
-                <img id="soldierImage" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0; transition: opacity 1.5s ease; position: absolute; top: 0; left: 0; filter: saturate(0.6) brightness(1.35) opacity(0.85);">
+            <div class="image-placeholder" style="width: 120px; height: 160px; background: #f0f0f0; border-radius: 3px; position: relative; overflow: hidden;">
+                <img id="soldierImage" style="width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: 3px; opacity: 0; transition: opacity 1.5s ease; position: absolute; top: 0; left: 0; filter: saturate(0.6) brightness(1.35) opacity(0.85);">
             </div>
         </div>
         <div class="soldier-text">
@@ -2638,8 +2641,8 @@
                             const tiltAngle = (Math.random() - 0.5) * 12; // Random tilt between -6° and +6°
                             tooltip.style.setProperty('--tilt-angle', `${tiltAngle}deg`);
                             
-                            // Position tooltip
-                            this.positionSoldierTooltip(e, tooltip);
+                            // Position tooltip relative to the name element
+                            this.positionSoldierTooltip(e, tooltip, nameEl);
                             
                             // Show tooltip
                             tooltip.classList.add('visible');
@@ -2659,44 +2662,44 @@
                     
                     nameEl.addEventListener('mousemove', (e) => {
                         if (tooltip.classList.contains('visible')) {
-                            this.positionSoldierTooltip(e, tooltip);
+                            this.positionSoldierTooltip(e, tooltip, nameEl);
                         }
                     });
                 });
             }
 
-            positionSoldierTooltip(mouseEvent, tooltip) {
-                const mouseX = mouseEvent.clientX;
-                const mouseY = mouseEvent.clientY;
+            positionSoldierTooltip(mouseEvent, tooltip, nameElement) {
+                const nameRect = nameElement.getBoundingClientRect();
                 const tooltipWidth = tooltip.offsetWidth;
                 const tooltipHeight = tooltip.offsetHeight;
                 const screenWidth = window.innerWidth;
                 const screenHeight = window.innerHeight;
                 
-                const offset = 15; // Distance from cursor
+                const offset = 15; // Distance from name element
                 let x, y;
                 
-                // Determine if cursor is on right or left side of screen
-                const isOnRightSide = mouseX > screenWidth / 2;
+                // Determine if name is on right or left side of screen
+                const nameCenterX = nameRect.left + (nameRect.width / 2);
+                const isOnRightSide = nameCenterX > screenWidth / 2;
                 
                 if (isOnRightSide) {
-                    // Position tooltip to the LEFT of the cursor
-                    x = mouseX - tooltipWidth - offset;
+                    // Position tooltip to the LEFT of the name
+                    x = nameRect.left - tooltipWidth - offset;
                     // If it would go off left edge, show on right instead
                     if (x < 10) {
-                        x = mouseX + offset;
+                        x = nameRect.right + offset;
                     }
                 } else {
-                    // Position tooltip to the RIGHT of the cursor
-                    x = mouseX + offset;
+                    // Position tooltip to the RIGHT of the name
+                    x = nameRect.right + offset;
                     // If it would go off right edge, show on left instead
                     if (x + tooltipWidth > screenWidth - 10) {
-                        x = mouseX - tooltipWidth - offset;
+                        x = nameRect.left - tooltipWidth - offset;
                     }
                 }
                 
-                // Center tooltip vertically around cursor
-                y = mouseY - (tooltipHeight / 2);
+                // Center tooltip vertically around name element
+                y = nameRect.top + (nameRect.height / 2) - (tooltipHeight / 2);
                 
                 // Ensure tooltip stays within screen bounds vertically
                 if (y < 10) {
