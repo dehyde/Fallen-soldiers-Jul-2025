@@ -71,7 +71,8 @@
             font-feature-settings: normal;
         }
 
-        .soldier-name:hover {
+        .soldier-name:hover,
+        .soldier-name.auto-hover-active {
             background: rgba(0,0,0,0.8) !important;
             color: white !important;
             z-index: 10;
@@ -328,12 +329,12 @@
             right: 100px;
             transform: translateY(-50%);
             width: 280px;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(15px);
+            background: rgba(255,255,255,0.45);
+            backdrop-filter: blur(8px);
             border-radius: 4px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             border: 1px solid rgba(0,0,0,0.1);
-            z-index: 200;
+            z-index: 15000;
             cursor: grab;
             user-select: none;
             transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
@@ -341,7 +342,7 @@
 
         .draggable-container:hover {
             cursor: grab;
-            background: rgba(250,250,250,0.95);
+            background: rgba(250,250,250,0.55);
         }
 
         .draggable-container:active {
@@ -1478,10 +1479,10 @@
                 const totalDays = this.getTotalTimelineDays();
                 document.getElementById('timelineSlider').max = totalDays;
                 
-                // Initialize with recent deaths narrative point (at today - 7 days back)
-                this.narrative.navigateToPoint('recent_deaths');
+                // Initialize with current date narrative point (today)
+                this.narrative.navigateToPoint('current_date');
                 
-                // Initialize timeline progress bar (at current date - 0 days back)
+                // Initialize timeline progress bar (at current date - today)
                 const initialDaysBack = 0;
                 const initialProgress = ((totalDays - initialDaysBack) / totalDays) * 100;
                 document.getElementById('timelineProgress').style.width = initialProgress + '%';
@@ -2577,6 +2578,218 @@
                 const soldierImageEl = document.getElementById('soldierImage');
                 let currentSoldierName = null;
                 
+                // Auto-hover system for current_date narrative
+                let autoHoverSystem = {
+                    active: false,
+                    intervals: [],
+                    activeElements: new Map(), // Track active elements and their tooltip elements
+                    maxSimultaneous: 3,
+                    tooltipCounter: 0, // For unique IDs
+                    
+                    start: () => {
+                        if (autoHoverSystem.active) return;
+                        autoHoverSystem.active = true;
+                        console.log('Starting auto-hover system');
+                        autoHoverSystem.scheduleNext();
+                    },
+                    
+                    stop: () => {
+                        autoHoverSystem.active = false;
+                        autoHoverSystem.intervals.forEach(id => clearTimeout(id));
+                        autoHoverSystem.intervals = [];
+                        
+                        // Clear all active elements and their tooltips
+                        autoHoverSystem.activeElements.forEach((data, nameEl) => {
+                            nameEl.classList.remove('auto-hover-active');
+                            clearTimeout(data.hideTimeout);
+                            // Remove the tooltip element
+                            if (data.tooltipElement && data.tooltipElement.parentNode) {
+                                data.tooltipElement.remove();
+                            }
+                        });
+                        autoHoverSystem.activeElements.clear();
+                        
+                        // Hide main tooltip if showing
+                        tooltip.classList.remove('visible');
+                    },
+                    
+                    scheduleNext: () => {
+                        if (!autoHoverSystem.active) return;
+                        
+                        const delay = Math.random() * 2000 + 1000; // 1-3 second delay between tooltips
+                        const timeoutId = setTimeout(() => {
+                            if (autoHoverSystem.activeElements.size < autoHoverSystem.maxSimultaneous) {
+                                autoHoverSystem.showRandomTooltip();
+                            }
+                            autoHoverSystem.scheduleNext(); // Schedule the next one
+                        }, delay);
+                        
+                        autoHoverSystem.intervals.push(timeoutId);
+                    },
+                    
+                    showRandomTooltip: () => {
+                        if (!autoHoverSystem.active) return;
+                        
+                        // Get available soldier names (not currently active)
+                        const availableNames = Array.from(soldierNames).filter(nameEl => 
+                            !autoHoverSystem.activeElements.has(nameEl)
+                        );
+                        
+                        if (availableNames.length === 0) return;
+                        
+                        // Pick a random soldier name
+                        const randomName = availableNames[Math.floor(Math.random() * availableNames.length)];
+                        const duration = Math.random() * 1000 + 4000; // 4-5 seconds
+                        
+                        // Create unique tooltip element for this soldier
+                        const tooltipId = `autoTooltip${autoHoverSystem.tooltipCounter++}`;
+                        const newTooltip = autoHoverSystem.createTooltipElement(tooltipId);
+                        
+                        // Schedule hide with proper timeout tracking
+                        const hideTimeoutId = setTimeout(() => {
+                            autoHoverSystem.simulateHover(randomName, false);
+                            autoHoverSystem.activeElements.delete(randomName);
+                        }, duration);
+                        
+                        // Track this element as active with its tooltip
+                        autoHoverSystem.activeElements.set(randomName, { 
+                            hideTimeout: hideTimeoutId,
+                            tooltipElement: newTooltip
+                        });
+                        
+                        // Show tooltip
+                        autoHoverSystem.simulateHover(randomName, true);
+                    },
+                    
+                    createTooltipElement: (tooltipId) => {
+                        const newTooltip = document.createElement('div');
+                        newTooltip.id = tooltipId;
+                        newTooltip.className = 'soldier-tooltip';
+                        newTooltip.innerHTML = `
+                            <div class="soldier-photo" style="display: none;">
+                                <div class="image-placeholder" style="width: 120px; height: 160px; background: #f0f0f0; border-radius: 3px; position: relative; overflow: hidden;">
+                                    <img class="soldier-image" style="width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: 3px; opacity: 0; transition: opacity 1.5s ease; position: absolute; top: 0; left: 0; filter: saturate(0.6) brightness(1.35) opacity(0.85);">
+                                </div>
+                            </div>
+                            <div class="soldier-text">
+                                <strong class="soldier-name-text"></strong>
+                                <div class="soldier-details-text"></div>
+                            </div>
+                        `;
+                        document.body.appendChild(newTooltip);
+                        return newTooltip;
+                    },
+                    
+                    simulateHover: (nameEl, show) => {
+                        const data = autoHoverSystem.activeElements.get(nameEl);
+                        if (!data) return;
+                        
+                        if (show) {
+                            // Add visual hover state to the name element
+                            nameEl.classList.add('auto-hover-active');
+                            
+                            // Show tooltip for this soldier immediately
+                            const rect = nameEl.getBoundingClientRect();
+                            const mouseEvent = { 
+                                clientX: rect.left + rect.width/2, 
+                                clientY: rect.top + rect.height/2 
+                            };
+                            autoHoverSystem.showTooltipForElement(nameEl, mouseEvent, data.tooltipElement);
+                        } else {
+                            // Remove visual hover state from name element
+                            nameEl.classList.remove('auto-hover-active');
+                            
+                            // Hide this specific tooltip with transition
+                            if (data.tooltipElement) {
+                                data.tooltipElement.classList.remove('visible');
+                                // Remove tooltip element after transition completes
+                                setTimeout(() => {
+                                    if (data.tooltipElement && data.tooltipElement.parentNode) {
+                                        data.tooltipElement.remove();
+                                    }
+                                }, 200); // Match the 0.2s disappear transition
+                            }
+                        }
+                    },
+                    
+                    showTooltipForElement: (nameEl, mouseEvent, tooltipElement) => {
+                        const name = nameEl.textContent;
+                        const rank = nameEl.dataset.rank;
+                        const unit = nameEl.dataset.unit;
+                        const imageUrl = nameEl.dataset.imageUrl;
+                        const deathDate = new Date(parseInt(nameEl.dataset.deathDate));
+                        
+                        // Get tooltip sub-elements
+                        const tooltipNameEl = tooltipElement.querySelector('.soldier-name-text');
+                        const tooltipDetailsEl = tooltipElement.querySelector('.soldier-details-text');
+                        const tooltipPhotoEl = tooltipElement.querySelector('.soldier-photo');
+                        const tooltipImageEl = tooltipElement.querySelector('.soldier-image');
+                        
+                        // Same tooltip logic as manual hover
+                        const formattedDate = deathDate.toLocaleDateString('he-IL');
+                        tooltipNameEl.textContent = name;
+                        tooltipDetailsEl.innerHTML = `
+                            <div>${unit}</div>
+                            <div style="opacity: 0.8;">${formattedDate}</div>
+                        `;
+                        
+                        // Clear and load image
+                        tooltipImageEl.style.opacity = '0';
+                        tooltipImageEl.src = '';
+                        
+                        if (imageUrl && imageUrl.trim()) {
+                            tooltipPhotoEl.style.display = 'block';
+                            tooltipImageEl.onload = () => {
+                                tooltipImageEl.style.opacity = '1';
+                            };
+                            tooltipImageEl.onerror = () => {
+                                tooltipPhotoEl.style.display = 'none';
+                            };
+                            tooltipImageEl.src = imageUrl;
+                        } else {
+                            tooltipPhotoEl.style.display = 'none';
+                        }
+                        
+                        // Apply styling and positioning
+                        const tiltAngle = (Math.random() - 0.5) * 12;
+                        tooltipElement.style.setProperty('--tilt-angle', `${tiltAngle}deg`);
+                        
+                        // Special current_date styling
+                        tooltipElement.style.background = 'rgba(255, 245, 200, 0.98)';
+                        tooltipElement.style.borderColor = 'rgba(255, 200, 100, 0.3)';
+                        tooltipElement.style.boxShadow = '0 6px 16px rgba(255, 150, 50, 0.3)';
+                        
+                        // Position and show
+                        this.positionSoldierTooltip(mouseEvent, tooltipElement, nameEl);
+                        tooltipElement.classList.add('visible');
+                    }
+                };
+                
+                // Check if we're on the current_date narrative point for special tooltip behavior
+                const isCurrentDateNarrative = () => {
+                    return this.narrative && this.narrative.currentPointId === 'current_date';
+                };
+                
+                // Start/stop auto-hover based on narrative point
+                const updateAutoHover = () => {
+                    if (isCurrentDateNarrative()) {
+                        autoHoverSystem.start();
+                    } else {
+                        autoHoverSystem.stop();
+                    }
+                };
+                
+                // Initial check and setup observer for narrative changes
+                setTimeout(updateAutoHover, 1000); // Give narrative time to initialize
+                
+                // Watch for narrative changes
+                const originalNavigateToPoint = this.narrative.navigateToPoint;
+                this.narrative.navigateToPoint = function(pointId) {
+                    const result = originalNavigateToPoint.call(this, pointId);
+                    setTimeout(updateAutoHover, 100); // Update auto-hover after navigation
+                    return result;
+                };
+                
                 soldierNames.forEach(nameEl => {
                     let hoverTimeout = null;
                     
@@ -2586,7 +2799,8 @@
                             clearTimeout(hoverTimeout);
                         }
                         
-                        // Set 1-second delay before showing tooltip
+                        // Set delay before showing tooltip - shorter for current_date narrative
+                        const delay = isCurrentDateNarrative() ? 500 : 1000; // 0.5s vs 1s
                         hoverTimeout = setTimeout(() => {
                             const name = nameEl.textContent;
                             const rank = nameEl.dataset.rank;
@@ -2641,16 +2855,28 @@
                             const tiltAngle = (Math.random() - 0.5) * 12; // Random tilt between -6° and +6°
                             tooltip.style.setProperty('--tilt-angle', `${tiltAngle}deg`);
                             
+                            // Apply special styling for current_date narrative
+                            if (isCurrentDateNarrative()) {
+                                tooltip.style.background = 'rgba(255, 245, 200, 0.98)'; // Warm yellow tint
+                                tooltip.style.borderColor = 'rgba(255, 200, 100, 0.3)';
+                                tooltip.style.boxShadow = '0 6px 16px rgba(255, 150, 50, 0.3)';
+                            } else {
+                                // Reset to normal styling
+                                tooltip.style.background = '';
+                                tooltip.style.borderColor = '';
+                                tooltip.style.boxShadow = '';
+                            }
+                            
                             // Position tooltip relative to the name element
                             this.positionSoldierTooltip(e, tooltip, nameEl);
                             
                             // Show tooltip
                             tooltip.classList.add('visible');
-                        }, 1000); // 1-second delay
+                        }, delay); // Dynamic delay based on narrative point
                     });
                     
                     nameEl.addEventListener('mouseleave', () => {
-                        // Clear timeout if user leaves before 1 second
+                        // Clear timeout if user leaves before delay completes
                         if (hoverTimeout) {
                             clearTimeout(hoverTimeout);
                             hoverTimeout = null;

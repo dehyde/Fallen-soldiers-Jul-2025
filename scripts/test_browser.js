@@ -5,7 +5,7 @@ const { spawn } = require('child_process');
 
 // Simple static file server
 const server = http.createServer((req, res) => {
-    let filePath = path.join(__dirname, req.url === '/' ? 'index.html' : req.url);
+    let filePath = path.join(__dirname, '..', req.url === '/' ? 'index.html' : req.url);
     
     if (!fs.existsSync(filePath)) {
         res.writeHead(404);
@@ -27,48 +27,81 @@ const server = http.createServer((req, res) => {
 
 // Test script that will be injected into the page
 const testScript = `
-console.log('=== TIMELINE HIGHLIGHTING TEST STARTED ===');
+console.log('=== NARRATIVE NAVIGATION TEST STARTED ===');
 
 // Wait for page to load
 setTimeout(() => {
-    const slider = document.getElementById('timelineSlider');
-    const totalDays = parseInt(slider.max);
+    console.log('Testing narrative navigation issue...');
     
-    console.log('Slider max value:', totalDays);
-    console.log('Starting automated timeline testing...');
-    
-    let testPosition = 0;
-    const testInterval = setInterval(() => {
-        if (testPosition > Math.min(200, totalDays)) {
-            clearInterval(testInterval);
-            console.log('=== AUTOMATED TEST COMPLETED ===');
-            return;
+    // Check if narrative engine is available
+    if (window.memorial && window.memorial.narrative) {
+        const narrative = window.memorial.narrative;
+        console.log('Narrative points loaded:', narrative.narrativePoints.map(p => p.id));
+        
+        // Find our specific entries
+        const recentDeaths = narrative.narrativePoints.find(p => p.id === 'recent_deaths');
+        const monthBefore = narrative.narrativePoints.find(p => p.id === 'month_before_hypothetical');
+        const warOverview = narrative.narrativePoints.find(p => p.id === 'war_overview');
+        
+        console.log('recent_deaths found:', !!recentDeaths);
+        console.log('month_before_hypothetical found:', !!monthBefore);
+        console.log('war_overview found:', !!warOverview);
+        
+        if (monthBefore) {
+            console.log('month_before_hypothetical details:', monthBefore);
+            console.log('Timeline point:', monthBefore.timeline_point);
+            console.log('Content:', monthBefore.content_hebrew);
         }
         
-        // Set slider position
-        slider.value = testPosition;
-        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        // Test navigation sequence
+        console.log('\\n=== TESTING NAVIGATION SEQUENCE ===');
         
-        // Log current state
-        const alive = document.querySelectorAll('.soldier-name.alive').length;
-        const dying = document.querySelectorAll('.soldier-name.dying').length;
-        const fallen = document.querySelectorAll('.soldier-name.fallen').length;
-        const total = document.querySelectorAll('.soldier-name').length;
-        
-        console.log('Position:', testPosition, '| Alive:', alive, '| Dying:', dying, '| Fallen:', fallen, '| Total:', total);
-        
-        testPosition += 5; // Move 5 days at a time
-    }, 100); // Fast movement - 100ms intervals
-    
-    // Also test narrative buttons
-    setTimeout(() => {
-        console.log('\\n=== TESTING NARRATIVE NAVIGATION ===');
-        const continueBtn = document.getElementById('ctaContinue');
-        if (continueBtn) {
-            console.log('Clicking continue button for narrative animation...');
-            continueBtn.click();
+        // Navigate to recent_deaths first
+        if (recentDeaths) {
+            console.log('1. Navigating to recent_deaths...');
+            narrative.navigateToPoint('recent_deaths');
+            
+            setTimeout(() => {
+                console.log('Current point after recent_deaths:', narrative.currentPointId);
+                const nextPoint = narrative.getNextPoint();
+                console.log('Next point should be:', nextPoint ? nextPoint.id : 'none');
+                
+                // Click continue button
+                const continueBtn = document.getElementById('ctaContinue');
+                if (continueBtn) {
+                    console.log('2. Clicking continue button...');
+                    continueBtn.click();
+                    
+                    setTimeout(() => {
+                        console.log('Current point after continue click:', narrative.currentPointId);
+                        const content = document.getElementById('narrativeContent').innerHTML;
+                        console.log('Current content preview:', content.substring(0, 100) + '...');
+                        
+                        // Check if we landed on month_before_hypothetical
+                        if (narrative.currentPointId === 'month_before_hypothetical') {
+                            console.log('SUCCESS: Reached month_before_hypothetical!');
+                        } else if (narrative.currentPointId === 'war_overview') {
+                            console.log('PROBLEM: Skipped to war_overview directly!');
+                        } else {
+                            console.log('UNEXPECTED: Landed on:', narrative.currentPointId);
+                        }
+                        
+                        // Test template resolution
+                        if (content.includes('{{soldiers_died_last_31_days}}')) {
+                            console.log('ERROR: Template variable not resolved!');
+                        } else if (content.includes('אם המלחמה הייתה מסתיימת לפני חודש')) {
+                            console.log('SUCCESS: Content appears to be rendered correctly');
+                        }
+                        
+                    }, 2000); // Wait for navigation animation
+                } else {
+                    console.log('ERROR: Continue button not found');
+                }
+            }, 2000); // Wait for initial navigation
         }
-    }, 15000);
+    } else {
+        console.log('ERROR: Narrative engine not found');
+    }
     
 }, 3000); // Wait 3 seconds for initial load
 `;
@@ -106,7 +139,7 @@ server.listen(PORT, () => {
                 '--virtual-time-budget=30000', // Run for 30 seconds
                 '--run-all-compositor-stages-before-draw',
                 `--evaluate-on-load=(${testScript})`,
-                `http://localhost:${PORT}/timeline-version.html`
+                `http://localhost:${PORT}/`
             ], { 
                 shell: true,
                 stdio: ['pipe', 'pipe', 'pipe']
@@ -158,9 +191,9 @@ server.listen(PORT, () => {
         console.log('The test script will run automatically.');
         
         // Add test script injection to served HTML
-        const originalHTML = fs.readFileSync(path.join(__dirname, 'timeline-version.html'), 'utf8');
+        const originalHTML = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
         const modifiedHTML = originalHTML.replace('</body>', `<script>${testScript}</script></body>`);
-        fs.writeFileSync(path.join(__dirname, 'timeline-version-test.html'), modifiedHTML);
+        fs.writeFileSync(path.join(__dirname, 'index-test.html'), modifiedHTML);
         console.log('Created timeline-version-test.html with automatic testing.');
     }
 });

@@ -21,7 +21,16 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(open index.html)",
-      "Bash(open http://localhost:57661)"
+      "Bash(open http://localhost:57661)",
+      "Bash(open http://localhost:8000)",
+      "Bash(pkill:*)",
+      "Bash(open http://localhost:8001)",
+      "Bash(curl:*)",
+      "Bash(git restore:*)",
+      "Bash(open http://localhost:8002)",
+      "Bash(open:*)",
+      "Bash(lsof:*)",
+      "Bash(gh repo view:*)"
     ],
     "deny": []
   }
