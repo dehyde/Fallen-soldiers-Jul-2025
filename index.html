@@ -337,12 +337,20 @@
             z-index: 15000;
             cursor: grab;
             user-select: none;
-            transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.8s ease;
+        }
+
+        .draggable-container.narrative-opaque {
+            background: rgba(255,255,255,0.90);
         }
 
         .draggable-container:hover {
             cursor: grab;
             background: rgba(250,250,250,0.55);
+        }
+
+        .draggable-container.narrative-opaque:hover {
+            background: rgba(250,250,250,0.95);
         }
 
         .draggable-container:active {
@@ -1239,6 +1247,14 @@
             navigateToPoint(pointId) {
                 const point = this.narrativePoints.find(p => p.id === pointId);
                 if (!point) return;
+                
+                // Update narrative container opacity based on point
+                const container = document.querySelector('.draggable-container');
+                if (pointId !== 'current_date') {
+                    container.classList.add('narrative-opaque');
+                } else {
+                    container.classList.remove('narrative-opaque');
+                }
                 
                 // Cancel any ongoing animation immediately (allows override)
                 if (this.currentAnimationId) {
