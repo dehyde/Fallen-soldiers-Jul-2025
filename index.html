@@ -526,6 +526,27 @@
             width: 8px !important;
             height: 8px !important;
         }
+        .could-have-ended-marker {
+            transition: all 0.4s ease;
+        }
+        
+        /* Triangle style for transformed markers (persists across narrative points) */
+        .could-have-ended-marker.transform-to-triangle {
+            width: 0 !important;
+            height: 0 !important;
+            border-left: 4px solid transparent !important;
+            border-right: 4px solid transparent !important;
+            border-top: 6px solid rgba(0,56,168,0.9) !important; /* Shorter triangle */
+            background: transparent !important;
+            border-radius: 0 !important;
+        }
+        
+        /* Hover effect for triangles (works on all narrative points) */
+        .timeline-container:hover .could-have-ended-marker.transform-to-triangle {
+            border-left: 5px solid transparent !important;
+            border-right: 5px solid transparent !important;
+            border-top: 8px solid rgba(0,56,168,0.9) !important;
+        }
 
         .military-bar {
             transition: fill 0.2s ease;
@@ -1303,6 +1324,23 @@
                 const point = this.getCurrentPoint();
                 if (!point) return;
                 
+                // Update body class for narrative-specific styling
+                document.body.className = document.body.className.replace(/narrative-\S+/g, '').trim();
+                document.body.classList.add(`narrative-${this.currentPointId}`);
+                
+                // Handle staggered triangle transformation for war_continuation
+                if (this.currentPointId === 'war_continuation') {
+                    this.animateTriangleTransformation();
+                } else {
+                    // Only reset triangles if we're going backwards to before war_continuation
+                    const currentIndex = this.narrativePoints.findIndex(p => p.id === this.currentPointId);
+                    const warContinuationIndex = this.narrativePoints.findIndex(p => p.id === 'war_continuation');
+                    
+                    if (currentIndex < warContinuationIndex) {
+                        this.resetTriangleTransformation();
+                    }
+                }
+                
                 const contentText = document.getElementById('contentText');
                 const ctaBack = document.getElementById('ctaBack');
                 const ctaContinue = document.getElementById('ctaContinue');
@@ -1319,6 +1357,23 @@
                 const currentIndex = this.narrativePoints.findIndex(p => p.id === this.currentPointId);
                 ctaBack.style.display = (currentIndex > 0) ? 'inline-block' : 'none';
                 ctaContinue.style.display = this.getNextPoint() ? 'inline-block' : 'none';
+            }
+            
+            animateTriangleTransformation() {
+                const couldHaveEndedMarkers = document.querySelectorAll('.could-have-ended-marker');
+                couldHaveEndedMarkers.forEach((marker, index) => {
+                    // Stagger the animations with 300ms delay between each
+                    setTimeout(() => {
+                        marker.classList.add('transform-to-triangle');
+                    }, index * 300);
+                });
+            }
+            
+            resetTriangleTransformation() {
+                const couldHaveEndedMarkers = document.querySelectorAll('.could-have-ended-marker');
+                couldHaveEndedMarkers.forEach(marker => {
+                    marker.classList.remove('transform-to-triangle');
+                });
             }
 
             getNextPoint() {
@@ -1750,6 +1805,7 @@
                             marker.style.top = `${trackOffsetFromAxis + markerDistance}px`;
                             marker.style.transform = 'translate(-50%, -50%)';
                             
+                            // Always create regular circular markers initially
                             marker.style.width = '8px';
                             marker.style.height = '8px';
                             
@@ -1765,6 +1821,12 @@
                             marker.style.background = markerColor;
                             marker.style.border = '2px solid #ffffff';
                             marker.style.borderRadius = '50%';
+                            
+                            // Add class for potential transformation
+                            if (event.could_have_ended === 'yes') {
+                                marker.classList.add('could-have-ended-marker');
+                            }
+                            
                             marker.style.cursor = 'pointer';
                             marker.style.zIndex = '100';
                             // Remove shadow
