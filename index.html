@@ -587,18 +587,21 @@
             align-items: center;
             opacity: 0;
             visibility: hidden;
-            transform: translateY(10px);
-            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+            transform: translateY(5px) rotate(var(--tilt-angle, 0deg));
+            --tilt-angle: 0deg;
+            transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
         }
 
         .soldier-tooltip.visible {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
+            transform: translateY(0) rotate(var(--tilt-angle, 0deg));
+            transition: opacity 1s ease, visibility 1s ease, transform 1s ease;
         }
         
         .soldier-text {
             margin-top: 8px;
+            text-align: right;
         }
 
         .soldier-tooltip strong {
@@ -662,7 +665,7 @@
     <div class="soldier-tooltip" id="soldierTooltip">
         <div class="soldier-photo" id="soldierPhoto" style="display: none;">
             <div class="image-placeholder" style="width: 120px; height: 160px; background: #f0f0f0; border-radius: 6px; position: relative; overflow: hidden;">
-                <img id="soldierImage" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0; transition: opacity 0.3s ease; position: absolute; top: 0; left: 0;">
+                <img id="soldierImage" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0; transition: opacity 1.5s ease; position: absolute; top: 0; left: 0; filter: saturate(0.6) brightness(1.35) opacity(0.85);">
             </div>
         </div>
         <div class="soldier-text">
@@ -2569,59 +2572,88 @@
                 const soldierDetailsEl = document.getElementById('soldierDetails');
                 const soldierPhotoEl = document.getElementById('soldierPhoto');
                 const soldierImageEl = document.getElementById('soldierImage');
+                let currentSoldierName = null;
                 
                 soldierNames.forEach(nameEl => {
+                    let hoverTimeout = null;
+                    
                     nameEl.addEventListener('mouseenter', (e) => {
-                        const name = nameEl.textContent;
-                        const rank = nameEl.dataset.rank;
-                        const unit = nameEl.dataset.unit;
-                        const imageUrl = nameEl.dataset.imageUrl;
-                        const deathDate = new Date(parseInt(nameEl.dataset.deathDate));
-                        
-                        // Format date in Hebrew style
-                        const formattedDate = deathDate.toLocaleDateString('he-IL');
-                        
-                        // Update tooltip content (compact format)
-                        soldierNameEl.textContent = name;
-                        soldierDetailsEl.innerHTML = `
-                            <div>${unit}</div>
-                            <div style="opacity: 0.8;">${formattedDate}</div>
-                        `;
-                        
-                        // Handle image with fade-in animation
-                        if (imageUrl && imageUrl.trim()) {
-                            console.log('Attempting to load image for', name, 'URL:', imageUrl);
-                            
-                            // Show container but keep image transparent
-                            soldierPhotoEl.style.display = 'block';
-                            soldierImageEl.style.opacity = '0';
-                            
-                            // Set up load handler for fade-in animation
-                            soldierImageEl.onload = () => {
-                                console.log('Image loaded successfully for', name);
-                                soldierImageEl.style.opacity = '1';
-                            };
-                            
-                            // Add error handler to hide image if it fails to load
-                            soldierImageEl.onerror = () => {
-                                console.log('Image failed to load for', name);
-                                soldierPhotoEl.style.display = 'none';
-                            };
-                            
-                            // Set the image source to trigger loading
-                            soldierImageEl.src = imageUrl;
-                        } else {
-                            soldierPhotoEl.style.display = 'none';
+                        // Clear any existing timeout
+                        if (hoverTimeout) {
+                            clearTimeout(hoverTimeout);
                         }
                         
-                        // Position tooltip
-                        this.positionSoldierTooltip(e, tooltip);
-                        
-                        // Show tooltip
-                        tooltip.classList.add('visible');
+                        // Set 1-second delay before showing tooltip
+                        hoverTimeout = setTimeout(() => {
+                            const name = nameEl.textContent;
+                            const rank = nameEl.dataset.rank;
+                            const unit = nameEl.dataset.unit;
+                            const imageUrl = nameEl.dataset.imageUrl;
+                            const deathDate = new Date(parseInt(nameEl.dataset.deathDate));
+                            
+                            // Format date in Hebrew style
+                            const formattedDate = deathDate.toLocaleDateString('he-IL');
+                            
+                            // Update tooltip content (compact format)
+                            soldierNameEl.textContent = name;
+                            soldierDetailsEl.innerHTML = `
+                                <div>${unit}</div>
+                                <div style="opacity: 0.8;">${formattedDate}</div>
+                            `;
+                            
+                            // IMMEDIATELY clear any previous image to prevent flickering
+                            soldierImageEl.style.opacity = '0';
+                            soldierImageEl.src = '';
+                            currentSoldierName = name;
+                            
+                            // Handle image with fade-in animation
+                            if (imageUrl && imageUrl.trim()) {
+                                console.log('Attempting to load image for', name, 'URL:', imageUrl);
+                                
+                                // Show container after clearing previous image
+                                soldierPhotoEl.style.display = 'block';
+                                
+                                // Set up load handler for fade-in animation
+                                soldierImageEl.onload = () => {
+                                    console.log('Image loaded successfully for', name);
+                                    // Only fade in if this is still the current soldier being displayed
+                                    if (currentSoldierName === name) {
+                                        soldierImageEl.style.opacity = '1';
+                                    }
+                                };
+                                
+                                // Add error handler to hide image if it fails to load
+                                soldierImageEl.onerror = () => {
+                                    console.log('Image failed to load for', name);
+                                    soldierPhotoEl.style.display = 'none';
+                                };
+                                
+                                // Set the image source to trigger loading
+                                soldierImageEl.src = imageUrl;
+                            } else {
+                                soldierPhotoEl.style.display = 'none';
+                            }
+                            
+                            // Apply random subtle tilt via CSS custom property
+                            const tiltAngle = (Math.random() - 0.5) * 12; // Random tilt between -6° and +6°
+                            tooltip.style.setProperty('--tilt-angle', `${tiltAngle}deg`);
+                            
+                            // Position tooltip
+                            this.positionSoldierTooltip(e, tooltip);
+                            
+                            // Show tooltip
+                            tooltip.classList.add('visible');
+                        }, 1000); // 1-second delay
                     });
                     
                     nameEl.addEventListener('mouseleave', () => {
+                        // Clear timeout if user leaves before 1 second
+                        if (hoverTimeout) {
+                            clearTimeout(hoverTimeout);
+                            hoverTimeout = null;
+                        }
+                        
+                        // Hide tooltip in its current tilted position - don't change rotation
                         tooltip.classList.remove('visible');
                     });
                     
