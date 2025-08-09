@@ -569,8 +569,8 @@
             position: fixed;
             background: rgba(255, 255, 255, 0.95) !important;
             color: #333 !important;
-            padding: 6px 8px !important;
-            border-radius: 3px !important;
+            padding: 8px !important;
+            border-radius: 6px !important;
             font-size: 11px !important;
             width: auto !important;
             white-space: nowrap !important;
@@ -578,18 +578,27 @@
             pointer-events: none !important;
             text-align: center !important;
             font-family: 'Heebo', sans-serif !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
-            border: 1px solid rgba(0,0,0,0.1) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+            border: 1px solid rgba(0,0,0,0.15) !important;
             line-height: 1.2 !important;
             backdrop-filter: blur(5px) !important;
-            display: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             opacity: 0;
-            transition: opacity 0.2s ease;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
         }
 
         .soldier-tooltip.visible {
-            display: block;
             opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .soldier-text {
+            margin-top: 8px;
         }
 
         .soldier-tooltip strong {
@@ -651,8 +660,15 @@
 
     <!-- Custom soldier tooltip -->
     <div class="soldier-tooltip" id="soldierTooltip">
-        <strong id="soldierName"></strong>
-        <div class="soldier-details" id="soldierDetails"></div>
+        <div class="soldier-photo" id="soldierPhoto" style="display: none;">
+            <div class="image-placeholder" style="width: 120px; height: 160px; background: #f0f0f0; border-radius: 6px; position: relative; overflow: hidden;">
+                <img id="soldierImage" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px; opacity: 0; transition: opacity 0.3s ease; position: absolute; top: 0; left: 0;">
+            </div>
+        </div>
+        <div class="soldier-text">
+            <strong id="soldierName"></strong>
+            <div class="soldier-details" id="soldierDetails"></div>
+        </div>
     </div>
 
     <div class="timeline-container">
@@ -1244,9 +1260,34 @@
                 // Update content immediately
                 this.updateNarrativeContent();
                 
-                // Start gradual animation if there's a difference
+                // Check if this is an opportunity point that should jump immediately
+                const shouldJumpImmediately = pointId.startsWith('opportunity_');
+                
+                // Start gradual animation if there's a difference, unless it's an opportunity point
                 if (currentTimelinePoint !== targetTimelinePoint) {
-                    this.animateToTimelinePoint(currentTimelinePoint, targetTimelinePoint);
+                    if (shouldJumpImmediately) {
+                        // Immediate jump for opportunity points
+                        const slider = document.getElementById('timelineSlider');
+                        slider.value = targetTimelinePoint;
+                        
+                        // Update timeline immediately
+                        const newEndDate = new Date(this.timeline.todayDate);
+                        newEndDate.setDate(newEndDate.getDate() - targetTimelinePoint);
+                        this.timeline.currentEndDate = newEndDate;
+                        
+                        // Update progress bar
+                        const totalDays = this.timeline.getTotalTimelineDays();
+                        const progress = ((totalDays - targetTimelinePoint) / totalDays) * 100;
+                        document.getElementById('timelineProgress').style.width = progress + '%';
+                        
+                        // Update tooltip and visualization
+                        this.timeline.updateTooltip(targetTimelinePoint, newEndDate);
+                        this.timeline.updateVisualization();
+                        this.isNavigating = false;
+                    } else {
+                        // Normal slow animation for other points
+                        this.animateToTimelinePoint(currentTimelinePoint, targetTimelinePoint);
+                    }
                 } else {
                     // If already at target, just update visualization and unlock navigation
                     this.timeline.updateVisualization();
@@ -1624,12 +1665,27 @@
                     }
                 }
 
+                // Extract image URL from field 8 (0-based index, so field 8)
+                let imageUrl = null;
+                if (fields.length >= 9) {
+                    const imageField = fields[8];
+                    if (imageField && imageField.trim()) {
+                        // Clean up the image URL (remove quotes and extra characters)
+                        imageUrl = imageField.replace(/"/g, '').trim();
+                        // If it's a relative URL, make it absolute
+                        if (imageUrl.startsWith('/media/')) {
+                            imageUrl = 'https://www.idf.il' + imageUrl;
+                        }
+                    }
+                }
+
                 return {
                     name: name,
                     rank: rank,
                     unit: unit,
                     death_date: deathDate,
-                    death_date_string: matchedDateStr
+                    death_date_string: matchedDateStr,
+                    image_url: imageUrl
                 };
             }
 
@@ -2485,7 +2541,7 @@
                 relevantSoldiers.sort((a, b) => a.death_date - b.death_date);
 
                 const namesHtml = relevantSoldiers.map(soldier => {
-                    return `<div class="soldier-name" data-death-date="${soldier.death_date.getTime()}" data-rank="${this.escapeHtml(soldier.rank)}" data-unit="${this.escapeHtml(soldier.unit)}">${soldier.name}</div>`;
+                    return `<div class="soldier-name" data-death-date="${soldier.death_date.getTime()}" data-rank="${this.escapeHtml(soldier.rank)}" data-unit="${this.escapeHtml(soldier.unit)}" data-image-url="${soldier.image_url || ''}">${soldier.name}</div>`;
                 }).join('');
 
                 container.innerHTML = namesHtml;
@@ -2511,12 +2567,15 @@
                 const tooltip = document.getElementById('soldierTooltip');
                 const soldierNameEl = document.getElementById('soldierName');
                 const soldierDetailsEl = document.getElementById('soldierDetails');
+                const soldierPhotoEl = document.getElementById('soldierPhoto');
+                const soldierImageEl = document.getElementById('soldierImage');
                 
                 soldierNames.forEach(nameEl => {
                     nameEl.addEventListener('mouseenter', (e) => {
                         const name = nameEl.textContent;
                         const rank = nameEl.dataset.rank;
                         const unit = nameEl.dataset.unit;
+                        const imageUrl = nameEl.dataset.imageUrl;
                         const deathDate = new Date(parseInt(nameEl.dataset.deathDate));
                         
                         // Format date in Hebrew style
@@ -2525,10 +2584,35 @@
                         // Update tooltip content (compact format)
                         soldierNameEl.textContent = name;
                         soldierDetailsEl.innerHTML = `
-                            <div>${rank}</div>
                             <div>${unit}</div>
                             <div style="opacity: 0.8;">${formattedDate}</div>
                         `;
+                        
+                        // Handle image with fade-in animation
+                        if (imageUrl && imageUrl.trim()) {
+                            console.log('Attempting to load image for', name, 'URL:', imageUrl);
+                            
+                            // Show container but keep image transparent
+                            soldierPhotoEl.style.display = 'block';
+                            soldierImageEl.style.opacity = '0';
+                            
+                            // Set up load handler for fade-in animation
+                            soldierImageEl.onload = () => {
+                                console.log('Image loaded successfully for', name);
+                                soldierImageEl.style.opacity = '1';
+                            };
+                            
+                            // Add error handler to hide image if it fails to load
+                            soldierImageEl.onerror = () => {
+                                console.log('Image failed to load for', name);
+                                soldierPhotoEl.style.display = 'none';
+                            };
+                            
+                            // Set the image source to trigger loading
+                            soldierImageEl.src = imageUrl;
+                        } else {
+                            soldierPhotoEl.style.display = 'none';
+                        }
                         
                         // Position tooltip
                         this.positionSoldierTooltip(e, tooltip);
