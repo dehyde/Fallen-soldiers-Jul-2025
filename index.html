@@ -298,8 +298,9 @@
             font-family: 'Heebo', sans-serif;
             text-align: center;
             line-height: 1.3;
+            min-width: max-content; /* Ensure tooltip maintains natural width */
             max-width: 300px; /* Allow for wider content when showing events */
-            white-space: normal; /* Allow text wrapping for event details */
+            box-sizing: border-box; /* Include padding in width calculations */
             transition: opacity 0.2s ease-in-out; /* Smooth opacity transitions */
         }
 
@@ -307,11 +308,11 @@
             content: '';
             position: absolute;
             bottom: -10px; /* Changed from top: 100% to bottom of tooltip */
-            left: 50%;
+            left: var(--triangle-left, 50%); /* Use custom property with 50% fallback */
             margin-left: -5px;
             border: 5px solid transparent;
             border-top-color: rgba(0, 0, 0, 0.9); /* Triangle points down from tooltip */
-            transition: left 0.1s ease;
+            transition: var(--triangle-transition, left 0.1s ease); /* Dynamic transition control */
         }
 
 
@@ -1266,7 +1267,12 @@
                 
                 // Set different speeds: slower for forward, faster for backward
                 const forwardSpeed = 25; // ms per day when moving forward in time (SLOWER)
-                const backwardSpeed = 10;  // ms per day when moving back in time (1.5x FASTER)
+                let backwardSpeed = 10;  // ms per day when moving back in time (1.5x FASTER)
+                
+                // Special case: 2x faster animation for war_overview navigation
+                if (this.currentPointId === 'war_overview') {
+                    backwardSpeed = 5; // 2x faster for war_overview
+                }
                 
                 const speed = isMovingForward ? forwardSpeed : backwardSpeed;
                 const step = isMovingBack ? 1 : -1;
@@ -2395,27 +2401,63 @@
                     tooltipAlive.textContent = `${aliveSoldiers} soldiers alive`;
                 }
                 
-                // Use setTimeout to ensure tooltip dimensions are updated after content change
-                setTimeout(() => {
-                    // Calculate handle position
-                    const sliderValue = parseInt(slider.value);
-                    const totalDays = this.getTotalTimelineDays();
-                    const handlePercent = (sliderValue / totalDays) * 100;
+                // Calculate positioning immediately for smooth animation
+                // Force layout refresh first to ensure content dimensions are current
+                tooltip.offsetWidth; // Force layout recalculation
+                
+                // Calculate handle position
+                const sliderValue = parseInt(slider.value);
+                const totalDays = this.getTotalTimelineDays();
+                const handlePercent = (sliderValue / totalDays) * 100;
+                
+                // Get tooltip dimensions (already rendered after forced layout)
+                const tooltipWidth = tooltip.offsetWidth;
+                const trackWidth = track.offsetWidth;
+                
+                // Calculate handle pixel position
+                const handleLeft = (handlePercent / 100) * trackWidth;
+                
+                // Calculate ideal tooltip position (centered on handle)
+                const idealLeft = handleLeft - (tooltipWidth / 2);
+                
+                // Check if tooltip would overflow track bounds
+                const minLeft = 0;
+                const maxLeft = trackWidth - tooltipWidth;
+                const wouldOverflow = idealLeft < minLeft || idealLeft > maxLeft;
+                
+                // Control triangle transition based on animation state
+                const afterElement = tooltip;
+                if (this.isTimelineAnimating) {
+                    // Disable transitions during animation for immediate response
+                    afterElement.style.setProperty('--triangle-transition', 'none');
+                } else {
+                    // Enable smooth transitions for static interactions
+                    afterElement.style.setProperty('--triangle-transition', 'left 0.1s ease');
+                }
+                
+                if (wouldOverflow) {
+                    // Use constrained positioning with dynamic triangle
+                    const constrainedLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
                     
-                    // Get tooltip dimensions (after content has been rendered)
-                    const tooltipWidth = tooltip.offsetWidth;
-                    const trackWidth = track.offsetWidth;
+                    // Position tooltip at constrained position
+                    tooltip.style.left = constrainedLeft + 'px';
+                    tooltip.style.transform = 'none'; // Remove CSS centering
                     
-                    // Use CSS centering method: position at handle location and let CSS center it
-                    const handleLeft = (handlePercent / 100) * trackWidth;
+                    // Calculate triangle position relative to tooltip
+                    const triangleOffset = handleLeft - constrainedLeft;
+                    const trianglePercent = (triangleOffset / tooltipWidth) * 100;
                     
-                    // Position tooltip at handle position (CSS translateX(-50%) will center it)
+                    // Constrain triangle within reasonable bounds (5% to 95%)
+                    const constrainedTrianglePercent = Math.max(5, Math.min(95, trianglePercent));
+                    tooltip.style.setProperty('--triangle-left', constrainedTrianglePercent + '%');
+                } else {
+                    // Use CSS centering method when tooltip fits comfortably
                     tooltip.style.left = handleLeft + 'px';
-                    tooltip.style.transform = 'translateX(-50%)'; // Use CSS centering method
+                    tooltip.style.transform = 'translateX(-50%)';
                     
                     // With CSS centering, triangle should be centered (50%)
                     tooltip.style.setProperty('--triangle-left', '50%');
-                }, 0);
+                }
             }
 
 
