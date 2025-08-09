@@ -2641,14 +2641,37 @@
                 const screenWidth = window.innerWidth;
                 const screenHeight = window.innerHeight;
                 
-                // Position tooltip above the cursor with some offset
-                let x = mouseX - tooltipWidth / 2;
-                let y = mouseY - tooltipHeight - 15;
+                const offset = 15; // Distance from cursor
+                let x, y;
                 
-                // Adjust if tooltip would go off screen
-                if (x < 10) x = 10;
-                if (x + tooltipWidth > screenWidth - 10) x = screenWidth - tooltipWidth - 10;
-                if (y < 10) y = mouseY + 15; // Show below cursor if no room above
+                // Determine if cursor is on right or left side of screen
+                const isOnRightSide = mouseX > screenWidth / 2;
+                
+                if (isOnRightSide) {
+                    // Position tooltip to the LEFT of the cursor
+                    x = mouseX - tooltipWidth - offset;
+                    // If it would go off left edge, show on right instead
+                    if (x < 10) {
+                        x = mouseX + offset;
+                    }
+                } else {
+                    // Position tooltip to the RIGHT of the cursor
+                    x = mouseX + offset;
+                    // If it would go off right edge, show on left instead
+                    if (x + tooltipWidth > screenWidth - 10) {
+                        x = mouseX - tooltipWidth - offset;
+                    }
+                }
+                
+                // Center tooltip vertically around cursor
+                y = mouseY - (tooltipHeight / 2);
+                
+                // Ensure tooltip stays within screen bounds vertically
+                if (y < 10) {
+                    y = 10;
+                } else if (y + tooltipHeight > screenHeight - 10) {
+                    y = screenHeight - tooltipHeight - 10;
+                }
                 
                 tooltip.style.left = x + 'px';
                 tooltip.style.top = y + 'px';
