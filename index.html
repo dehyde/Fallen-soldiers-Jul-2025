@@ -638,6 +638,41 @@
             color: #555 !important;
             line-height: 1.2 !important;
         }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .names-container {
+                gap: 1px; /* Reduce from 3.3px */
+                bottom: 70px; /* Adjust for smaller timeline */
+            }
+            
+            .soldier-name {
+                padding: 0.5px 1px; /* Reduce from 2px 4px */
+                line-height: 1.0 !important; /* Tighter line height for mobile */
+            }
+            
+            .timeline-container {
+                height: 70px; /* Reduce from 110px */
+                padding: 5px 10px; /* Reduce padding dramatically */
+            }
+            
+            .timeline-labels {
+                margin-top: 5px; /* Reduce from 12px */
+                font-size: 11px; /* Reduce from 13px */
+            }
+            
+            .timeline-tooltip,
+            .timeline-handle-tooltip {
+                display: none !important; /* Hide timeline tooltips on mobile */
+            }
+            
+            .draggable-container {
+                right: 50%; /* Center horizontally */
+                top: 50%; /* Keep vertical centering */
+                transform: translateX(50%) translateY(-50%); /* Center both horizontally and vertically */
+                max-width: 90vw; /* Ensure it fits on small screens */
+            }
+        }
     </style>
 
     <script>
@@ -2965,7 +3000,8 @@
             applySafeFontSize() {
                 console.log('Applying safe fixed font size');
                 const soldierNames = document.querySelectorAll('.soldier-name');
-                const safeFontSize = 7; // 4px * 1.8 = 7.2px
+                const isMobile = window.innerWidth <= 768;
+                const safeFontSize = isMobile ? 4 : 7; // Smaller minimum on mobile
                 
                 soldierNames.forEach(name => {
                     name.style.fontSize = safeFontSize + 'px';
@@ -3026,9 +3062,11 @@
                 }
                 
                 if (isOverflowing && checkNumber === 3) {
-                    console.log(`\n!!! FINAL ATTEMPT - SETTING TO 9PX !!!`);
+                    const isMobile = window.innerWidth <= 768;
+                    const finalSize = isMobile ? '5px' : '9px';
+                    console.log(`\n!!! FINAL ATTEMPT - SETTING TO ${finalSize} !!!`);
                     soldierNames.forEach(name => {
-                        name.style.fontSize = '9px';
+                        name.style.fontSize = finalSize;
                     });
                 }
             }
