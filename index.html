@@ -904,6 +904,14 @@
                     case 'soldiers_died_last_31_days':
                         return `<strong>${this.getFallenSinceTodayExcludingRecent(31)}</strong>`;
                     
+                    case 'timeline_event_days_from_today':
+                        const eventId = params[0];
+                        return this.getTimelineEventDaysFromToday(eventId);
+                    
+                    case 'timeline_event_title':
+                        const titleEventId = params[0];
+                        return this.getTimelineEventTitle(titleEventId);
+                    
                     default:
                         return `{{${placeholder}}}`;
                 }
@@ -1282,10 +1290,40 @@
                 return Math.max(0, lastMonthSoldiers.length - 3);
             }
 
+            getTimelineEventDaysFromToday(eventId) {
+                const event = this.timeline.timelineEvents.find(e => e.id === eventId);
+                if (!event) {
+                    console.warn(`Timeline event with id ${eventId} not found`);
+                    return 0;
+                }
+                
+                // Calculate days from today using the actual event date
+                const eventDate = new Date(event.date);
+                const todayDate = this.timeline.todayDate;
+                const daysFromToday = Math.floor((todayDate - eventDate) / (1000 * 60 * 60 * 24));
+                
+                console.log(`Event ${eventId}: date=${event.date}, calculated days_from_today=${daysFromToday}`);
+                return daysFromToday;
+            }
+
+            getTimelineEventTitle(eventId) {
+                const event = this.timeline.timelineEvents.find(e => e.id === eventId);
+                if (!event) {
+                    console.warn(`Timeline event with id ${eventId} not found`);
+                    return `Event ${eventId} not found`;
+                }
+                
+                return event.title_hebrew || `Event ${eventId}`;
+            }
+
+
+
             // Navigation methods
             getCurrentPoint() {
                 return this.narrativePoints.find(p => p.id === this.currentPointId) || this.narrativePoints[0];
             }
+
+
 
             navigateToPoint(pointId) {
                 const point = this.narrativePoints.find(p => p.id === pointId);
@@ -1311,17 +1349,25 @@
                 
                 // Get current and target timeline points
                 const currentTimelinePoint = parseInt(document.getElementById('timelineSlider').value);
-                let targetTimelinePoint = parseInt(point.timeline_point);
+                let targetTimelinePoint;
                 
-                // Special handling for "max" timeline_point: use maximum timeline value
+                // Handle different timeline_point types
                 if (point.timeline_point === 'max') {
                     targetTimelinePoint = this.timeline.getTotalTimelineDays();
+                } else if (point.timeline_point.includes('{{')) {
+                    // Parse dynamic timeline_point with placeholders
+                    const resolvedTimelinePoint = this.parseTemplate(point.timeline_point);
+                    targetTimelinePoint = parseInt(resolvedTimelinePoint);
+                } else {
+                    targetTimelinePoint = parseInt(point.timeline_point);
                 }
                 
                 // Special handling for recent_deaths: use actual days since last deaths
                 if (pointId === 'recent_deaths') {
                     targetTimelinePoint = this.timeline.narrative.getDaysSinceLastDeaths() + 1;
                 }
+                
+
                 
                 // Update content immediately
                 this.updateNarrativeContent();
@@ -1780,12 +1826,11 @@
                         }
                     }
                     
-                    // Parse date - handle d/m/yyyy format correctly
+                    // Parse date - handle YYYY-MM-DD format correctly
                     if (event.date) {
-                        // Convert d/m/yyyy to m/d/yyyy for proper JavaScript parsing
-                        const [day, month, year] = event.date.split('/');
-                        const correctedDateString = `${month}/${day}/${year}`;
-                        event.eventDate = new Date(correctedDateString);
+                        // Remove quotes and parse YYYY-MM-DD format directly
+                        const cleanDate = event.date.replace(/"/g, '');
+                        event.eventDate = new Date(cleanDate);
                         console.log('Timeline event parsed:', event.title_hebrew, 'Original date:', event.date, 'Parsed date:', event.eventDate);
                     }
                     
