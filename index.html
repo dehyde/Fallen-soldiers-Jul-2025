@@ -380,6 +380,14 @@
             cursor: inherit;
         }
 
+        .content-text p {
+            margin-bottom: 12px;
+        }
+
+        .content-text p:last-child {
+            margin-bottom: 0;
+        }
+
         .cta-buttons {
             display: flex;
             gap: 10px;
@@ -427,7 +435,7 @@
 
         .cta-primary:hover {
             background: #333333;
-            transform: translateY(-1px);
+            opacity: 0.8;
         }
 
         .cta-tertiary {
@@ -1058,7 +1066,7 @@
                     names = `${nameList} ו-${lastName}`;
                 }
                 
-                return `ביום ${hebrewDate}, נהרגו ${names}. באותו בוקר הם היו עוד חיים.`;
+                return `<p>ביום ${hebrewDate}, נהרגו ${names}.</p><p>באותו בוקר הם היו עוד חיים.</p>`;
             }
 
 
