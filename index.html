@@ -548,22 +548,22 @@
             transition: all 0.4s ease;
         }
         
-        /* Triangle style for transformed markers (persists across narrative points) */
+        /* Diamond style for transformed markers (persists across narrative points) */
         .could-have-ended-marker.transform-to-triangle {
-            width: 0 !important;
-            height: 0 !important;
-            border-left: 4px solid transparent !important;
-            border-right: 4px solid transparent !important;
-            border-top: 6px solid rgba(0,56,168,0.9) !important; /* Shorter triangle */
-            background: transparent !important;
-            border-radius: 0 !important;
+            width: 8px !important;
+            height: 8px !important;
+            border: none !important;
+            background: rgba(0,56,168,0.9) !important;
+            border-radius: 2px !important;
+            transform: translate(-50%, -50%) rotate(45deg) !important;
         }
         
-        /* Hover effect for triangles (works on all narrative points) */
+        /* Hover effect for diamonds (works on all narrative points) */
         .timeline-container:hover .could-have-ended-marker.transform-to-triangle {
-            border-left: 5px solid transparent !important;
-            border-right: 5px solid transparent !important;
-            border-top: 8px solid rgba(0,56,168,0.9) !important;
+            width: 10px !important;
+            height: 10px !important;
+            background: rgba(0,56,168,1) !important;
+            transform: translate(-50%, -50%) rotate(45deg) !important;
         }
 
         .military-bar {
