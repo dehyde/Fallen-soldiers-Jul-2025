@@ -904,6 +904,27 @@
                     case 'soldiers_died_last_31_days':
                         return `<strong>${this.getFallenSinceTodayExcludingRecent(31)}</strong>`;
                     
+                    case 'soldiers_died_month_before_last_death':
+                        return `<strong>${this.getFallenInMonthBeforeLastDeath()}</strong>`;
+                    
+                    case 'days_from_today_to_month_before_last_death':
+                        return this.getDaysFromTodayToMonthBeforeLastDeath();
+                    
+                    case 'deaths_start_to_first_ceasefire':
+                        return `<strong>${this.getDeathsFromStartToFirstCeasefire()}</strong>`;
+                    
+                    case 'weekly_average_to_first_ceasefire':
+                        return `<strong>${this.getWeeklyAverageToFirstCeasefire()}</strong>`;
+                    
+                    case 'soldiers_could_be_alive_first_ceasefire':
+                        return `<strong>${this.getSoldiersCouldBeAliveIfFirstCeasefireEnded()}</strong>`;
+                    
+                    case 'deaths_ceasefire_to_withdrawal':
+                        return `<strong>${this.getDeathsFromFirstCeasefireToWithdrawal()}</strong>`;
+                    
+                    case 'soldiers_alive_at_withdrawal':
+                        return `<strong>${this.getSoldiersAliveAtWithdrawal()}</strong>`;
+                    
                     case 'timeline_event_days_from_today':
                         const eventId = params[0];
                         return this.getTimelineEventDaysFromToday(eventId);
@@ -978,6 +999,31 @@
                 
                 // Return total minus recent deaths
                 return soldiersInPeriod.length - soldiersOnLatestDate.length;
+            }
+
+            getFallenInMonthBeforeLastDeath() {
+                // Find all soldiers who died since war start
+                const relevantSoldiers = this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate
+                );
+                
+                if (relevantSoldiers.length === 0) return 0;
+                
+                // Find the most recent death date
+                const latestDeathDate = relevantSoldiers
+                    .map(s => s.death_date)
+                    .sort((a, b) => b - a)[0];
+                
+                // Calculate date range: 30 days before the most recent death
+                const monthBeforeLatest = new Date(latestDeathDate);
+                monthBeforeLatest.setDate(monthBeforeLatest.getDate() - 30);
+                
+                // Count soldiers who died in the 30 days before the most recent death
+                return relevantSoldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date >= monthBeforeLatest &&
+                    s.death_date < latestDeathDate
+                ).length;
             }
 
             getFallenOnDate(daysFromToday) {
@@ -1068,6 +1114,81 @@
                 
                 // Calculate days from today back to most recent death
                 return Math.floor((this.timeline.todayDate - latestDeathDate) / (1000 * 60 * 60 * 24));
+            }
+
+            getDaysFromTodayToMonthBeforeLastDeath() {
+                // Find all soldiers who died since war start
+                const relevantSoldiers = this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate
+                );
+                
+                if (relevantSoldiers.length === 0) return 31; // fallback
+                
+                // Find the most recent death date
+                const latestDeathDate = relevantSoldiers
+                    .map(s => s.death_date)
+                    .sort((a, b) => b - a)[0];
+                
+                // Calculate date 30 days before the most recent death
+                const monthBeforeLatest = new Date(latestDeathDate);
+                monthBeforeLatest.setDate(monthBeforeLatest.getDate() - 30);
+                
+                // Calculate days from today back to that date
+                return Math.floor((this.timeline.todayDate - monthBeforeLatest) / (1000 * 60 * 60 * 24));
+            }
+
+            getDeathsFromStartToFirstCeasefire() {
+                // First ceasefire was on 2023-11-22 (event ID 1)
+                const firstCeasefireDate = new Date('2023-11-22');
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date <= firstCeasefireDate
+                ).length;
+            }
+
+            getWeeklyAverageToFirstCeasefire() {
+                // Calculate days from operation start (2023-10-27) to first ceasefire (2023-11-22)
+                const operationStart = new Date('2023-10-27');
+                const firstCeasefire = new Date('2023-11-22');
+                const daysInPeriod = Math.floor((firstCeasefire - operationStart) / (1000 * 60 * 60 * 24));
+                const weeksInPeriod = daysInPeriod / 7;
+                
+                const deaths = this.getDeathsFromStartToFirstCeasefire();
+                return Math.round(deaths / weeksInPeriod);
+            }
+
+            getSoldiersCouldBeAliveIfFirstCeasefireEnded() {
+                // First ceasefire was on 2023-11-22
+                const firstCeasefireDate = new Date('2023-11-22');
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date > firstCeasefireDate &&
+                    s.death_date <= this.timeline.todayDate
+                ).length;
+            }
+
+            getDeathsFromFirstCeasefireToWithdrawal() {
+                // From end of first ceasefire (2023-11-22) to withdrawal (2024-01-01)
+                const firstCeasefireDate = new Date('2023-11-22');
+                const withdrawalDate = new Date('2024-01-01');
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date > firstCeasefireDate &&
+                    s.death_date <= withdrawalDate
+                ).length;
+            }
+
+            getSoldiersAliveAtWithdrawal() {
+                // Soldiers still alive at withdrawal date (2024-01-01)
+                const withdrawalDate = new Date('2024-01-01');
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date > withdrawalDate
+                ).length;
             }
 
             getLastDeathsText() {
