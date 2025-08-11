@@ -692,6 +692,16 @@
                 max-width: 90vw; /* Ensure it fits on small screens */
             }
         }
+        
+        /* Narrative number color classes */
+        .fallen-soldiers-number {
+            color: #8B0000 !important; /* Dark red for fallen soldiers */
+            font-weight: 400 !important;
+        }
+        
+        .alive-soldiers-number {
+            color: #0038A8 !important; /* Dark blue for alive soldiers */
+        }
     </style>
 
     <script>
@@ -841,21 +851,21 @@
                 
                 switch(type) {
                     case 'total_count':
-                        return `<strong>${this.timeline.soldiers.filter(s => s.death_date >= this.timeline.startDate).length}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.timeline.soldiers.filter(s => s.death_date >= this.timeline.startDate).length}</strong>`;
                     
                     case 'alive_count':
                         return `<strong>${this.getAliveCount()}</strong>`;
                     
                     case 'fallen_count':
-                        return `<strong>${this.getFallenCount()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getFallenCount()}</strong>`;
                     
                     case 'fallen_since_date':
                         const days = parseInt(params[0]) || 0;
-                        return `<strong>${this.getFallenSince(days)}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getFallenSince(days)}</strong>`;
                     
                     case 'fallen_on_date':
                         const targetDays = parseInt(params[0]) || 0;
-                        return `<strong>${this.getFallenOnDate(targetDays)}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getFallenOnDate(targetDays)}</strong>`;
                     
                     case 'date_hebrew':
                         const daysBack = parseInt(params[0]) || 0;
@@ -876,7 +886,7 @@
                         return `<strong>${this.getMonthsSinceStart()}</strong>`;
                     
                     case 'average_monthly_casualties':
-                        return `<strong>${this.getAverageMonthlycasualties()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getAverageMonthlycasualties()}</strong>`;
                     
                     case 'days_since_last_deaths':
                         return `<strong>${this.getDaysSinceLastDeaths()}</strong>`;
@@ -909,43 +919,43 @@
                         return this.getRandomNames();
                     
                     case 'fallen_since_january':
-                        return `<strong>${this.getFallenSinceJanuary()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getFallenSinceJanuary()}</strong>`;
                     
                     case 'fallen_last_month':
-                        return `<strong>${this.getFallenLastMonth()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getFallenLastMonth()}</strong>`;
                     
                     case 'last_month_names':
                         return this.getLastMonthNames();
                     
                     case 'last_month_remaining_count':
-                        return `<strong>${this.getLastMonthRemainingCount()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getLastMonthRemainingCount()}</strong>`;
                     
                     case 'soldiers_died_last_31_days':
-                        return `<strong>${this.getFallenSinceTodayExcludingRecent(31)}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getFallenSinceTodayExcludingRecent(31)}</strong>`;
                     
                     case 'soldiers_died_month_before_last_death':
-                        return `<strong>${this.getFallenInMonthBeforeLastDeath()}</strong>`;
+                        return `<strong class="alive-soldiers-number">${this.getFallenInMonthBeforeLastDeath()}</strong>`;
                     
                     case 'days_from_today_to_month_before_last_death':
                         return this.getDaysFromTodayToMonthBeforeLastDeath();
                     
                     case 'deaths_start_to_first_ceasefire':
-                        return `<strong>${this.getDeathsFromStartToFirstCeasefire()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getDeathsFromStartToFirstCeasefire()}</strong>`;
                     
                     case 'weekly_average_to_first_ceasefire':
-                        return `<strong>${this.getWeeklyAverageToFirstCeasefire()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getWeeklyAverageToFirstCeasefire()}</strong>`;
                     
                     case 'soldiers_could_be_alive_first_ceasefire':
                         return `<strong>${this.getSoldiersCouldBeAliveIfFirstCeasefireEnded()}</strong>`;
                     
                     case 'deaths_ceasefire_to_withdrawal':
-                        return `<strong>${this.getDeathsFromFirstCeasefireToWithdrawal()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getDeathsFromFirstCeasefireToWithdrawal()}</strong>`;
                     
                     case 'soldiers_alive_at_withdrawal':
                         return `<strong>${this.getSoldiersAliveAtWithdrawal()}</strong>`;
                     
                     case 'deaths_withdrawal_to_khan_yunis':
-                        return `<strong>${this.getDeathsFromWithdrawalToKhanYunis()}</strong>`;
+                        return `<strong class="fallen-soldiers-number">${this.getDeathsFromWithdrawalToKhanYunis()}</strong>`;
                     
                     case 'soldiers_alive_after_khan_yunis':
                         return `<strong>${this.getSoldiersAliveAfterKhanYunis()}</strong>`;
@@ -2731,11 +2741,11 @@
                 if (isStoppedOverEvent) {
                     // Show event details in tooltip
                     const titleLink = eventAtDate.source && eventAtDate.source.startsWith('http')
-                        ? `<a href="${eventAtDate.source}" target="_blank" style="color: #ffcc00; text-decoration: underline; cursor: pointer; font-weight: normal;">${eventAtDate.title_hebrew}</a>`
-                        : `<span style="color: #ffcc00; font-weight: normal;">${eventAtDate.title_hebrew}</span>`;
+                        ? `<a href="${eventAtDate.source}" target="_blank" style="color: white; text-decoration: none; cursor: pointer; font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">${eventAtDate.title_hebrew}</a>`
+                        : `<span style="color: white; font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">${eventAtDate.title_hebrew}</span>`;
                     tooltipDate.innerHTML = titleLink;
                     tooltipAlive.innerHTML = `
-                        <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 6px;">
+                        <div style="padding-top: 6px; font-weight: normal;">
                             ${formattedDate}<br>${aliveSoldiers} soldiers alive
                         </div>
                     `;
