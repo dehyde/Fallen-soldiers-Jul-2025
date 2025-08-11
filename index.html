@@ -566,6 +566,25 @@
             transform: translate(-50%, -50%) rotate(45deg) !important;
         }
 
+        /* Regular event diamond styling (mustard color) */
+        .regular-event-diamond {
+            width: 8px !important;
+            height: 8px !important;
+            background: #ffcc00 !important;
+            border: none !important;
+            border-radius: 2px !important;
+            transform: translate(-50%, -50%) rotate(45deg) !important;
+            transition: all 0.4s ease;
+        }
+
+        /* Hover effect for regular diamonds */
+        .timeline-container:hover .regular-event-diamond {
+            width: 10px !important;
+            height: 10px !important;
+            background: #ffdd11 !important;
+            transform: translate(-50%, -50%) rotate(45deg) !important;
+        }
+
         .military-bar {
             transition: fill 0.2s ease;
         }
@@ -925,6 +944,12 @@
                     case 'soldiers_alive_at_withdrawal':
                         return `<strong>${this.getSoldiersAliveAtWithdrawal()}</strong>`;
                     
+                    case 'deaths_withdrawal_to_khan_yunis':
+                        return `<strong>${this.getDeathsFromWithdrawalToKhanYunis()}</strong>`;
+                    
+                    case 'soldiers_alive_after_khan_yunis':
+                        return `<strong>${this.getSoldiersAliveAfterKhanYunis()}</strong>`;
+                    
                     case 'timeline_event_days_from_today':
                         const eventId = params[0];
                         return this.getTimelineEventDaysFromToday(eventId);
@@ -1188,6 +1213,28 @@
                 return this.timeline.soldiers.filter(s => 
                     s.death_date >= this.timeline.startDate && 
                     s.death_date > withdrawalDate
+                ).length;
+            }
+
+            getDeathsFromWithdrawalToKhanYunis() {
+                // From withdrawal (2024-01-01) to Khan Yunis withdrawal (2024-04-07)
+                const withdrawalDate = new Date('2024-01-01');
+                const khanYunisDate = new Date('2024-04-07');
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date > withdrawalDate &&
+                    s.death_date <= khanYunisDate
+                ).length;
+            }
+
+            getSoldiersAliveAfterKhanYunis() {
+                // Soldiers still alive after Khan Yunis withdrawal date (2024-04-07)
+                const khanYunisDate = new Date('2024-04-07');
+                
+                return this.timeline.soldiers.filter(s => 
+                    s.death_date >= this.timeline.startDate && 
+                    s.death_date > khanYunisDate
                 ).length;
             }
 
@@ -1955,6 +2002,12 @@
                         console.log('Timeline event parsed:', event.title_hebrew, 'Original date:', event.date, 'Parsed date:', event.eventDate);
                     }
                     
+                    // Filter out hidden events
+                    if (event.show && event.show.toLowerCase() === 'hide') {
+                        console.log('Hiding timeline event:', event.title_hebrew);
+                        continue;
+                    }
+                    
                     this.timelineEvents.push(event);
                 }
                 console.log('Total timeline events loaded:', this.timelineEvents.length);
@@ -2119,6 +2172,9 @@
                             // Add class for potential transformation
                             if (event.could_have_ended === 'yes') {
                                 marker.classList.add('could-have-ended-marker');
+                            } else {
+                                // Make regular markers diamond-shaped from the beginning
+                                marker.classList.add('regular-event-diamond');
                             }
                             
                             marker.style.cursor = 'pointer';
@@ -2864,7 +2920,7 @@
                         
                         // Pick a random soldier name
                         const randomName = availableNames[Math.floor(Math.random() * availableNames.length)];
-                        const duration = Math.random() * 1000 + 4000; // 4-5 seconds
+                        const duration = Math.random() * 1000 + 3000; // 4-5 seconds
                         
                         // Create unique tooltip element for this soldier
                         const tooltipId = `autoTooltip${autoHoverSystem.tooltipCounter++}`;
@@ -3025,7 +3081,7 @@
                         }
                         
                         // Set delay before showing tooltip - shorter for current_date narrative
-                        const delay = isCurrentDateNarrative() ? 500 : 1000; // 0.5s vs 1s
+                        const delay = isCurrentDateNarrative() ? 500 : 600; // 0.5s vs 1s
                         hoverTimeout = setTimeout(() => {
                             const name = nameEl.textContent;
                             const rank = nameEl.dataset.rank;
