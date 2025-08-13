@@ -30,7 +30,9 @@
       "Bash(open http://localhost:8002)",
       "Bash(open:*)",
       "Bash(lsof:*)",
-      "Bash(gh repo view:*)"
+      "Bash(gh repo view:*)",
+      "Bash(cp:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }

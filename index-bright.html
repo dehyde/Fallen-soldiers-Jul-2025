@@ -16,13 +16,12 @@
 
         body {
             font-family: 'Heebo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #333333;
-            color: #e0e0e0;
+            background: #f5f5f5;
+            color: #333333;
             height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            margin-right: 350px;
         }
 
         .stats-header {
@@ -45,9 +44,9 @@
         .names-container {
             position: fixed;
             top: 20px;
-            bottom: 20px;
+            bottom: 110px;
             left: 5px;
-            right: 370px;
+            right: 5px;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
@@ -113,169 +112,46 @@
             transition: opacity 0.6s ease-out, background-color 0.6s ease-out, color 0.6s ease-out;
         }
 
-        /* =========================
-           NEW VERTICAL TIMELINE
-           ========================= */
-        
-        .timeline-panel {
+        .timeline-container {
             position: fixed;
-            top: 0;
-            right: 0;
             bottom: 0;
-            width: 350px;
+            left: 0;
+            right: 0;
+            height: 110px;
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(15px);
-            border-left: 2px solid rgba(0,0,0,0.1);
+            /* Remove top border */
+            /* border-top: 2px solid rgba(0,0,0,0.3); */
+            /* Remove shadow */
+            /* box-shadow: 0 -4px 20px rgba(0,0,0,0.1); */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 10px 50px 30px 50px;
             z-index: 100;
         }
 
-        .timeline-content {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            padding: 20px;
-        }
-
-        .timeline-header {
-            margin-bottom: 20px;
-        }
-
-        .timeline-header h3 {
-            margin: 0;
-            font-size: 18px;
-            color: #333;
-            text-align: center;
-        }
-
-        .timeline-vertical {
-            flex: 1;
-            display: flex;
-            align-items: stretch;
+        .timeline-track {
             position: relative;
-            min-height: 400px;
-        }
-
-        .timeline-track-vertical {
-            position: absolute;
-            left: 50px;
-            top: 20px;
-            bottom: 20px;
-            width: 4px;
-            background: #ddd;
-            border-radius: 2px;
-        }
-
-        .timeline-progress-vertical {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 0%;
+            height: 1px;
             background: #333;
-            border-radius: 2px;
-            transition: height 0.3s ease;
+            border-radius: 0;
+            margin: 5px 0 15px 0;
+            border: none;
         }
 
-        .timeline-markers {
+        .timeline-progress {
             position: absolute;
-            top: 0;
-            bottom: 0;
-            left: -4px;
-            right: -4px;
+            top: -1.5px; /* Center the 4px progress bar on the 1px track */
+            right: 0;
+            height: 4px;
+            width: 0%;
+            background: #000;
+            border-radius: 0;
+            transition: none;
+            z-index: 1;
+            pointer-events: none;
         }
-
-        .timeline-slider-vertical {
-            position: absolute;
-            left: 40px;
-            top: 20px;
-            bottom: 20px;
-            width: 20px;
-            background: transparent;
-            outline: none;
-            cursor: pointer;
-            appearance: slider-vertical;
-            -webkit-appearance: slider-vertical;
-            writing-mode: bt-lr; /* IE */
-        }
-
-        .timeline-slider-vertical::-webkit-slider-thumb {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #333;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .timeline-slider-vertical::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #333;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .timeline-labels-vertical {
-            position: absolute;
-            left: 80px;
-            top: 20px;
-            bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .timeline-info {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .timeline-info div {
-            margin: 5px 0;
-            font-size: 14px;
-            color: #333;
-        }
-
-        /* Timeline marker styles */
-        .timeline-marker {
-            position: absolute;
-            left: -4px;
-            width: 12px;
-            height: 12px;
-            background: #2196f3;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            z-index: 2;
-            transition: all 0.2s ease;
-        }
-
-        .timeline-marker:hover {
-            transform: scale(1.2);
-        }
-
-        /* Mobile responsive */
-        @media (max-width: 768px) {
-            .timeline-panel {
-                display: none;
-            }
-        }
-
-        /* =========================
-           END NEW VERTICAL TIMELINE
-           ========================= */
-
-        /* Old timeline styles removed */
 
         .timeline-axis {
             position: absolute;
@@ -312,14 +188,12 @@
         }
 
         .timeline-slider {
-            width: 80vh;
-            height: 20px;
+            width: 100%;
+            height: 4px;
             background: transparent;
             outline: none;
             position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translateX(-50%) translateY(-50%) rotate(-90deg);
+            top: -1.5px; /* Center slider on track to align thumb with progress bar */
             cursor: pointer;
             -webkit-appearance: none;
             z-index: 20;
@@ -404,16 +278,11 @@
 
         .timeline-labels {
             display: flex;
-            flex-direction: column;
             justify-content: space-between;
-            height: 80vh;
-            margin-left: 20px;
+            margin-top: 12px;
             font-size: 13px;
             font-weight: 500;
             color: #555;
-            position: absolute;
-            left: 50%;
-            top: 10vh;
         }
 
         .timeline-handle-tooltip {
@@ -645,10 +514,10 @@
 
         .timeline-area-chart {
             position: absolute;
-            top: 10vh;
-            left: -40px;
-            bottom: 10vh;
-            width: 40px;
+            top: -40px;
+            left: 0;
+            right: 0;
+            height: 40px;
             z-index: 1;
             pointer-events: none;
         }
@@ -656,8 +525,6 @@
         .timeline-area-chart svg {
             width: 100%;
             height: 100%;
-            transform: rotate(-90deg);
-            transform-origin: center center;
         }
 
         .area-path {
@@ -796,14 +663,9 @@
 
         /* Mobile optimizations */
         @media (max-width: 768px) {
-            body {
-                margin-right: 0; /* Remove right margin on mobile */
-            }
-            
             .names-container {
                 gap: 1px; /* Reduce from 3.3px */
                 bottom: 70px; /* Adjust for smaller timeline */
-                right: 5px; /* Restore full width on mobile */
             }
             
             .soldier-name {
@@ -812,17 +674,8 @@
             }
             
             .timeline-container {
-                /* Revert to bottom position on mobile */
-                position: fixed;
-                top: auto;
-                right: 0;
-                bottom: 0;
-                left: 0;
-                width: auto;
-                height: 70px;
-                padding: 5px 10px;
-                border-left: none;
-                border-top: 1px solid rgba(0,0,0,0.1);
+                height: 70px; /* Reduce from 110px */
+                padding: 5px 10px; /* Reduce padding dramatically */
             }
             
             .timeline-labels {
@@ -914,38 +767,22 @@
         </div>
     </div>
 
-    <!-- New Vertical Timeline -->
-    <div class="timeline-panel">
-        <div class="timeline-content">
-            <div class="timeline-header">
-                <h3>Timeline</h3>
+    <div class="timeline-container">
+        <div class="timeline-track">
+            <div class="timeline-area-chart" id="timelineAreaChart">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <path class="area-path" id="areaPath" d=""></path>
+                </svg>
             </div>
-            <div class="timeline-vertical">
-                <div class="timeline-track-vertical timeline-track">
-                    <div class="timeline-progress-vertical" id="timelineProgress"></div>
-                    <div class="timeline-markers" id="timelineMarkers"></div>
-                    <div id="timelineAxis" style="display: none;"></div>
-                    <div id="timelineAreaChart" style="display: none;">
-                        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
-                            <path class="area-path" id="areaPath" d=""></path>
-                        </svg>
-                    </div>
-                </div>
-                <input type="range" id="timelineSlider" class="timeline-slider-vertical" min="0" max="1" value="0" orient="vertical">
-                <div class="timeline-labels-vertical" id="timelineLabels">
-                    <div class="timeline-label-start">Start</div>
-                    <div class="timeline-label-end">Today</div>
-                </div>
-            </div>
-            <div class="timeline-info" id="timelineInfo">
+            <div class="timeline-progress" id="timelineProgress"></div>
+            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="1" value="0">
+            <div class="timeline-axis" id="timelineAxis"></div>
+            <div class="timeline-handle-tooltip" id="timelineTooltip">
                 <div id="tooltipDate">27/07/25</div>
                 <div id="tooltipAlive">0 soldiers alive</div>
-                <div id="timelineTooltip" style="display: none;">
-                    <div id="tooltipDate2">27/07/25</div>
-                    <div id="tooltipAlive2">0 soldiers alive</div>
-                </div>
             </div>
         </div>
+        <!-- Removed timeline labels -->
     </div>
 
     <script>
@@ -3702,56 +3539,8 @@
             }
         }
 
-        // Override progress bar updates to work with vertical timeline
-        const originalProgressUpdate = function() {
-            const progressBar = document.getElementById('timelineProgress');
-            if (progressBar && progressBar.style) {
-                // Intercept width changes and convert to height for vertical timeline
-                const originalWidthSetter = Object.getOwnPropertyDescriptor(HTMLElement.prototype.style, 'width').set;
-                Object.defineProperty(progressBar.style, 'width', {
-                    set: function(value) {
-                        // Convert width percentage to height for vertical timeline
-                        this.height = value;
-                    },
-                    get: function() {
-                        return this.height || '0%';
-                    }
-                });
-            }
-        };
-
-        // Initialize the vertical timeline
-        function initVerticalTimeline() {
-            const slider = document.getElementById('timelineSlider');
-            const progress = document.getElementById('timelineProgress');
-            const info = document.getElementById('timelineInfo');
-            
-            // Override progress bar updates
-            originalProgressUpdate();
-            
-            // Update info display
-            function updateTimelineInfo(date, aliveCount) {
-                const tooltipDate = document.getElementById('tooltipDate');
-                const tooltipAlive = document.getElementById('tooltipAlive');
-                if (tooltipDate) tooltipDate.textContent = date;
-                if (tooltipAlive) tooltipAlive.textContent = aliveCount + ' soldiers alive';
-            }
-            
-            // Connect to existing tooltip updates
-            window.updateVerticalTimelineInfo = updateTimelineInfo;
-        }
-
-        // Initialize everything
-        const memorial = new TimelineMemorial();
-        
-        // Initialize vertical timeline after memorial is ready
-        setTimeout(() => {
-            initVerticalTimeline();
-            // Connect the global timeline reference
-            if (memorial.timeline) {
-                window.timeline = memorial.timeline;
-            }
-        }, 100);
+        // Initialize the memorial
+        new TimelineMemorial();
     </script>
 </body>
 </html>
