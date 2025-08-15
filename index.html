@@ -651,24 +651,11 @@
             transition: fill 0.2s ease;
         }
 
-        .timeline-container:hover .area-path-past {
-            fill: rgba(180, 180, 180, 0.35);
-        }
-
-        .timeline-container:hover .area-path-future {
-            fill: rgba(180, 180, 180, 0);
-        }
 
         .timeline-event-marker {
-            width: 6px !important;
-            height: 6px !important;
-            transition: width 0.2s ease, height 0.2s ease;
-            display: none !important;
-        }
-
-        .timeline-container:hover .timeline-event-marker {
             width: 8px !important;
             height: 8px !important;
+            display: block !important;
         }
         .could-have-ended-marker {
             transition: all 0.4s ease;
@@ -696,6 +683,36 @@
         .regular-event-diamond {
             width: 8px !important;
             height: 8px !important;
+        }
+
+        /* Timeline event diagonal labels */
+        .timeline-event-label {
+            font-family: 'Heebo', sans-serif;
+            font-size: 10px;
+            color: #bbb;
+            white-space: nowrap;
+            z-index: 101;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Show labels on timeline container hover */
+        .timeline-container:hover .timeline-event-label {
+            opacity: 1;
+        }
+
+        /* Priority styling for war-ending events */
+        .timeline-event-label.war-ending {
+            color: #888;
+            font-weight: 500;
+        }
+
+        .regular-event-diamond {
             background: #ffcc00 !important;
             border: none !important;
             border-radius: 2px !important;
@@ -2353,7 +2370,17 @@
                 let markersAdded = 0;
                 let markersSkipped = 0;
                 
-                this.timelineEvents.forEach(event => {
+                // Sort events: war-ending events first, then by date (newest first)
+                const sortedEvents = this.timelineEvents.slice().sort((a, b) => {
+                    // War-ending events (could_have_ended: 'yes') come first
+                    if (a.could_have_ended === 'yes' && b.could_have_ended !== 'yes') return -1;
+                    if (b.could_have_ended === 'yes' && a.could_have_ended !== 'yes') return 1;
+                    
+                    // Within same priority, sort by date (newest first)
+                    return b.eventDate - a.eventDate;
+                });
+                
+                sortedEvents.forEach(event => {
                     console.log('Processing event:', event.title_hebrew, 'Date:', event.eventDate);
                     if (event.eventDate && !isNaN(event.eventDate.getTime())) {
                         // Calculate position based on date (0% = endDate/today, 100% = startDate/oldest)
@@ -2370,34 +2397,39 @@
                                 return;
                             }
                             
+                            // For now, only show events that could have ended the war
+                            if (event.could_have_ended !== 'yes') {
+                                markersSkipped++;
+                                return;
+                            }
+                            
                             // Create event marker
                             const marker = document.createElement('div');
                             marker.className = 'timeline-event-marker';
                             marker.style.position = 'absolute';
                             marker.style.left = position + '%';
                             
-                            // Position all events below timeline
-                            // Note: markers are positioned relative to the axis (which is 5px below track)
-                            // So we need to adjust positions to align with the track itself
-                            const trackOffsetFromAxis = -5; // Axis is 5px below track, so track is -5px from axis
-                            const markerDistance = 15; // Distance from timeline track
-                            
-                            // All events below track: track position plus marker distance  
-                            marker.style.top = `${trackOffsetFromAxis + markerDistance}px`;
+                            // Position marker ON the timeline track
+                            // The axis is 5px below the track, so we position relative to track
+                            const trackOffsetFromAxis = -5; // Track is 5px above axis
+                            marker.style.top = `${trackOffsetFromAxis}px`;
                             marker.style.transform = 'translate(-50%, -50%)';
                             
                             // Always create regular circular markers initially
                             marker.style.width = '8px';
                             marker.style.height = '8px';
                             
-                            // Set color based on category
-                            let markerColor = '#ff4444'; // default red
-                            switch(event.category) {
-                                case 'military': markerColor = '#808000'; break; // olive green
-                                case 'political': markerColor = '#666666'; break; // gray
-                                case 'diplomatic': markerColor = '#666666'; break; // gray
-                                case 'legal': markerColor = '#9900cc'; break; // purple
-                                default: markerColor = '#666666'; // gray
+                            // Set color - use blue for events that could have ended the war
+                            let markerColor = '#1168FF'; // Blue for war-ending events
+                            if (event.could_have_ended !== 'yes') {
+                                // Fallback colors for other events (though we're not showing them currently)
+                                switch(event.category) {
+                                    case 'military': markerColor = '#808000'; break; // olive green
+                                    case 'political': markerColor = '#666666'; break; // gray
+                                    case 'diplomatic': markerColor = '#666666'; break; // gray
+                                    case 'legal': markerColor = '#9900cc'; break; // purple
+                                    default: markerColor = '#666666'; // gray
+                                }
                             }
                             marker.style.background = markerColor;
                             marker.style.border = '2px solid #ffffff';
@@ -2416,6 +2448,24 @@
                             // Remove shadow
                             // marker.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
                             marker.style.pointerEvents = 'auto';
+                            
+                            // Create diagonal label
+                            const label = document.createElement('div');
+                            label.className = 'timeline-event-label';
+                            if (event.could_have_ended === 'yes') {
+                                label.classList.add('war-ending');
+                            }
+                            label.textContent = event.title_hebrew;
+                            
+                            // Position label so its RIGHT side is above and to the left of the marker
+                            // The label's right edge should be to the left of the point
+                            label.style.position = 'absolute';
+                            label.style.right = `calc(${100 - position}% + 10px)`; // Position from right side
+                            label.style.top = `${trackOffsetFromAxis - 18}px`; // Above the marker
+                            label.style.transform = 'rotate(45deg)';
+                            label.style.transformOrigin = 'right bottom';
+                            
+                            axisContainer.appendChild(label);
                             
                             // Create custom immediate tooltip
                             let currentTooltip = null;
