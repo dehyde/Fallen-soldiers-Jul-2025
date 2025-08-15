@@ -6,7 +6,7 @@
     <title>Fallen Soldiers - Timeline Memorial</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@100..900&family=Heebo:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@100..900&family=Heebo:wght@100..900&family=Suez+One&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -43,18 +43,100 @@
 
         .names-container {
             position: fixed;
-            top: 20px;
-            bottom: 110px;
-            left: 5px;
-            right: 5px;
+            top: 310px;
+            bottom: 20px;
+            left: 50px;
+            right: 50px;
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
-            align-content: center;
+            align-items: flex-start;
+            align-content: flex-start;
             gap: 3.3px;
             overflow: hidden;
             justify-content: center;
             direction: rtl;
+        }
+
+        .header-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 50px;
+            z-index: 1000;
+            direction: rtl;
+        }
+
+        .header-info {
+            width: 250px;
+            font-family: 'Heebo', sans-serif;
+            font-size: 16px;
+            color: #666;
+            text-align: right;
+            direction: rtl;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+
+        .status-components {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+            align-items: flex-end;
+            justify-content: flex-start;
+            min-width: 300px;
+            width: 300px;
+            text-align: right;
+        }
+
+        .status-component {
+            height: 21px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0;
+            width: fit-content;
+            margin-left: auto;
+        }
+
+        .alive-status {
+            background: #E7F0FF; /* Same as living soldier background */
+        }
+
+        .fallen-status {
+            background: rgba(0,0,0,0.1); /* Gray semi-transparent like fallen soldiers */
+        }
+
+        .status-text {
+            font-family: 'Heebo', sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            padding: 2px 4px;
+            text-align: right;
+            direction: rtl;
+            white-space: nowrap;
+        }
+
+        .alive-status .status-text {
+            color: #1168FF; /* Same as living soldier text */
+        }
+
+        .fallen-status .status-text {
+            color: #666; /* Gray like fallen soldiers */
+            opacity: 0.7; /* Semi-transparent like fallen soldiers */
+        }
+
+        .names-title {
+            width: 400px;
+            font-family: 'Suez One', serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: #4e4e4e;
+            text-align: right;
+            direction: rtl;
+            line-height: 1.2;
+            flex-shrink: 0;
         }
 
         .soldier-name {
@@ -86,8 +168,8 @@
 
         .soldier-name.alive {
             opacity: 1;
-            background: rgba(0,56,168,0.9);
-            color: white;
+            background: #E7F0FF;
+            color: #1168FF;
         }
 
         .soldier-name.dying {
@@ -111,10 +193,10 @@
 
         .timeline-container {
             position: fixed;
-            bottom: 0;
+            top: 100px;
             left: 0;
             right: 0;
-            height: 110px;
+            height: 200px;
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(15px);
             /* Remove top border */
@@ -124,18 +206,24 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 10px 50px 30px 50px;
+            padding: 100px 50px 30px 50px;
             z-index: 100;
         }
 
-        .timeline-track {
-            position: relative;
-            height: 1px;
-            background: #333;
-            border-radius: 0;
-            margin: 5px 0 15px 0;
-            border: none;
-        }
+.timeline-track {
+    position: relative;
+    height: 1px;
+    background: repeating-linear-gradient(
+        to right,
+        #1168FF 0px,
+        #1168FF 4px,
+        transparent 4px,
+        transparent 6px
+    );
+    border-radius: 0;
+    margin: 5px 0 15px 0;
+    border: none;
+}
 
         .timeline-progress {
             position: absolute;
@@ -223,7 +311,7 @@
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
-            opacity: 0;
+            opacity: 1;
             z-index: 30;
         }
 
@@ -265,7 +353,7 @@
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
-            opacity: 0;
+            opacity: 1;
             transition: opacity 0.2s ease;
         }
 
@@ -293,7 +381,7 @@
             white-space: nowrap;
             z-index: 50;
             pointer-events: auto;
-            opacity: 1;
+            opacity: 0;
             transform: translateX(-50%);
             bottom: 15px; /* Changed from top: -65px to grow upwards */
             font-family: 'Heebo', sans-serif;
@@ -314,6 +402,11 @@
             border: 5px solid transparent;
             border-top-color: rgba(0, 0, 0, 0.9); /* Triangle points down from tooltip */
             transition: var(--triangle-transition, left 0.1s ease); /* Dynamic transition control */
+        }
+
+        /* Show tooltip on slider handle hover */
+        .timeline-slider:hover ~ .timeline-handle-tooltip {
+            opacity: 1;
         }
 
 
@@ -338,6 +431,7 @@
             cursor: grab;
             user-select: none;
             transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.8s ease;
+            display: none;
         }
 
         .draggable-container.narrative-opaque {
@@ -524,20 +618,31 @@
             height: 100%;
         }
 
-        .area-path {
+        .area-path-past {
             fill: rgba(180, 180, 180, 0.175);
             stroke: none;
             transition: fill 0.2s ease;
         }
 
-        .timeline-container:hover .area-path {
+        .area-path-future {
+            fill: rgba(180, 180, 180, 0);
+            stroke: none;
+            transition: fill 0.2s ease;
+        }
+
+        .timeline-container:hover .area-path-past {
             fill: rgba(180, 180, 180, 0.35);
+        }
+
+        .timeline-container:hover .area-path-future {
+            fill: rgba(180, 180, 180, 0);
         }
 
         .timeline-event-marker {
             width: 6px !important;
             height: 6px !important;
             transition: width 0.2s ease, height 0.2s ease;
+            display: none !important;
         }
 
         .timeline-container:hover .timeline-event-marker {
@@ -658,6 +763,42 @@
             line-height: 1.2 !important;
         }
 
+        /* Fallen soldier photo styling */
+        .soldier-name.fallen:hover .soldier-tooltip img,
+        .soldier-name.fallen + .soldier-tooltip img,
+        .soldier-tooltip.fallen img {
+            filter: grayscale(100%) opacity(0.6) contrast(1.3) brightness(1.2) !important;
+        }
+
+        /* Living soldier photo styling */
+        .soldier-name.alive:hover .soldier-tooltip img,
+        .soldier-name.alive + .soldier-tooltip img,
+        .soldier-tooltip.alive img {
+            filter: saturate(0.6) brightness(1.35) opacity(0.85) contrast(1.3) !important;
+        }
+
+        /* Living soldier photo container shadow */
+        .soldier-name.alive:hover .soldier-tooltip,
+        .soldier-name.alive + .soldier-tooltip,
+        .soldier-tooltip.alive {
+            box-shadow: 0 4px 12px rgba(17, 104, 255, 0.3) !important;
+        }
+
+        /* Ensure identical text styling for both living and fallen */
+        .soldier-tooltip.alive .soldier-details,
+        .soldier-tooltip.fallen .soldier-details {
+            font-size: 10px !important;
+            color: #555 !important;
+            line-height: 1.2 !important;
+        }
+
+        .soldier-tooltip.alive strong,
+        .soldier-tooltip.fallen strong {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            color: #333 !important;
+        }
+
         /* Mobile optimizations */
         @media (max-width: 768px) {
             .names-container {
@@ -700,7 +841,11 @@
         }
         
         .alive-soldiers-number {
-            color: #0038A8 !important; /* Dark blue for alive soldiers */
+            color: #1168FF !important;
+            background: #E7F0FF !important;
+            padding: 2px 6px !important;
+            border-radius: 4px !important;
+            font-weight: 600 !important;
         }
     </style>
 
@@ -741,6 +886,46 @@
         </div>
     </div>
 
+    <div class="header-container">
+        <div class="names-title">
+            הנופלים, ואלה שיכלו עוד להיות חיים<br>
+            אם המלחמה הייתה נגמרת
+        </div>
+        
+        <div class="header-info">
+            <div id="selectedDate">27/10/2023</div>
+            <div id="lastEvent">תחילת המלחמה</div>
+        </div>
+        
+        <div class="status-components">
+            <div class="status-component alive-status">
+                <div class="status-text" id="aliveCount">0 עוד היו חיים</div>
+            </div>
+            <div class="status-component fallen-status">
+                <div class="status-text" id="fallenCount">0 חללים מאז תחילת התמרון</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="timeline-container">
+        <div class="timeline-track">
+            <div class="timeline-area-chart" id="timelineAreaChart">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <path class="area-path-future" id="areaPathFuture" d=""></path>
+                    <path class="area-path-past" id="areaPathPast" d=""></path>
+                </svg>
+            </div>
+            <div class="timeline-progress" id="timelineProgress"></div>
+            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="1" value="0">
+            <div class="timeline-axis" id="timelineAxis"></div>
+            <div class="timeline-handle-tooltip" id="timelineTooltip">
+                <div id="tooltipDate">27/07/25</div>
+                <div id="tooltipAlive">0 soldiers alive</div>
+            </div>
+        </div>
+        <!-- Removed timeline labels -->
+    </div>
+
     <div class="names-container" id="namesContainer">
         <div class="loading">Loading memorial data...</div>
     </div>
@@ -756,24 +941,6 @@
             <strong id="soldierName"></strong>
             <div class="soldier-details" id="soldierDetails"></div>
         </div>
-    </div>
-
-    <div class="timeline-container">
-        <div class="timeline-track">
-            <div class="timeline-area-chart" id="timelineAreaChart">
-                <svg viewBox="0 0 100 40" preserveAspectRatio="none">
-                    <path class="area-path" id="areaPath" d=""></path>
-                </svg>
-            </div>
-            <div class="timeline-progress" id="timelineProgress"></div>
-            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="1" value="0">
-            <div class="timeline-axis" id="timelineAxis"></div>
-            <div class="timeline-handle-tooltip" id="timelineTooltip">
-                <div id="tooltipDate">27/07/25</div>
-                <div id="tooltipAlive">0 soldiers alive</div>
-            </div>
-        </div>
-        <!-- Removed timeline labels -->
     </div>
 
     <script>
@@ -2072,53 +2239,61 @@
                 const axisContainer = document.getElementById('timelineAxis');
                 axisContainer.innerHTML = '';
                 
-                const startDate = this.startDate;
-                const endDate = new Date();
-                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)); // From today back to Oct 27, 2023
+                const startDate = this.startDate; // Oct 27, 2023
+                const endDate = this.todayDate;
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
                 
-                // Generate major ticks every 3 months and minor ticks every month
-                const majorTickMonths = [0, 3, 6, 9, 12, 15, 18, 21]; // Every 3 months
-                const minorTickMonths = [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20]; // Every month
+                // Define the 4 specific Hebrew dates
+                const hebrewDates = [
+                    {
+                        date: new Date(2023, 9, 27), // Oct 27, 2023 (month is 0-indexed)
+                        label: '27 באוקטובר 2023', // Full Hebrew date for beginning
+                        position: 100 // Rightmost (oldest)
+                    },
+                    {
+                        date: new Date(2024, 0, 1), // Jan 1, 2024
+                        label: 'ינואר 2024',
+                        position: null // Will be calculated
+                    },
+                    {
+                        date: new Date(2025, 0, 1), // Jan 1, 2025
+                        label: 'ינואר 2025',
+                        position: null // Will be calculated
+                    },
+                    {
+                        date: endDate,
+                        label: 'היום',
+                        position: 0 // Leftmost (newest)
+                    }
+                ];
                 
-                // Calculate date positions
-                const monthsTotal = 21; // Approximately 21 months from Oct 2023 to Jul 2025
-                
-                // Major ticks with labels
-                majorTickMonths.forEach(monthOffset => {
-                    if (monthOffset <= monthsTotal) {
-                        const tickDate = new Date(startDate);
-                        tickDate.setMonth(tickDate.getMonth() + monthOffset);
-                        
-                        const position = ((monthsTotal - monthOffset) / monthsTotal) * 100;
-                        
-                        // Create tick mark
-                        const tick = document.createElement('div');
-                        tick.className = 'timeline-tick major';
-                        tick.style.left = position + '%';
-                        axisContainer.appendChild(tick);
-                        
-                        // Create date label
-                        const label = document.createElement('div');
-                        label.className = 'timeline-date-label';
-                        label.style.left = position + '%';
-                        label.textContent = tickDate.toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            year: '2-digit' 
-                        });
-                        axisContainer.appendChild(label);
+                // Calculate positions for Jan 2024 and Jan 2025
+                hebrewDates.forEach(dateObj => {
+                    if (dateObj.position === null) {
+                        const daysFromStart = Math.ceil((dateObj.date - startDate) / (1000 * 60 * 60 * 24));
+                        // Position from right (oldest=100%) to left (newest=0%)
+                        dateObj.position = 100 - (daysFromStart / totalDays) * 100;
+                        // Ensure position is within bounds
+                        dateObj.position = Math.max(0, Math.min(100, dateObj.position));
                     }
                 });
                 
-                // Minor ticks
-                minorTickMonths.forEach(monthOffset => {
-                    if (monthOffset <= monthsTotal) {
-                        const position = ((monthsTotal - monthOffset) / monthsTotal) * 100;
-                        
-                        const tick = document.createElement('div');
-                        tick.className = 'timeline-tick';
-                        tick.style.left = position + '%';
-                        axisContainer.appendChild(tick);
-                    }
+                // Create ticks and labels for the 4 Hebrew dates
+                hebrewDates.forEach(dateObj => {
+                    // Create tick mark
+                    const tick = document.createElement('div');
+                    tick.className = 'timeline-tick major';
+                    tick.style.left = dateObj.position + '%';
+                    axisContainer.appendChild(tick);
+                    
+                    // Create Hebrew date label
+                    const label = document.createElement('div');
+                    label.className = 'timeline-date-label';
+                    label.style.left = dateObj.position + '%';
+                    label.textContent = dateObj.label;
+                    label.style.fontFamily = "'Heebo', sans-serif";
+                    label.style.direction = 'rtl';
+                    axisContainer.appendChild(label);
                 });
 
                 // Add timeline events markers
@@ -2355,7 +2530,7 @@
             }
 
             generateAreaChart() {
-                console.log('Generating area chart for fallen soldiers per week');
+                console.log('Generating area chart for cumulative fallen soldiers');
                 
                 const totalDays = this.getTotalTimelineDays();
                 const weeklyData = [];
@@ -2363,35 +2538,37 @@
                 // Add starting point at war beginning (Oct 7th) with 0 casualties
                 weeklyData.push({
                     week: -1,
-                    fallen: 0,
+                    cumulativeFallen: 0,
                     weekStart: new Date(this.startDate),
                     weekEnd: new Date(this.startDate),
                     displayDate: new Date(this.startDate)
                 });
                 
-                // Group soldiers by week
+                // Group soldiers by week and calculate cumulative totals
+                let cumulativeTotal = 0;
                 for (let week = 0; week < Math.ceil(totalDays / 7); week++) {
                     const weekStart = new Date(this.startDate);
                     weekStart.setDate(weekStart.getDate() + (week * 7));
                     const weekEnd = new Date(weekStart);
                     weekEnd.setDate(weekEnd.getDate() + 6);
                     
-                    const weeklyFallen = this.soldiers.filter(soldier => {
-                        return soldier.death_date >= weekStart && soldier.death_date <= weekEnd;
+                    // Count soldiers who died up to the end of this week
+                    const totalFallenUpToThisWeek = this.soldiers.filter(soldier => {
+                        return soldier.death_date <= weekEnd && soldier.death_date >= this.startDate;
                     }).length;
                     
                     // Position this week's data at the END of the week (weekEnd) for chart alignment
                     weeklyData.push({
                         week: week,
-                        fallen: weeklyFallen,
+                        cumulativeFallen: totalFallenUpToThisWeek,
                         weekStart: weekStart,
                         weekEnd: weekEnd,
                         displayDate: weekEnd  // Use week end for positioning
                     });
                 }
                 
-                // Find max value for scaling
-                const maxFallen = Math.max(...weeklyData.map(d => d.fallen));
+                // Find max value for scaling (use cumulative values)
+                const maxFallen = Math.max(...weeklyData.map(d => d.cumulativeFallen));
                 if (maxFallen === 0) return; // No data to chart
                 
                 // Generate SVG path with smooth curves (RTL: newest weeks on left, oldest on right)
@@ -2404,8 +2581,8 @@
                     // Position each week's data at its display date for better alignment
                     const displayDaysFromToday = Math.floor((this.todayDate - week.displayDate) / (1000 * 60 * 60 * 24));
                     const x = (displayDaysFromToday / totalDays) * viewBoxWidth;
-                    const y = viewBoxHeight - (week.fallen / maxFallen) * viewBoxHeight;
-                    points.push({x, y, fallen: week.fallen, displayDate: week.displayDate});
+                    const y = viewBoxHeight - (week.cumulativeFallen / maxFallen) * viewBoxHeight;
+                    points.push({x, y, cumulativeFallen: week.cumulativeFallen, displayDate: week.displayDate});
                 });
                 
                 // Sort points by X position for proper chart drawing
@@ -2465,16 +2642,137 @@
                     pathData += ` L ${lastPoint.x},${viewBoxHeight} L ${points[0].x},${viewBoxHeight} Z`;
                 }
                 
-                // Update the SVG path
-                const pathElement = document.getElementById('areaPath');
-                if (pathElement) {
-                    pathElement.setAttribute('d', pathData);
-                }
+                // Get current timeline position (progress bar position)
+                // The timeline runs from right (100% = start) to left (0% = today)
+                const daysFromToday = this.currentEndDate ? 
+                    Math.ceil((this.todayDate - this.currentEndDate) / (1000 * 60 * 60 * 24)) : 0;
+                const currentTimelineProgress = (daysFromToday / totalDays) * 100;
+                
+                console.log('Timeline split calculation:', {
+                    totalDays,
+                    daysFromToday,
+                    currentTimelineProgress,
+                    currentEndDate: this.currentEndDate
+                });
+                
+                // Split the chart at the current timeline position
+                this.generateSplitAreaChart(points, viewBoxHeight, currentTimelineProgress);
                 
                 console.log(`RTL Area chart generated: ${weeklyData.length} weeks, max fallen: ${maxFallen}`);
                 
                 // Generate military events chart
-                this.generateMilitaryEventsChart();
+                // this.generateMilitaryEventsChart(); // Hidden as requested
+            }
+
+            generateSplitAreaChart(points, viewBoxHeight, splitPosition) {
+                if (points.length === 0) return;
+                
+                console.log('Splitting chart at position:', splitPosition, 'with', points.length, 'points');
+                console.log('Points X positions:', points.map(p => p.x.toFixed(1)));
+                
+                // Split points into past (right of split) and future (left of split) 
+                const pastPoints = points.filter(p => p.x >= splitPosition);
+                const futurePoints = points.filter(p => p.x <= splitPosition);
+                
+                console.log('Past points:', pastPoints.length, 'Future points:', futurePoints.length);
+                
+                // Add split point if needed to connect the two sections
+                if (pastPoints.length > 0 && futurePoints.length > 0) {
+                    // Find the interpolated value at the split position
+                    const leftPoint = points.find(p => p.x <= splitPosition) || points[0];
+                    const rightPoint = points.find(p => p.x >= splitPosition) || points[points.length - 1];
+                    
+                    if (leftPoint && rightPoint && leftPoint !== rightPoint) {
+                        const ratio = (splitPosition - leftPoint.x) / (rightPoint.x - leftPoint.x);
+                        const interpolatedY = leftPoint.y + (rightPoint.y - leftPoint.y) * ratio;
+                        const splitPoint = { x: splitPosition, y: interpolatedY, cumulativeFallen: 0 };
+                        
+                        // Add split point to both arrays
+                        if (!futurePoints.find(p => p.x === splitPosition)) {
+                            futurePoints.push(splitPoint);
+                        }
+                        if (!pastPoints.find(p => p.x === splitPosition)) {
+                            pastPoints.unshift(splitPoint);
+                        }
+                    }
+                }
+                
+                // Generate path for past section (visible)
+                const pastPath = this.generatePathData(pastPoints, viewBoxHeight);
+                const pastPathElement = document.getElementById('areaPathPast');
+                if (pastPathElement) {
+                    pastPathElement.setAttribute('d', pastPath);
+                }
+                
+                // Generate path for future section (transparent)
+                const futurePath = this.generatePathData(futurePoints, viewBoxHeight);
+                const futurePathElement = document.getElementById('areaPathFuture');
+                if (futurePathElement) {
+                    futurePathElement.setAttribute('d', futurePath);
+                }
+            }
+
+            generatePathData(points, viewBoxHeight) {
+                if (points.length === 0) return '';
+                
+                // Sort points by X position for proper chart drawing
+                points.sort((a, b) => a.x - b.x);
+                
+                // Start area path from bottom at first data point's X position
+                let pathData = '';
+                if (points.length > 0) {
+                    pathData = `M ${points[0].x},${viewBoxHeight} L ${points[0].x},${points[0].y}`;
+                }
+                
+                // Generate smooth curve using proper spline interpolation
+                if (points.length > 1) {
+                    for (let i = 1; i < points.length; i++) {
+                        const prev = points[i-1];
+                        const curr = points[i];
+                        const next = points[i + 1] || curr;
+                        const prevPrev = points[i - 2] || prev;
+                        
+                        // Calculate smooth control points using cardinal spline method
+                        const tension = 0.3; // Controls curve tightness
+                        
+                        // Calculate tangent vectors for smooth flow
+                        let cp1x, cp1y, cp2x, cp2y;
+                        
+                        if (i === 1) {
+                            // First curve: control point 1 goes in direction toward current point
+                            cp1x = prev.x + (curr.x - prev.x) * tension;
+                            cp1y = prev.y + (curr.y - prev.y) * tension;
+                        } else {
+                            // Subsequent curves: control point 1 follows the flow from previous-previous to current
+                            const tangentX = (curr.x - prevPrev.x) * tension;
+                            const tangentY = (curr.y - prevPrev.y) * tension;
+                            cp1x = prev.x + tangentX;
+                            cp1y = prev.y + tangentY;
+                        }
+                        
+                        if (i === points.length - 1) {
+                            // Last curve: control point 2 comes from direction of previous point
+                            cp2x = curr.x - (curr.x - prev.x) * tension;
+                            cp2y = curr.y - (curr.y - prev.y) * tension;
+                        } else {
+                            // Other curves: control point 2 follows flow from previous to next
+                            const tangentX = (next.x - prev.x) * tension;
+                            const tangentY = (next.y - prev.y) * tension;
+                            cp2x = curr.x - tangentX;
+                            cp2y = curr.y - tangentY;
+                        }
+                        
+                        pathData += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${curr.x},${curr.y}`;
+                    }
+                }
+                
+                // Close the path to form an area (go down to bottom at last point, then back to start)
+                if (points.length > 0) {
+                    const lastPoint = points[points.length - 1];
+                    pathData += ` L ${lastPoint.x},${viewBoxHeight} L ${points[0].x},${viewBoxHeight} Z`;
+                }
+                
+                return pathData;
             }
             
             generateMilitaryEventsChart() {
@@ -2718,6 +3016,12 @@
                 const slider = document.getElementById('timelineSlider');
                 const track = document.querySelector('.timeline-track');
                 
+                // Header info elements
+                const selectedDateEl = document.getElementById('selectedDate');
+                const lastEventEl = document.getElementById('lastEvent');
+                const aliveCountEl = document.getElementById('aliveCount');
+                const fallenCountEl = document.getElementById('fallenCount');
+                
                 if (!tooltip || !tooltipDate || !tooltipAlive || !slider || !this.soldiers || !track) {
                     return; // Elements or data not ready yet
                 }
@@ -2728,11 +3032,39 @@
                 const year = currentDate.getFullYear().toString().slice(-2);
                 const formattedDate = `${day}/${month}/${year}`;
                 
-                // Calculate alive soldiers count
+                // Calculate alive and fallen soldiers count
                 const aliveSoldiers = this.soldiers.filter(s => 
                     s.death_date >= this.startDate && 
                     s.death_date > currentDate
                 ).length;
+                
+                const fallenSoldiers = this.soldiers.filter(s => 
+                    s.death_date >= this.startDate && 
+                    s.death_date <= currentDate
+                ).length;
+                
+                // Update header info
+                if (selectedDateEl) {
+                    selectedDateEl.textContent = formattedDate;
+                }
+                
+                // Find the last timeline event before or on the current date
+                const lastEvent = this.timelineEvents
+                    .filter(event => event.eventDate <= currentDate)
+                    .sort((a, b) => b.eventDate - a.eventDate)[0];
+                    
+                if (lastEventEl && lastEvent) {
+                    lastEventEl.textContent = lastEvent.title_hebrew;
+                }
+                
+                // Update status components
+                if (aliveCountEl) {
+                    aliveCountEl.textContent = `${aliveSoldiers} עוד היו חיים`;
+                }
+                
+                if (fallenCountEl) {
+                    fallenCountEl.textContent = `${fallenSoldiers} חללים מאז תחילת התמרון`;
+                }
                 
                 // Check if we're over a timeline event (when STOPPED, not transitioning)
                 const eventAtDate = this.getEventAtDate(currentDate);
@@ -2921,9 +3253,10 @@
                     showRandomTooltip: () => {
                         if (!autoHoverSystem.active) return;
                         
-                        // Get available soldier names (not currently active)
+                        // Get available soldier names (only fallen soldiers, not currently active)
                         const availableNames = Array.from(soldierNames).filter(nameEl => 
-                            !autoHoverSystem.activeElements.has(nameEl)
+                            !autoHoverSystem.activeElements.has(nameEl) &&
+                            !nameEl.classList.contains('alive')
                         );
                         
                         if (availableNames.length === 0) return;
@@ -3021,7 +3354,7 @@
                         tooltipNameEl.textContent = name;
                         tooltipDetailsEl.innerHTML = `
                             <div>${unit}</div>
-                            <div style="opacity: 0.8;">${formattedDate}</div>
+                            <div style="opacity: 0.8;">נפל ${formattedDate}</div>
                         `;
                         
                         // Clear and load image
@@ -3044,6 +3377,14 @@
                         // Apply styling and positioning
                         const tiltAngle = (Math.random() - 0.5) * 12;
                         tooltipElement.style.setProperty('--tilt-angle', `${tiltAngle}deg`);
+                        
+                        // Add fallen/alive class to tooltip based on soldier state
+                        tooltipElement.classList.remove('fallen', 'alive');
+                        if (nameEl.classList.contains('fallen')) {
+                            tooltipElement.classList.add('fallen');
+                        } else if (nameEl.classList.contains('alive')) {
+                            tooltipElement.classList.add('alive');
+                        }
                         
                         // Special current_date styling
                         tooltipElement.style.background = 'rgba(255, 245, 200, 0.98)';
@@ -3106,7 +3447,7 @@
                             soldierNameEl.textContent = name;
                             soldierDetailsEl.innerHTML = `
                                 <div>${unit}</div>
-                                <div style="opacity: 0.8;">${formattedDate}</div>
+                                <div style="opacity: 0.8;">נפל ${formattedDate}</div>
                             `;
                             
                             // IMMEDIATELY clear any previous image to prevent flickering
@@ -3145,6 +3486,14 @@
                             // Apply random subtle tilt via CSS custom property
                             const tiltAngle = (Math.random() - 0.5) * 12; // Random tilt between -6° and +6°
                             tooltip.style.setProperty('--tilt-angle', `${tiltAngle}deg`);
+                            
+                            // Add fallen/alive class to tooltip based on soldier state
+                            tooltip.classList.remove('fallen', 'alive');
+                            if (nameEl.classList.contains('fallen')) {
+                                tooltip.classList.add('fallen');
+                            } else if (nameEl.classList.contains('alive')) {
+                                tooltip.classList.add('alive');
+                            }
                             
                             // Apply special styling for current_date narrative
                             if (isCurrentDateNarrative()) {
@@ -3520,13 +3869,16 @@
                 // Update count in draggable container
                 const aliveCountSpan = document.getElementById('aliveCount');
                 if (aliveCountSpan) {
-                    aliveCountSpan.textContent = aliveCount;
+                    aliveCountSpan.textContent = `${aliveCount} עוד היו חיים`;
                 }
                 
                 // Update narrative content to refresh placeholders
                 if (this.narrative) {
                     this.narrative.updateNarrativeContent();
                 }
+                
+                // Regenerate area chart with new split position
+                this.generateAreaChart();
             }
         }
 
