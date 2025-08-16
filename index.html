@@ -338,11 +338,12 @@
         }
 
         .timeline-slider {
-            width: 100%;
+            width: calc(100% + 16px);
             height: 4px;
             background: transparent;
             outline: none;
             position: absolute;
+            left: -8px; /* Offset by half handle width to align handle center with track edges */
             top: -1.5px; /* Center slider on track to align thumb with progress bar */
             cursor: pointer;
             -webkit-appearance: none;
@@ -370,8 +371,8 @@
             -webkit-appearance: none;
             width: 12px;
             height: 12px;
-            background: linear-gradient(135deg, #333 0%, #555 100%);
-            border: 2px solid #fff;
+            background: var(--handle-background, linear-gradient(135deg, #333 0%, #555 100%));
+            border: var(--handle-border, 2px solid #fff);
             border-radius: 50%;
             cursor: grab;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
@@ -417,8 +418,8 @@
         .timeline-slider::-moz-range-thumb {
             width: 12px;
             height: 12px;
-            background: linear-gradient(135deg, #333 0%, #555 100%);
-            border: 2px solid #fff;
+            background: var(--handle-background, linear-gradient(135deg, #333 0%, #555 100%));
+            border: var(--handle-border, 2px solid #fff);
             border-radius: 50%;
             cursor: grab;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
@@ -880,7 +881,7 @@
         }
 
         .regular-event-diamond {
-            background: #ffcc00 !important;
+            background: #ff8800 !important;
             border: none !important;
             border-radius: 2px !important;
             transform: translate(-50%, -50%) rotate(45deg) !important;
@@ -891,7 +892,7 @@
         .timeline-container:hover .regular-event-diamond {
             width: 10px !important;
             height: 10px !important;
-            background: #ffdd11 !important;
+            background: #ff8800 !important;
             transform: translate(-50%, -50%) rotate(45deg) !important;
         }
 
@@ -1992,8 +1993,8 @@
                 const isMovingBack = endPoint > startPoint; // Moving back in time (higher days back)
                 const isMovingForward = endPoint < startPoint; // Moving forward in time (lower days back)
                 
-                // Set different speeds: slower for forward, faster for backward
-                const forwardSpeed = 25; // ms per day when moving forward in time (SLOWER)
+                // Set different speeds: faster for forward, faster for backward
+                const forwardSpeed = 5; // ms per day when moving forward in time (MUCH FASTER)
                 let backwardSpeed = 10;  // ms per day when moving back in time (1.5x FASTER)
                 
                 // Special case: 2x faster animation for war_overview navigation
@@ -2630,9 +2631,9 @@
                             } else if (isMilitaryCategory) {
                                 markerColor = '#000000'; // Black for military events
                             } else if (isPoliticalCategory) {
-                                markerColor = '#FFD700'; // Yellow for political events
+                                markerColor = '#FF8800'; // Orange for political events
                                 if (event.title_hebrew.includes('הקלות חמאס')) {
-                                    console.log(`DEBUG: ${event.title_hebrew} - isPoliticalCategory: true - should be YELLOW`);
+                                    console.log(`DEBUG: ${event.title_hebrew} - isPoliticalCategory: true - should be ORANGE`);
                                 }
                             } else {
                                 markerColor = '#1168FF'; // Default to blue for other ceasefire/diplomatic events
@@ -3595,8 +3596,56 @@
                     // With CSS centering, triangle should be centered (50%)
                     tooltip.style.setProperty('--triangle-left', '50%');
                 }
+                
+                // Update handle color based on timeline state
+                this.updateHandleColor(currentDate);
             }
 
+            updateHandleColor(currentDate) {
+                const slider = document.getElementById('timelineSlider');
+                if (!slider || !currentDate) return;
+                
+                // Determine color based on timeline state
+                let handleColor;
+                let borderColor = '#fff';
+                
+                // Check if current date exactly matches a timeline event
+                const eventAtCurrentDate = this.getEventAtDate(currentDate);
+                
+                if (eventAtCurrentDate) {
+                    // On an event date - use the same color system as timeline markers
+                    const isMilitaryCategory = eventAtCurrentDate.category === 'military' || 
+                                              eventAtCurrentDate.category === 'military_withdrawal' || 
+                                              eventAtCurrentDate.category === 'military_operation';
+                    
+                    const isPoliticalCategory = eventAtCurrentDate.category === 'coalition_threat' ||
+                                               eventAtCurrentDate.category === 'extremist_statement' ||
+                                               eventAtCurrentDate.category === 'political_admission' ||
+                                               eventAtCurrentDate.category === 'coalition_departure' ||
+                                               eventAtCurrentDate.category === 'political_manipulation';
+                    
+                    if (eventAtCurrentDate.could_have_ended === 'yes' || eventAtCurrentDate.could_have_ended === 'ended_war') {
+                        // Blue for war-ending events
+                        handleColor = 'linear-gradient(135deg, #1168FF 0%, #4488FF 100%)';
+                    } else if (isMilitaryCategory) {
+                        // Black for military events
+                        handleColor = 'linear-gradient(135deg, #000000 0%, #333333 100%)';
+                    } else if (isPoliticalCategory) {
+                        // Orange for political events
+                        handleColor = 'linear-gradient(135deg, #FF8800 0%, #FFAA33 100%)';
+                    } else {
+                        // Default blue for other diplomatic events
+                        handleColor = 'linear-gradient(135deg, #1168FF 0%, #4488FF 100%)';
+                    }
+                } else {
+                    // Not on any event - always use gray
+                    handleColor = 'linear-gradient(135deg, #333 0%, #555 100%)';
+                }
+                
+                // Apply the color using CSS custom properties
+                slider.style.setProperty('--handle-background', handleColor);
+                slider.style.setProperty('--handle-border', `2px solid ${borderColor}`);
+            }
 
             escapeHtml(text) {
                 return text
@@ -4456,15 +4505,15 @@
             
             // Animate to the target position
             const startValue = currentSliderValue;
-            const duration = 1200; // 1.2 seconds
+            const duration = 300; // 0.3 seconds (much faster)
             const startTime = performance.now();
             
             function animateToEvent(currentTime) {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 
-                // Ease-out function (cubic for smooth deceleration)
-                const easeOut = 1 - Math.pow(1 - progress, 3);
+                // Extreme ease-out function (quadratic for dramatic deceleration)
+                const easeOut = 1 - Math.pow(1 - progress, 2);
                 
                 const newValue = startValue + (targetSliderValue - startValue) * easeOut;
                 timelineSlider.value = newValue;
