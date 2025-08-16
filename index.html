@@ -6,7 +6,8 @@
     <title>Fallen Soldiers - Timeline Memorial</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@100..900&family=Heebo:wght@100..900&family=Suez+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@100..900&family:Heebo:wght@100..900&family=Suez+One&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
         * {
             margin: 0;
@@ -77,9 +78,36 @@
             line-height: 1.4;
             opacity: 0.9;
             position: absolute;
-            left: -420px;
+            left: -460px;
             top: 50%;
             transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            direction: rtl;
+        }
+
+        .timeline-description-text {
+            flex: 1;
+        }
+
+        .timeline-description-link {
+            color: #666;
+            text-decoration: none;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .timeline-description-link:hover {
+            opacity: 1;
+            color: #333;
+        }
+
+        .timeline-description-link .lucide {
+            width: 16px;
+            height: 16px;
         }
 
         .header-info {
@@ -612,11 +640,11 @@
         }
 
         .cta-skip-back {
-            background: #000000;
-            color: white;
-            border: none;
+            background: #f8f8f8;
+            color: #4a4a4a;
+            border: 1px solid rgba(0, 0, 0, 0.1);
             padding: 8px;
-            border-radius: 2px;
+            border-radius: 4px;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: 'Heebo', sans-serif;
@@ -633,19 +661,18 @@
         }
 
         .cta-skip-back {
-            background: #000000;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 2px;
+            background: #f8f8f8;
+            color: #4a4a4a;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 8px;
+            border-radius: 4px;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: 'Heebo', sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            width: auto;
+            width: 32px;
             height: 32px;
             position: absolute;
             left: -120px;
@@ -656,17 +683,16 @@
             white-space: nowrap;
         }
 
-        .cta-skip-back::after {
-            content: '⏭';
-            font-size: 14px;
-            line-height: 1;
-            transform: rotate(180deg);
-            display: inline-block;
+        .cta-skip-back .lucide {
+            width: 16px;
+            height: 16px;
+            transform: scaleX(-1);
+            color: #4a4a4a;
         }
 
         .cta-skip-back:hover {
-            background: #333333;
-            opacity: 0.8;
+            background: #f0f0f0;
+            border-color: rgba(0, 0, 0, 0.15);
         }
 
         /* Modal overlay */
@@ -1086,7 +1112,9 @@
             הנופלים, ואלה שיכלו עוד להיות חיים<br>
             אם המלחמה הייתה מסתיימת&nbsp;&nbsp;<span class="selected-date-in-title">ב-<span id="selectedDateInTitle">30.1.2024</span></span>
         </div>
-        <button class="cta-skip-back" id="ctaSkipBack" title="המשך להזדמנות הבאה">המשך</button>
+        <button class="cta-skip-back" id="ctaSkipBack" title="המשך להזדמנות הבאה">
+            <i data-lucide="skip-forward"></i>
+        </button>
         <div class="timeline-description" id="timelineDescription">
             <!-- Timeline description will be populated here -->
         </div>
@@ -2112,8 +2140,8 @@
 
             getTotalTimelineDays() {
                 // Calculate days from start date (Oct 27, 2023) to today
-                // Add 1 to include today as day 0 in the slider range
-                return Math.floor((this.todayDate - this.startDate) / (1000 * 60 * 60 * 24)) + 1;
+                // Return exact number of days without the +1 to fix off-by-one error
+                return Math.floor((this.todayDate - this.startDate) / (1000 * 60 * 60 * 24));
             }
 
 
@@ -2178,7 +2206,7 @@
             async loadTimelineEvents() {
                 try {
                     // console.log('Attempting to load events-new2.csv...');
-                    const response = await safeFetch('data/events-new2.csv');
+                    const response = await safeFetch('data/events-new2.csv?v=' + Date.now());
                     // console.log('Response status:', response.status, response.statusText);
                     
                     if (!response.ok) {
@@ -2596,10 +2624,16 @@
                             
                             if (event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war') {
                                 markerColor = '#1168FF'; // Blue for war-ending events
+                                if (event.title_hebrew.includes('הקלות חמאס')) {
+                                    console.log(`DEBUG: ${event.title_hebrew} - could_have_ended: "${event.could_have_ended}" - should be BLUE`);
+                                }
                             } else if (isMilitaryCategory) {
                                 markerColor = '#000000'; // Black for military events
                             } else if (isPoliticalCategory) {
                                 markerColor = '#FFD700'; // Yellow for political events
+                                if (event.title_hebrew.includes('הקלות חמאס')) {
+                                    console.log(`DEBUG: ${event.title_hebrew} - isPoliticalCategory: true - should be YELLOW`);
+                                }
                             } else {
                                 markerColor = '#1168FF'; // Default to blue for other ceasefire/diplomatic events
                             }
@@ -2748,14 +2782,41 @@
                 return this.timelineEvents.find(event => {
                     if (!event.eventDate) return false;
                     
-                    // Skip military category events (same as display filter)
-                    if (event.category === 'military') return false;
+                    // Only show events that are marked as visible
+                    if (event.show !== 'show') return false;
                     
                     const eventDateOnly = new Date(event.eventDate);
                     eventDateOnly.setHours(0, 0, 0, 0);
                     
                     return Math.abs(currentDateOnly - eventDateOnly) < 24 * 60 * 60 * 1000; // Same day
                 });
+            }
+
+            updateTimelineDescription(event, isNext = false) {
+                const timelineDescriptionEl = document.getElementById('timelineDescription');
+                if (!timelineDescriptionEl || !event) return;
+                
+                const descriptionText = event.description_hebrew || event.title_hebrew;
+                const prefix = isNext ? 'הבא: ' : '';
+                
+                // Create the description with text and optional link icon
+                if (event.source && event.source.startsWith('http')) {
+                    timelineDescriptionEl.innerHTML = `
+                        <span class="timeline-description-text">${prefix}${descriptionText}</span>
+                        <a href="${event.source}" target="_blank" class="timeline-description-link" title="קישור למקור">
+                            <i data-lucide="link"></i>
+                        </a>
+                    `;
+                } else {
+                    timelineDescriptionEl.innerHTML = `
+                        <span class="timeline-description-text">${prefix}${descriptionText}</span>
+                    `;
+                }
+                
+                // Initialize Lucide icons
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
             }
 
             jumpToEventDate(eventDate) {
@@ -3283,15 +3344,16 @@
                     return null;
                 }
                 
-                // Get all war-ending events sorted by days_from_start (oldest first)
-                const warEndingEvents = this.timelineEvents
-                    .filter(event => event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war')
+                // Get all visible events sorted by days_from_start (oldest first)
+                const visibleEvents = this.timelineEvents
+                    .filter(event => event.show === 'show')
                     .sort((a, b) => parseInt(a.days_from_start) - parseInt(b.days_from_start));
                 
-                console.log('War-ending events:', warEndingEvents.map(e => ({id: e.id, title: e.title_hebrew})));
+                console.log('Visible events:', visibleEvents.map(e => ({id: e.id, title: e.title_hebrew, show: e.show})));
+                console.log('Total visible events found:', visibleEvents.length);
                 
-                if (warEndingEvents.length === 0) {
-                    console.log('No war-ending events found');
+                if (visibleEvents.length === 0) {
+                    console.log('No visible events found');
                     return null;
                 }
                 
@@ -3306,8 +3368,8 @@
                 
                 console.log('Current date:', currentDate.toDateString(), 'Slider value:', currentSliderValue);
                 
-                // Find the next war-ending event chronologically AFTER current date
-                let nextEvent = warEndingEvents.find(event => {
+                // Find the next visible event chronologically AFTER current date
+                let nextEvent = visibleEvents.find(event => {
                     console.log('Checking event:', event.title_hebrew, 'Date:', event.eventDate, 'After current?', event.eventDate > currentDate);
                     return event.eventDate > currentDate;
                 });
@@ -3315,7 +3377,7 @@
                 // If no event found after current position, loop back to the first event
                 if (!nextEvent) {
                     console.log('No next event found, looping to first');
-                    nextEvent = warEndingEvents[0];
+                    nextEvent = visibleEvents[0];
                 }
                 
                 return nextEvent;
@@ -3324,12 +3386,12 @@
             getPrevTimelineEvent() {
                 if (!this.timelineEvents) return null;
                 
-                // Get all war-ending events sorted by days_from_start (newest first)
-                const warEndingEvents = this.timelineEvents
-                    .filter(event => event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war')
+                // Get all visible events sorted by days_from_start (newest first)
+                const visibleEvents = this.timelineEvents
+                    .filter(event => event.show === 'show')
                     .sort((a, b) => parseInt(b.days_from_start) - parseInt(a.days_from_start));
                 
-                if (warEndingEvents.length === 0) return null;
+                if (visibleEvents.length === 0) return null;
                 
                 // Calculate current timeline position
                 const timelineSlider = document.getElementById('timelineSlider');
@@ -3340,14 +3402,14 @@
                 const currentDate = new Date(this.todayDate);
                 currentDate.setDate(currentDate.getDate() - currentDaysBack);
                 
-                // Find the previous war-ending event chronologically BEFORE current date
-                let prevEvent = warEndingEvents.find(event => {
+                // Find the previous visible event chronologically BEFORE current date
+                let prevEvent = visibleEvents.find(event => {
                     return event.eventDate < currentDate;
                 });
                 
                 // If no event found before current position, loop back to the last event
                 if (!prevEvent) {
-                    prevEvent = warEndingEvents[0]; // This is the newest event due to reverse sort
+                    prevEvent = visibleEvents[0]; // This is the newest event due to reverse sort
                 }
                 
                 return prevEvent;
@@ -3415,22 +3477,22 @@
                     const eventAtCurrentDate = this.getEventAtDate(currentDate);
                     
                     if (eventAtCurrentDate) {
-                        // Case: On a timeline event date - show that event's info
-                        timelineDescriptionEl.textContent = eventAtCurrentDate.description_hebrew || eventAtCurrentDate.title_hebrew;
+                        // Case: On a timeline event date - show that event's info with link
+                        this.updateTimelineDescription(eventAtCurrentDate, false);
                     } else if (this.isTimelineAnimating) {
                         // Only show "הבא:" during transitions, not for manually selected dates
                         const targetEvent = this.getNextTimelineEvent();
                         
                         if (targetEvent) {
                             // Case: During transition with target date - show target date's info
-                            timelineDescriptionEl.textContent = `הבא: ${targetEvent.description_hebrew || targetEvent.title_hebrew}`;
+                            this.updateTimelineDescription(targetEvent, true);
                         } else {
                             // Case: During transition but no target date - show nothing
-                            timelineDescriptionEl.textContent = '';
+                            timelineDescriptionEl.innerHTML = '';
                         }
                     } else {
                         // Case: Manually selected date with no timeline event - show nothing
-                        timelineDescriptionEl.textContent = '';
+                        timelineDescriptionEl.innerHTML = '';
                     }
                 }
                 
@@ -4341,18 +4403,18 @@
         // Initialize the memorial
         const memorial = new TimelineMemorial();
         
-        // Skip-back CTA functionality - jump to next war-ending event
+        // Skip-back CTA functionality - jump to next visible event
         document.getElementById('ctaSkipBack').addEventListener('click', function() {
             if (!memorial.timelineEvents) return;
             
-            // Get all war-ending events sorted by date (chronological order: past to future)
-            const warEndingEvents = memorial.timelineEvents
-                .filter(event => event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war')
+            // Get all visible events sorted by date (chronological order: past to future)
+            const visibleEvents = memorial.timelineEvents
+                .filter(event => event.show === 'show')
                 .sort((a, b) => new Date(a.date) - new Date(b.date));
             
-            console.log('War-ending events:', warEndingEvents.map(e => ({id: e.id, title: e.title_hebrew, date: e.date, could_have_ended: e.could_have_ended})));
+            console.log('Visible events:', visibleEvents.map(e => ({id: e.id, title: e.title_hebrew, date: e.date, show: e.show})));
             
-            if (warEndingEvents.length === 0) return;
+            if (visibleEvents.length === 0) return;
             
             // Calculate current timeline position
             const timelineSlider = document.getElementById('timelineSlider');
@@ -4367,31 +4429,20 @@
             const currentDate = new Date(memorial.todayDate);
             currentDate.setDate(currentDate.getDate() - currentDaysBack);
             
-            // console.log('Current slider value:', currentSliderValue, 'represents date:', currentDate.toDateString());
+            console.log('Current timeline date:', currentDate.toDateString());
             
-            // Find the current event based on timeline position
-            let currentEventIndex = -1;
-            for (let i = 0; i < warEndingEvents.length; i++) {
-                const eventDaysBack = Math.floor((memorial.todayDate - warEndingEvents[i].eventDate) / (1000 * 60 * 60 * 24));
-                console.log('Event:', warEndingEvents[i].title_hebrew, 'days back:', eventDaysBack, 'current slider:', currentSliderValue);
-                // If we're at or very close to this event (within a few days), consider it current
-                if (Math.abs(eventDaysBack - currentSliderValue) <= 3) {
-                    currentEventIndex = i;
-                    console.log('Found current event at index:', i, warEndingEvents[i].title_hebrew);
-                    break;
-                }
-            }
+            // Find the next event chronologically AFTER current position
+            let nextEvent = visibleEvents.find(event => {
+                console.log('Checking event:', event.title_hebrew, 'Date:', event.eventDate, 'After current?', event.eventDate > currentDate);
+                return event.eventDate > currentDate;
+            });
             
-            // Get next event in sequence
-            let nextEvent;
-            if (currentEventIndex >= 0 && currentEventIndex < warEndingEvents.length - 1) {
-                // Move to next event in chronological order (older to newer)
-                nextEvent = warEndingEvents[currentEventIndex + 1];
-                console.log('Moving to next event:', nextEvent.title_hebrew);
+            // If no event found after current position, loop back to the first event
+            if (!nextEvent) {
+                console.log('No next event found, looping to first');
+                nextEvent = visibleEvents[0];
             } else {
-                // If at the end or no current event found, loop back to first
-                nextEvent = warEndingEvents[0];
-                console.log('Looping to first event:', nextEvent.title_hebrew);
+                console.log('Found next event:', nextEvent.title_hebrew);
             }
             
             console.log('Next event selected:', nextEvent.title_hebrew, 'at date:', nextEvent.eventDate);
@@ -4428,6 +4479,13 @@
             }
             
             requestAnimationFrame(animateToEvent);
+        });
+
+        // Initialize Lucide icons on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
         });
     </script>
 </body>
