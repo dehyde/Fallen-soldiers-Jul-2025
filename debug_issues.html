@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Timeline Issues</title>
+</head>
+<body>
+    <h1>Debug Timeline Issues</h1>
+    <button id="testBtn">Test Timeline Events Loading</button>
+    <div id="output"></div>
+    
+    <script>
+    async function testTimelineEvents() {
+        try {
+            // Test 1: Load and parse events
+            const response = await fetch('data/events-new.csv');
+            const csvText = await response.text();
+            console.log('CSV loaded, first 500 chars:', csvText.substring(0, 500));
+            
+            const lines = csvText.split('\n').filter(line => line.trim());
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+            console.log('Headers:', headers);
+            
+            const events = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line.trim()) continue;
+                
+                // Parse CSV properly handling quoted fields
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current); // Last value
+                
+                const event = {};
+                headers.forEach((header, index) => {
+                    event[header] = values[index] || '';
+                });
+                
+                // Parse date
+                if (event.date) {
+                    event.eventDate = new Date(event.date);
+                }
+                
+                events.push(event);
+            }
+            
+            console.log('Total events loaded:', events.length);
+            
+            // Test 2: Check visible events
+            const visibleEvents = events.filter(e => e.show === 'show');
+            console.log('Visible events:', visibleEvents.length);
+            
+            // Test 3: Find the specific event mentioned
+            const specificEvent = events.find(e => e.title_hebrew && e.title_hebrew.includes('מתקפה קרקעית בשלושה צירים'));
+            console.log('Specific event found:', specificEvent);
+            
+            // Test 4: Check which events have descriptions
+            const eventsWithDesc = events.filter(e => e.description_hebrew && e.description_hebrew.trim());
+            const eventsWithoutDesc = events.filter(e => !e.description_hebrew || !e.description_hebrew.trim());
+            
+            console.log('Events WITH descriptions:', eventsWithDesc.length);
+            console.log('Events WITHOUT descriptions:', eventsWithoutDesc.length);
+            
+            // Display results
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <h3>Results:</h3>
+                <p><strong>Total events:</strong> ${events.length}</p>
+                <p><strong>Visible events (show='show'):</strong> ${visibleEvents.length}</p>
+                <p><strong>Events with descriptions:</strong> ${eventsWithDesc.length}</p>
+                <p><strong>Events without descriptions:</strong> ${eventsWithoutDesc.length}</p>
+                
+                <h4>Specific Event Check:</h4>
+                ${specificEvent ? `
+                    <p><strong>Title:</strong> ${specificEvent.title_hebrew}</p>
+                    <p><strong>Description:</strong> ${specificEvent.description_hebrew || 'MISSING'}</p>
+                    <p><strong>Show:</strong> ${specificEvent.show}</p>
+                ` : '<p>Event NOT found!</p>'}
+                
+                <h4>Sample Visible Events:</h4>
+                <ul>
+                    ${visibleEvents.slice(0, 10).map(e => 
+                        `<li>${e.title_hebrew} - ${e.description_hebrew ? 'HAS DESC' : 'NO DESC'}</li>`
+                    ).join('')}
+                </ul>
+            `;
+            
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('output').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        }
+    }
+    
+    document.getElementById('testBtn').addEventListener('click', testTimelineEvents);
+    
+    // Auto-run
+    window.addEventListener('load', testTimelineEvents);
+    </script>
+</body>
+</html>

@@ -85,6 +85,7 @@
             align-items: center;
             gap: 8px;
             direction: rtl;
+            transition: opacity 0.3s ease;
         }
 
         .timeline-description-text {
@@ -481,6 +482,28 @@
         /* Show tooltip on slider handle hover */
         .timeline-slider:hover ~ .timeline-handle-tooltip {
             opacity: 1;
+        }
+
+        /* Timeline track hover states */
+        .timeline-track.hovering .timeline-slider::-webkit-slider-thumb {
+            opacity: 0.3;
+        }
+
+        .timeline-track.hovering .timeline-slider::-moz-range-thumb {
+            opacity: 0.3;
+        }
+
+        .timeline-track.hovering .timeline-handle-tooltip {
+            opacity: 1;
+        }
+
+        /* Timeline cursor states */
+        .timeline-container.track-hovering {
+            cursor: default;
+        }
+
+        .timeline-container.track-hovering.on-event {
+            cursor: pointer;
         }
 
 
@@ -2795,29 +2818,46 @@
 
             updateTimelineDescription(event, isNext = false) {
                 const timelineDescriptionEl = document.getElementById('timelineDescription');
-                if (!timelineDescriptionEl || !event) return;
+                if (!timelineDescriptionEl) return;
+                
+                if (!event) {
+                    // Fade out if no event
+                    timelineDescriptionEl.style.opacity = '0';
+                    setTimeout(() => {
+                        timelineDescriptionEl.innerHTML = '';
+                    }, 300);
+                    return;
+                }
                 
                 const descriptionText = event.description_hebrew || event.title_hebrew;
                 const prefix = isNext ? 'הבא: ' : '';
                 
-                // Create the description with text and optional link icon
-                if (event.source && event.source.startsWith('http')) {
-                    timelineDescriptionEl.innerHTML = `
-                        <span class="timeline-description-text">${prefix}${descriptionText}</span>
-                        <a href="${event.source}" target="_blank" class="timeline-description-link" title="קישור למקור">
-                            <i data-lucide="link"></i>
-                        </a>
-                    `;
-                } else {
-                    timelineDescriptionEl.innerHTML = `
-                        <span class="timeline-description-text">${prefix}${descriptionText}</span>
-                    `;
-                }
+                // Fade out current content
+                timelineDescriptionEl.style.opacity = '0';
                 
-                // Initialize Lucide icons
-                if (window.lucide) {
-                    lucide.createIcons();
-                }
+                setTimeout(() => {
+                    // Update content
+                    if (event.source && event.source.startsWith('http')) {
+                        timelineDescriptionEl.innerHTML = `
+                            <span class="timeline-description-text">${prefix}${descriptionText}</span>
+                            <a href="${event.source}" target="_blank" class="timeline-description-link" title="קישור למקור">
+                                <i data-lucide="link"></i>
+                            </a>
+                        `;
+                    } else {
+                        timelineDescriptionEl.innerHTML = `
+                            <span class="timeline-description-text">${prefix}${descriptionText}</span>
+                        `;
+                    }
+                    
+                    // Initialize Lucide icons
+                    if (window.lucide) {
+                        lucide.createIcons();
+                    }
+                    
+                    // Fade in new content
+                    timelineDescriptionEl.style.opacity = '0.9';
+                }, 300);
             }
 
             jumpToEventDate(eventDate) {
@@ -3249,6 +3289,9 @@
 
                 // Setup navigation CTAs
                 this.setupNavigationCTAs();
+                
+                // Setup timeline track hover functionality
+                this.setupTimelineTrackHover();
 
                 // Recalculate font size when window is resized with buffer
                 window.addEventListener('resize', () => {
@@ -3312,6 +3355,154 @@
                         isDragging = false;
                         container.classList.remove('dragging');
                     }
+                });
+            }
+
+            setupTimelineTrackHover() {
+                const track = document.querySelector('.timeline-track');
+                const tooltip = document.getElementById('timelineTooltip');
+                const slider = document.getElementById('timelineSlider');
+                const container = document.querySelector('.timeline-container');
+                
+                if (!track || !tooltip || !slider || !container) return;
+                
+                let isHoveringHandle = false;
+                let isTrackHovering = false;
+                
+                // Check if mouse is over the slider handle
+                const isMouseOverHandle = (e) => {
+                    const sliderRect = slider.getBoundingClientRect();
+                    const trackRect = track.getBoundingClientRect();
+                    
+                    // Calculate current handle position
+                    const sliderValue = parseInt(slider.value);
+                    const totalDays = this.getTotalTimelineDays();
+                    const handlePercent = (sliderValue / totalDays) * 100;
+                    const handleLeft = (handlePercent / 100) * trackRect.width;
+                    const handleCenterX = trackRect.left + handleLeft;
+                    
+                    // Check if mouse is within handle bounds (8px radius)
+                    const mouseX = e.clientX;
+                    const mouseY = e.clientY;
+                    const handleRadius = 8;
+                    
+                    return Math.abs(mouseX - handleCenterX) <= handleRadius && 
+                           mouseY >= sliderRect.top - handleRadius && 
+                           mouseY <= sliderRect.bottom + handleRadius;
+                };
+                
+                container.addEventListener('mouseenter', (e) => {
+                    // Start tracking
+                });
+                
+                container.addEventListener('mousemove', (e) => {
+                    const wasHoveringHandle = isHoveringHandle;
+                    isHoveringHandle = isMouseOverHandle(e);
+                    
+                    if (isHoveringHandle) {
+                        // Mouse is over handle - disable track hover
+                        if (isTrackHovering) {
+                            track.classList.remove('hovering');
+                            container.classList.remove('track-hovering', 'on-event');
+                            isTrackHovering = false;
+                            
+                            // Restore tooltip to current slider position
+                            const currentSliderValue = parseInt(slider.value);
+                            const currentDate = new Date(this.todayDate);
+                            currentDate.setDate(currentDate.getDate() - currentSliderValue);
+                            this.updateTooltip(currentSliderValue, currentDate);
+                        }
+                    } else {
+                        // Mouse is over track but not handle - enable track hover
+                        if (!isTrackHovering) {
+                            track.classList.add('hovering');
+                            container.classList.add('track-hovering');
+                            isTrackHovering = true;
+                        }
+                        
+                        const rect = track.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const trackWidth = rect.width;
+                        
+                        // Calculate percentage position along track
+                        const percentage = (x / trackWidth) * 100;
+                        const clampedPercentage = Math.max(0, Math.min(100, percentage));
+                        
+                        // Calculate corresponding timeline date
+                        const totalDays = this.getTotalTimelineDays();
+                        const daysBack = Math.round((clampedPercentage / 100) * totalDays);
+                        const hoverDate = new Date(this.todayDate);
+                        hoverDate.setDate(hoverDate.getDate() - daysBack);
+                        
+                        // Update tooltip position and content
+                        const handleLeft = (clampedPercentage / 100) * trackWidth;
+                        
+                        // Calculate tooltip positioning with triangle adjustment
+                        const tooltipWidth = tooltip.offsetWidth;
+                        const idealLeft = handleLeft - (tooltipWidth / 2);
+                        const minLeft = 0;
+                        const maxLeft = trackWidth - tooltipWidth;
+                        const wouldOverflow = idealLeft < minLeft || idealLeft > maxLeft;
+                        
+                        if (wouldOverflow) {
+                            // Use constrained positioning with dynamic triangle
+                            const constrainedLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
+                            tooltip.style.left = constrainedLeft + 'px';
+                            tooltip.style.transform = 'none';
+                            
+                            // Calculate triangle position relative to tooltip
+                            const triangleOffset = handleLeft - constrainedLeft;
+                            const trianglePercent = (triangleOffset / tooltipWidth) * 100;
+                            const constrainedTrianglePercent = Math.max(5, Math.min(95, trianglePercent));
+                            tooltip.style.setProperty('--triangle-left', constrainedTrianglePercent + '%');
+                        } else {
+                            // Use CSS centering method when tooltip fits comfortably
+                            tooltip.style.left = handleLeft + 'px';
+                            tooltip.style.transform = 'translateX(-50%)';
+                            tooltip.style.setProperty('--triangle-left', '50%');
+                        }
+                        
+                        // Update tooltip date
+                        const day = hoverDate.getDate().toString().padStart(2, '0');
+                        const month = (hoverDate.getMonth() + 1).toString().padStart(2, '0');
+                        const year = hoverDate.getFullYear().toString().slice(-2);
+                        const formattedDate = `${day}/${month}/${year}`;
+                        
+                        const tooltipDate = document.getElementById('tooltipDate');
+                        if (tooltipDate) {
+                            tooltipDate.textContent = formattedDate;
+                        }
+                        
+                        // Calculate alive soldiers for hover date
+                        const aliveSoldiers = this.soldiers.filter(s => s.death_date > hoverDate).length;
+                        const tooltipAlive = document.getElementById('tooltipAlive');
+                        if (tooltipAlive) {
+                            tooltipAlive.textContent = `נותרו: ${aliveSoldiers.toLocaleString()}`;
+                        }
+                        
+                        // Check if hover date matches any timeline event for cursor state
+                        const eventAtHoverDate = this.getEventAtDate(hoverDate);
+                        if (eventAtHoverDate) {
+                            container.classList.add('on-event');
+                        } else {
+                            container.classList.remove('on-event');
+                        }
+                    }
+                });
+                
+                container.addEventListener('mouseleave', () => {
+                    if (isTrackHovering) {
+                        track.classList.remove('hovering');
+                        container.classList.remove('track-hovering', 'on-event');
+                        isTrackHovering = false;
+                        
+                        // Restore tooltip to current slider position
+                        const currentSliderValue = parseInt(slider.value);
+                        const currentDate = new Date(this.todayDate);
+                        currentDate.setDate(currentDate.getDate() - currentSliderValue);
+                        this.updateTooltip(currentSliderValue, currentDate);
+                    }
+                    isHoveringHandle = false;
                 });
             }
 
@@ -3489,11 +3680,11 @@
                             this.updateTimelineDescription(targetEvent, true);
                         } else {
                             // Case: During transition but no target date - show nothing
-                            timelineDescriptionEl.innerHTML = '';
+                            this.updateTimelineDescription(null);
                         }
                     } else {
                         // Case: Manually selected date with no timeline event - show nothing
-                        timelineDescriptionEl.innerHTML = '';
+                        this.updateTimelineDescription(null);
                     }
                 }
                 

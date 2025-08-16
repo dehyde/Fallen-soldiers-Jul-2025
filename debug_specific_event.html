@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Specific Event</title>
+</head>
+<body>
+    <h1>Debug Specific Event: מתקפה קרקעית בשלושה צירים</h1>
+    <button id="testBtn">Test Event Data</button>
+    <div id="output"></div>
+    
+    <script>
+    async function testSpecificEvent() {
+        try {
+            // Load the events file
+            const response = await fetch('data/events-new.csv?v=' + Date.now());
+            const csvText = await response.text();
+            
+            console.log('CSV loaded, first 500 chars:', csvText.substring(0, 500));
+            
+            // Parse CSV manually like the main code does
+            const lines = csvText.split('\n').filter(line => line.trim());
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+            
+            console.log('Headers:', headers);
+            
+            const events = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line.trim()) continue;
+                
+                // Parse CSV with proper quote handling
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current); // Last value
+                
+                const event = {};
+                headers.forEach((header, index) => {
+                    event[header] = values[index] || '';
+                });
+                
+                // Parse date
+                if (event.date) {
+                    event.eventDate = new Date(event.date);
+                }
+                
+                events.push(event);
+            }
+            
+            // Find the specific event
+            const targetEvent = events.find(e => 
+                e.title_hebrew && e.title_hebrew.includes('מתקפה קרקעית בשלושה צירים')
+            );
+            
+            console.log('Target event found:', targetEvent);
+            
+            // Test if the description logic would work
+            let descriptionText = '';
+            if (targetEvent) {
+                descriptionText = targetEvent.description_hebrew || targetEvent.title_hebrew;
+            }
+            
+            // Display results
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <h3>Results:</h3>
+                <p><strong>Event found:</strong> ${targetEvent ? 'YES' : 'NO'}</p>
+                ${targetEvent ? `
+                    <h4>Event Details:</h4>
+                    <p><strong>ID:</strong> ${targetEvent.id}</p>
+                    <p><strong>Title:</strong> ${targetEvent.title_hebrew}</p>
+                    <p><strong>Description Hebrew:</strong> "${targetEvent.description_hebrew}"</p>
+                    <p><strong>Description length:</strong> ${targetEvent.description_hebrew ? targetEvent.description_hebrew.length : 0}</p>
+                    <p><strong>Show:</strong> ${targetEvent.show}</p>
+                    <p><strong>Date:</strong> ${targetEvent.date}</p>
+                    <p><strong>Event Date:</strong> ${targetEvent.eventDate}</p>
+                    <p><strong>Final description text:</strong> "${descriptionText}"</p>
+                    
+                    <h4>All Properties:</h4>
+                    <pre>${JSON.stringify(targetEvent, null, 2)}</pre>
+                ` : '<p>Event NOT found!</p>'}
+                
+                <h4>Sample of all events:</h4>
+                <ul>
+                    ${events.slice(0, 5).map(e => 
+                        `<li><strong>${e.title_hebrew}</strong><br>
+                         Desc: "${e.description_hebrew}"<br>
+                         Show: ${e.show}</li>`
+                    ).join('')}
+                </ul>
+            `;
+            
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('output').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        }
+    }
+    
+    document.getElementById('testBtn').addEventListener('click', testSpecificEvent);
+    
+    // Auto-run
+    window.addEventListener('load', testSpecificEvent);
+    </script>
+</body>
+</html>

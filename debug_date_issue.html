@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Date Issue</title>
+</head>
+<body>
+    <h1>Debug Date Issue</h1>
+    <button id="testBtn">Test Date Calculations</button>
+    <div id="output"></div>
+    
+    <script>
+    function testDateCalculations() {
+        // Test the timeline date calculations
+        const startDate = new Date('2023-10-27');
+        const todayDate = new Date();
+        
+        console.log('Start date:', startDate);
+        console.log('Today date:', todayDate);
+        
+        // Calculate total days like the timeline does
+        const totalDays = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        console.log('Total days:', totalDays);
+        
+        // Test what date slider value 0 represents
+        const daysBack = 0;
+        const currentDate = new Date(todayDate);
+        currentDate.setDate(currentDate.getDate() - daysBack);
+        console.log('Slider 0 represents date:', currentDate);
+        
+        // Test what date slider max value represents
+        const maxDaysBack = totalDays;
+        const maxDate = new Date(todayDate);
+        maxDate.setDate(maxDate.getDate() - maxDaysBack);
+        console.log('Slider max represents date:', maxDate);
+        
+        // Test first visible event date
+        const firstEventDate = new Date('2023-10-27');
+        const daysBackToFirstEvent = Math.floor((todayDate - firstEventDate) / (1000 * 60 * 60 * 24));
+        console.log('Days back to first event (Oct 27):', daysBackToFirstEvent);
+        
+        // Test Oct 26 for comparison
+        const oct26 = new Date('2023-10-26');
+        const daysBackToOct26 = Math.floor((todayDate - oct26) / (1000 * 60 * 60 * 24));
+        console.log('Days back to Oct 26:', daysBackToOct26);
+        
+        // Display results
+        const output = document.getElementById('output');
+        output.innerHTML = `
+            <h3>Date Calculations:</h3>
+            <p><strong>Start Date:</strong> ${startDate.toDateString()}</p>
+            <p><strong>Today:</strong> ${todayDate.toDateString()}</p>
+            <p><strong>Total Days:</strong> ${totalDays}</p>
+            <p><strong>Slider 0 (today):</strong> ${currentDate.toDateString()}</p>
+            <p><strong>Slider Max:</strong> ${maxDate.toDateString()}</p>
+            <p><strong>Days to Oct 27:</strong> ${daysBackToFirstEvent}</p>
+            <p><strong>Days to Oct 26:</strong> ${daysBackToOct26}</p>
+            
+            <h4>Expected behavior:</h4>
+            <p>When timeline starts, it should show today's date, and when you navigate to the first event, it should be Oct 27, 2023.</p>
+            <p>If you're seeing Oct 26, there might be an off-by-one error in the date calculation.</p>
+        `;
+    }
+    
+    document.getElementById('testBtn').addEventListener('click', testDateCalculations);
+    
+    // Auto-run
+    window.addEventListener('load', testDateCalculations);
+    </script>
+</body>
+</html>

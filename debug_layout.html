@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Layout</title>
+    <style>
+        .test-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            border: 2px solid red;
+            padding: 10px;
+        }
+        .item1 { background: blue; color: white; padding: 10px; }
+        .item2 { background: green; color: white; padding: 10px; }
+        .item3 { background: orange; color: white; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Expected: Item1 → Item2 → Item3</h1>
+    
+    <div class="test-container">
+        <div class="item1">Item1 (TITLE)</div>
+        <div class="item2">Item2 (BUTTON)</div>
+        <div class="item3">Item3 (DESCRIPTION)</div>
+    </div>
+    
+    <h2>What does this show?</h2>
+    <p>If this shows Item1 → Item2 → Item3, then basic flex is working.</p>
+    <p>If not, there's something else going on.</p>
+</body>
+</html>
