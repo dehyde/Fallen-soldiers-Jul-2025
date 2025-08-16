@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Continue Button</title>
+</head>
+<body>
+    <h1>Debug Continue Button Navigation</h1>
+    <button id="testBtn">Test Navigation</button>
+    <div id="output"></div>
+
+    <script>
+    // Simple test to understand the navigation sequence
+    async function testNavigation() {
+        try {
+            // Load timeline events
+            const response = await fetch('data/timeline-events.csv');
+            const csvText = await response.text();
+            const lines = csvText.split('\n');
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+            
+            const events = lines.slice(1).filter(line => line.trim()).map(line => {
+                const values = line.split(',').map(v => v.replace(/"/g, ''));
+                const event = {};
+                headers.forEach((header, index) => {
+                    event[header] = values[index] || '';
+                });
+                
+                // Add eventDate for sorting
+                const eventDate = new Date(event.date);
+                event.eventDate = eventDate;
+                return event;
+            });
+            
+            // Filter war-ending events
+            const warEndingEvents = events
+                .filter(event => event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war')
+                .sort((a, b) => parseInt(a.days_from_start) - parseInt(b.days_from_start));
+            
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <h3>All Timeline Events (${events.length} total):</h3>
+                <ul>
+                    ${events.map(e => `<li>ID ${e.id}: ${e.title_hebrew} (${e.could_have_ended})</li>`).join('')}
+                </ul>
+                
+                <h3>War-Ending Events in Navigation Order (${warEndingEvents.length} total):</h3>
+                <ol>
+                    ${warEndingEvents.map(e => `<li>ID ${e.id}: ${e.title_hebrew} - ${e.date} (${e.could_have_ended})</li>`).join('')}
+                </ol>
+            `;
+            
+            // Check specifically for Lebanon event
+            const lebanonEvent = events.find(e => e.title_hebrew && e.title_hebrew.includes('לבנון'));
+            if (lebanonEvent) {
+                output.innerHTML += `
+                    <h3>Lebanon Event Details:</h3>
+                    <p>ID: ${lebanonEvent.id}</p>
+                    <p>Title: ${lebanonEvent.title_hebrew}</p>
+                    <p>Date: ${lebanonEvent.date}</p>
+                    <p>could_have_ended: "${lebanonEvent.could_have_ended}"</p>
+                    <p>show: "${lebanonEvent.show}"</p>
+                    <p>Is in war-ending list? ${warEndingEvents.some(e => e.id === lebanonEvent.id) ? 'YES' : 'NO'}</p>
+                `;
+            } else {
+                output.innerHTML += '<h3>Lebanon Event NOT FOUND!</h3>';
+            }
+            
+        } catch (error) {
+            document.getElementById('output').innerHTML = `Error: ${error.message}`;
+        }
+    }
+    
+    document.getElementById('testBtn').addEventListener('click', testNavigation);
+    
+    // Auto-run on load
+    window.addEventListener('load', testNavigation);
+    </script>
+</body>
+</html>

@@ -145,6 +145,7 @@
             direction: rtl;
             line-height: 1.2;
             flex-shrink: 0;
+            position: relative;
         }
 
         .selected-date-in-title {
@@ -329,11 +330,15 @@
             background: linear-gradient(135deg, #333 0%, #555 100%);
             border: 2px solid #fff;
             border-radius: 50%;
-            cursor: pointer;
+            cursor: grab;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
             opacity: 1;
             z-index: 30;
+        }
+        
+        .timeline-slider:active::-webkit-slider-thumb {
+            cursor: grabbing;
         }
 
         .timeline-container:hover .timeline-slider::-webkit-slider-thumb {
@@ -372,10 +377,14 @@
             background: linear-gradient(135deg, #333 0%, #555 100%);
             border: 2px solid #fff;
             border-radius: 50%;
-            cursor: pointer;
+            cursor: grab;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
             opacity: 1;
             transition: opacity 0.2s ease;
+        }
+        
+        .timeline-slider:active::-moz-range-thumb {
+            cursor: grabbing;
         }
 
         .timeline-container:hover .timeline-slider::-moz-range-thumb {
@@ -585,6 +594,123 @@
         .cta-tertiary:hover {
             background: rgba(0,0,0,0.05);
             border-color: #bbb;
+        }
+
+        .cta-skip-back {
+            background: #000000;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Heebo', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            position: absolute;
+            left: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1001;
+        }
+
+        .cta-skip-back {
+            background: #000000;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Heebo', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: auto;
+            height: 32px;
+            position: absolute;
+            left: -80px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1001;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .cta-skip-back::after {
+            content: '⏭';
+            font-size: 14px;
+            line-height: 1;
+            transform: rotate(180deg);
+            display: inline-block;
+        }
+
+        .cta-skip-back:hover {
+            background: #333333;
+            opacity: 0.8;
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 20000;
+            pointer-events: auto;
+        }
+
+        /* Initial modal container */
+        .initial-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px;
+            background: rgba(255,255,255,0.90);
+            backdrop-filter: blur(8px);
+            border-radius: 4px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,0,0,0.1);
+            z-index: 20001;
+            direction: rtl;
+        }
+
+        .initial-modal-content {
+            padding: 20px;
+            text-align: right;
+        }
+
+        .initial-modal-text {
+            font-size: 1.1em;
+            line-height: 1.4;
+            color: #333;
+            margin-bottom: 20px;
+            font-family: 'Heebo', sans-serif;
+        }
+
+        .initial-modal-cta {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* Blur and fade specific elements when modal is open */
+        .timeline-container,
+        .header-container,
+        .status-components-container {
+            transition: filter 0.4s ease, opacity 0.4s ease;
+        }
+
+        .modal-open .timeline-container,
+        .modal-open .header-container,
+        .modal-open .status-components-container {
+            filter: blur(3px);
+            opacity: 0.3;
         }
 
         .timeline-tooltip {
@@ -912,6 +1038,22 @@
     </script>
 </head>
 <body>
+    <!-- Initial Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="initial-modal" id="initialModal">
+            <div class="initial-modal-content">
+                <div class="initial-modal-text" id="initialModalText">
+                    שבועיים אחרי השביעי באוקטובר צה״ל סיים את ההערכות למתקפה הקרקעית בעזה, שהייתה ירית הפתיחה למלחמה שמדינת ישראל מובילה עד היום.<br><br>
+                    השלב הזה במלחמה שנמשך גם בימים אלו גבה עד היום את חייהם של <span id="modalTotalSoldiers">___</span> חיילים במשך <span id="modalMonthsOfFighting">___</span> חודשים של לחימה.<br><br>
+                    את המחיר של אי-סיום המלחמה משלמים החיילים בחייהם.
+                </div>
+                <div class="initial-modal-cta">
+                    <button class="cta-primary" id="modalContinueBtn">המשך</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="draggable-container" id="draggableContainer">
         <div class="draggable-content">
             <div class="content-text" id="contentText">
@@ -925,6 +1067,8 @@
     </div>
 
     <div class="header-container">
+        <button class="cta-skip-back" id="ctaSkipBack" title="המשך להזדמנות הבאה">המשך</button>
+        
         <div class="names-title">
             הנופלים, ואלה שיכלו עוד להיות חיים<br>
             אם המלחמה הייתה מסתיימת&nbsp;&nbsp;<span class="selected-date-in-title">ב-<span id="selectedDateInTitle">30.1.2024</span></span>
@@ -997,9 +1141,9 @@
                 try {
                     const response = await safeFetch('data/narrative.csv');
                     const csvText = await response.text();
-                    console.log('CSV loaded:', csvText.substring(0, 200) + '...');
+                    // console.log('CSV loaded:', csvText.substring(0, 200) + '...');
                     this.parseNarrativeCsv(csvText);
-                    console.log(`Loaded ${this.narrativePoints.length} narrative points:`, this.narrativePoints);
+                    // console.log(`Loaded ${this.narrativePoints.length} narrative points:`, this.narrativePoints);
                 } catch (error) {
                     console.error('Error loading narrative:', error);
                     // Fallback content if CSV fails to load
@@ -1687,7 +1831,7 @@
                 const todayDate = this.timeline.todayDate;
                 const daysFromToday = Math.floor((todayDate - eventDate) / (1000 * 60 * 60 * 24));
                 
-                console.log(`Event ${eventId}: date=${event.date}, calculated days_from_today=${daysFromToday}`);
+                // console.log(`Event ${eventId}: date=${event.date}, calculated days_from_today=${daysFromToday}`);
                 return daysFromToday;
             }
 
@@ -1726,7 +1870,7 @@
                 if (this.currentAnimationId) {
                     clearTimeout(this.currentAnimationId);
                     this.currentAnimationId = null;
-                    console.log('Previous navigation cancelled, starting new one');
+                    // console.log('Previous navigation cancelled, starting new one');
                 }
                 
                 this.isNavigating = true;
@@ -1820,7 +1964,7 @@
                 const animate = () => {
                     // Check if animation was cancelled
                     if (!this.isNavigating) {
-                        console.log('Animation cancelled during execution');
+                        // console.log('Animation cancelled during execution');
                         return;
                     }
                     
@@ -1980,13 +2124,13 @@
                 // Recalculate font size after timeline changes with buffer
                 setTimeout(() => {
                     const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.startDate);
-                    console.log('Forcing font recalculation for', relevantSoldiers.length, 'soldiers');
+                    // console.log('Forcing font recalculation for', relevantSoldiers.length, 'soldiers');
                     
                     // Force container dimensions update
                     const container = document.getElementById('namesContainer');
                     const availableWidth = container.clientWidth;
                     const availableHeight = container.clientHeight;
-                    console.log('New container dimensions:', availableWidth, 'x', availableHeight);
+                    // console.log('New container dimensions:', availableWidth, 'x', availableHeight);
                     
                     if (availableWidth > 0 && availableHeight > 0) {
                         this.performFontSizeCalculation(relevantSoldiers.length, availableWidth, availableHeight);
@@ -1999,14 +2143,14 @@
                     const response = await safeFetch('data/idf-url-increment.csv');
                     const csvText = await response.text();
                     this.parseCsvData(csvText);
-                    console.log(`Loaded ${this.soldiers.length} soldiers`);
+                    // console.log(`Loaded ${this.soldiers.length} soldiers`);
                     
                     if (this.soldiers.length > 0) {
                         const dates = this.soldiers.map(s => s.death_date).sort((a,b) => a - b);
-                        console.log('Date range:', dates[0].toLocaleDateString(), 'to', dates[dates.length-1].toLocaleDateString());
+                        // console.log('Date range:', dates[0].toLocaleDateString(), 'to', dates[dates.length-1].toLocaleDateString());
                         
                         const afterOct26 = this.soldiers.filter(s => s.death_date >= this.startDate);
-                        console.log(`${afterOct26.length} soldiers died after Oct 27, 2023`);
+                        // console.log(`${afterOct26.length} soldiers died after Oct 27, 2023`);
                     }
                 } catch (error) {
                     console.error('Error loading data:', error);
@@ -2016,22 +2160,22 @@
 
             async loadTimelineEvents() {
                 try {
-                    console.log('Attempting to load timeline-events.csv...');
+                    // console.log('Attempting to load timeline-events.csv...');
                     const response = await safeFetch('data/timeline-events.csv');
-                    console.log('Response status:', response.status, response.statusText);
+                    // console.log('Response status:', response.status, response.statusText);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     
                     const csvText = await response.text();
-                    console.log('CSV text loaded:', csvText.substring(0, 200) + '...');
+                    // console.log('CSV text loaded:', csvText.substring(0, 200) + '...');
                     this.parseTimelineEvents(csvText);
-                    console.log(`Loaded ${this.timelineEvents.length} timeline events`);
+                    // console.log(`Loaded ${this.timelineEvents.length} timeline events`);
                 } catch (error) {
                     console.error('Error loading timeline events:', error);
                     // Create test events if CSV fails to load
-                    console.log('Creating test timeline events...');
+                    // console.log('Creating test timeline events...');
                     this.timelineEvents = [
                         {
                             id: 'test_event',
@@ -2041,24 +2185,24 @@
                             eventDate: new Date('2025-07-29')
                         }
                     ];
-                    console.log('Test events created:', this.timelineEvents.length);
+                    // console.log('Test events created:', this.timelineEvents.length);
                 }
             }
             
             async loadMilitaryEvents() {
                 try {
-                    console.log('Attempting to load military_events.csv...');
+                    // console.log('Attempting to load military_events.csv...');
                     const response = await safeFetch('data/military_events.csv');
-                    console.log('Response status:', response.status, response.statusText);
+                    // console.log('Response status:', response.status, response.statusText);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     
                     const csvText = await response.text();
-                    console.log('CSV text loaded:', csvText.substring(0, 200) + '...');
+                    // console.log('CSV text loaded:', csvText.substring(0, 200) + '...');
                     this.parseMilitaryEvents(csvText);
-                    console.log(`Loaded ${this.militaryEvents.length} military events`);
+                    // console.log(`Loaded ${this.militaryEvents.length} military events`);
                 } catch (error) {
                     console.error('Error loading military events:', error);
                     this.militaryEvents = [];
@@ -2216,12 +2360,20 @@
                         // Remove quotes and parse YYYY-MM-DD format directly
                         const cleanDate = event.date.replace(/"/g, '');
                         event.eventDate = new Date(cleanDate);
-                        console.log('Timeline event parsed:', event.title_hebrew, 'Original date:', event.date, 'Parsed date:', event.eventDate);
+                        // console.log('Timeline event parsed:', event.title_hebrew, 'Original date:', event.date, 'Parsed date:', event.eventDate);
                     }
                     
                     // Filter out hidden events
                     if (event.show && event.show.toLowerCase() === 'hide') {
-                        console.log('Hiding timeline event:', event.title_hebrew);
+                        // console.log('Hiding timeline event:', event.title_hebrew);
+                        continue;
+                    }
+                    
+                    // Filter to show only events that could have ended the war
+                    if (event.could_have_ended && 
+                        event.could_have_ended.toLowerCase() !== 'yes' && 
+                        event.could_have_ended.toLowerCase() !== 'ended_war') {
+                        // console.log('Filtering out event (could_have_ended != yes/ended_war):', event.title_hebrew);
                         continue;
                     }
                     
@@ -2268,11 +2420,11 @@
                     // Combine penetration depth and intensity for final combat intensity score
                     event.combatIntensity = event.penetrationKm + (event.intensityLevel * 2);
                     
-                    console.log('Military event parsed:', event.Date, event.Event_Type, 'Intensity:', event.combatIntensity);
+                    // console.log('Military event parsed:', event.Date, event.Event_Type, 'Intensity:', event.combatIntensity);
                     
                     this.militaryEvents.push(event);
                 }
-                console.log('Total military events loaded:', this.militaryEvents.length);
+                // console.log('Total military events loaded:', this.militaryEvents.length);
             }
 
             generateTimelineAxis() {
@@ -2364,17 +2516,19 @@
 
                 // Add timeline events markers
                 console.log('Adding timeline event markers, total events:', this.timelineEvents.length);
-                console.log('Timeline range:', startDate.toLocaleDateString(), 'to', endDate.toLocaleDateString());
-                console.log('Total timeline days:', totalDays);
+                // console.log('Timeline range:', startDate.toLocaleDateString(), 'to', endDate.toLocaleDateString());
+                // console.log('Total timeline days:', totalDays);
                 
                 let markersAdded = 0;
                 let markersSkipped = 0;
                 
                 // Sort events: war-ending events first, then by date (newest first)
                 const sortedEvents = this.timelineEvents.slice().sort((a, b) => {
-                    // War-ending events (could_have_ended: 'yes') come first
-                    if (a.could_have_ended === 'yes' && b.could_have_ended !== 'yes') return -1;
-                    if (b.could_have_ended === 'yes' && a.could_have_ended !== 'yes') return 1;
+                    // War-ending events (could_have_ended: 'yes' or 'ended_war') come first
+                    const aIsWarEnding = (a.could_have_ended === 'yes' || a.could_have_ended === 'ended_war');
+                    const bIsWarEnding = (b.could_have_ended === 'yes' || b.could_have_ended === 'ended_war');
+                    if (aIsWarEnding && !bIsWarEnding) return -1;
+                    if (bIsWarEnding && !aIsWarEnding) return 1;
                     
                     // Within same priority, sort by date (newest first)
                     return b.eventDate - a.eventDate;
@@ -2391,14 +2545,20 @@
                         console.log(`Event "${event.title_hebrew}": eventDate=${event.eventDate.toISOString()}, daysDiff=${daysDiff}, position=${position.toFixed(1)}%`);
                         
                         if (position >= 0 && position <= 100) {
-                            // Skip military category events from display
-                            if (event.category === 'military') {
-                                markersSkipped++;
-                                return;
-                            }
+                            // Show events that either:
+                            // 1. Could have ended the war (could_have_ended: 'yes' or 'ended_war')
+                            // 2. Are military-related or other events with show='show' that are NOT war-ending
+                            const isMilitaryEvent = event.category === 'military' || 
+                                                  event.category === 'military_withdrawal' || 
+                                                  event.category === 'military_operation' ||
+                                                  event.category === 'extremist_statement';
+                            const isWarEndingEvent = event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war';
+                            const shouldShow = isWarEndingEvent || 
+                                             (event.show === 'show' && !isWarEndingEvent);
                             
-                            // For now, only show events that could have ended the war
-                            if (event.could_have_ended !== 'yes') {
+                            console.log(`Event "${event.title_hebrew}": category=${event.category}, could_have_ended=${event.could_have_ended}, show=${event.show}, isMilitaryEvent=${isMilitaryEvent}, isWarEndingEvent=${isWarEndingEvent}, shouldShow=${shouldShow}`);
+                            
+                            if (!shouldShow) {
                                 markersSkipped++;
                                 return;
                             }
@@ -2419,12 +2579,15 @@
                             marker.style.width = '8px';
                             marker.style.height = '8px';
                             
-                            // Set color - use blue for events that could have ended the war
-                            let markerColor = '#1168FF'; // Blue for war-ending events
-                            if (event.could_have_ended !== 'yes') {
-                                // Fallback colors for other events (though we're not showing them currently)
+                            // Set color based on event type
+                            let markerColor;
+                            if (isWarEndingEvent) {
+                                markerColor = '#1168FF'; // Blue for war-ending events
+                            } else if (isMilitaryEvent) {
+                                markerColor = '#000000'; // Black for military events
+                            } else {
+                                // Fallback colors for other events
                                 switch(event.category) {
-                                    case 'military': markerColor = '#808000'; break; // olive green
                                     case 'political': markerColor = '#666666'; break; // gray
                                     case 'diplomatic': markerColor = '#666666'; break; // gray
                                     case 'legal': markerColor = '#9900cc'; break; // purple
@@ -2436,7 +2599,7 @@
                             marker.style.borderRadius = '50%';
                             
                             // Add class for potential transformation
-                            if (event.could_have_ended === 'yes') {
+                            if (event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war') {
                                 marker.classList.add('could-have-ended-marker');
                             } else {
                                 // Make regular markers diamond-shaped from the beginning
@@ -2452,7 +2615,7 @@
                             // Create diagonal label
                             const label = document.createElement('div');
                             label.className = 'timeline-event-label';
-                            if (event.could_have_ended === 'yes') {
+                            if (event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war') {
                                 label.classList.add('war-ending');
                             }
                             label.textContent = event.title_hebrew;
@@ -2462,7 +2625,7 @@
                             label.style.position = 'absolute';
                             label.style.right = `calc(${100 - position}% + 10px)`; // Position from right side
                             label.style.top = `${trackOffsetFromAxis - 18}px`; // Above the marker
-                            label.style.transform = 'rotate(45deg)';
+                            label.style.transform = 'rotate(30deg)';
                             label.style.transformOrigin = 'right bottom';
                             
                             axisContainer.appendChild(label);
@@ -2558,19 +2721,19 @@
                             };
                             
                             axisContainer.appendChild(marker);
-                            console.log(`✅ Successfully added marker for: ${event.title_hebrew} (${event.stance}) at position ${position.toFixed(1)}% - BELOW timeline`);
+                            // console.log(`✅ Successfully added marker for: ${event.title_hebrew} (${event.stance}) at position ${position.toFixed(1)}% - BELOW timeline`);
                             markersAdded++;
                         } else {
-                            console.log(`❌ Skipping event "${event.title_hebrew}" - position out of range: ${position.toFixed(1)}%`);
+                            // console.log(`❌ Skipping event "${event.title_hebrew}" - position out of range: ${position.toFixed(1)}%`);
                             markersSkipped++;
                         }
                     } else {
-                        console.log(`❌ Skipping event "${event.title_hebrew}" - invalid date:`, event.eventDate);
+                        // console.log(`❌ Skipping event "${event.title_hebrew}" - invalid date:`, event.eventDate);
                         markersSkipped++;
                     }
                 });
                 
-                console.log(`\n📊 Timeline markers summary: ${markersAdded} added, ${markersSkipped} skipped, ${this.timelineEvents.length} total`);
+                // console.log(`\n📊 Timeline markers summary: ${markersAdded} added, ${markersSkipped} skipped, ${this.timelineEvents.length} total`);
                 
                 // Generate area chart after timeline axis
                 this.generateAreaChart();
@@ -2625,11 +2788,11 @@
                     this.updateVisualization();
                 }, 10);
                 
-                console.log(`Jumped to event date: ${eventDate.toLocaleDateString()}, days back: ${constrainedDays}`);
+                // console.log(`Jumped to event date: ${eventDate.toLocaleDateString()}, days back: ${constrainedDays}`);
             }
 
             generateAreaChart() {
-                console.log('Generating area chart for cumulative fallen soldiers');
+                // console.log('Generating area chart for cumulative fallen soldiers');
                 
                 const totalDays = this.getTotalTimelineDays();
                 const weeklyData = [];
@@ -2747,17 +2910,17 @@
                     Math.ceil((this.todayDate - this.currentEndDate) / (1000 * 60 * 60 * 24)) : 0;
                 const currentTimelineProgress = (daysFromToday / totalDays) * 100;
                 
-                console.log('Timeline split calculation:', {
-                    totalDays,
-                    daysFromToday,
-                    currentTimelineProgress,
-                    currentEndDate: this.currentEndDate
-                });
+                // console.log('Timeline split calculation:', {
+                //     totalDays,
+                //     daysFromToday,
+                //     currentTimelineProgress,
+                //     currentEndDate: this.currentEndDate
+                // });
                 
                 // Split the chart at the current timeline position
                 this.generateSplitAreaChart(points, viewBoxHeight, currentTimelineProgress);
                 
-                console.log(`RTL Area chart generated: ${weeklyData.length} weeks, max fallen: ${maxFallen}`);
+                // console.log(`RTL Area chart generated: ${weeklyData.length} weeks, max fallen: ${maxFallen}`);
                 
                 // Generate military events chart
                 // this.generateMilitaryEventsChart(); // Hidden as requested
@@ -2766,14 +2929,14 @@
             generateSplitAreaChart(points, viewBoxHeight, splitPosition) {
                 if (points.length === 0) return;
                 
-                console.log('Splitting chart at position:', splitPosition, 'with', points.length, 'points');
-                console.log('Points X positions:', points.map(p => p.x.toFixed(1)));
+                // console.log('Splitting chart at position:', splitPosition, 'with', points.length, 'points');
+                // console.log('Points X positions:', points.map(p => p.x.toFixed(1)));
                 
                 // Split points into past (right of split) and future (left of split) 
                 const pastPoints = points.filter(p => p.x >= splitPosition);
                 const futurePoints = points.filter(p => p.x <= splitPosition);
                 
-                console.log('Past points:', pastPoints.length, 'Future points:', futurePoints.length);
+                // console.log('Past points:', pastPoints.length, 'Future points:', futurePoints.length);
                 
                 // Add split point if needed to connect the two sections
                 if (pastPoints.length > 0 && futurePoints.length > 0) {
@@ -2875,10 +3038,10 @@
             }
             
             generateMilitaryEventsChart() {
-                console.log('Generating military events combat intensity bar chart');
+                // console.log('Generating military events combat intensity bar chart');
                 
                 if (!this.militaryEvents || this.militaryEvents.length === 0) {
-                    console.log('No military events data available');
+                    // console.log('No military events data available');
                     return;
                 }
                 
@@ -2986,10 +3149,10 @@
                     svg.insertBefore(rect, svg.firstChild);
                     svg.insertBefore(topBorder, svg.firstChild);
                     
-                    console.log(`Bar ${index}: X=${barStartX}-${barEndX} (width=${barWidth}), Height=${barHeight}, Intensity=${period.intensity}`);
+                    // console.log(`Bar ${index}: X=${barStartX}-${barEndX} (width=${barWidth}), Height=${barHeight}, Intensity=${period.intensity}`);
                 });
                 
-                console.log(`Military events bar chart generated: ${timePeriods.length} periods, ${timePeriods.filter(p => p.intensity > 0).length} visible bars`);
+                // console.log(`Military events bar chart generated: ${timePeriods.length} periods, ${timePeriods.filter(p => p.intensity > 0).length} visible bars`);
             }
 
             setupEventListeners() {
@@ -3094,18 +3257,99 @@
                 const ctaContinue = document.getElementById('ctaContinue');
 
                 ctaBack.addEventListener('click', () => {
-                    const prevPoint = this.narrative.getPrevPoint();
-                    if (prevPoint) {
-                        this.narrative.navigateToPoint(prevPoint.id);
+                    const prevEvent = this.getPrevTimelineEvent();
+                    if (prevEvent) {
+                        this.jumpToEventDate(prevEvent);
                     }
                 });
 
                 ctaContinue.addEventListener('click', () => {
-                    const nextPoint = this.narrative.getNextPoint();
-                    if (nextPoint) {
-                        this.narrative.navigateToPoint(nextPoint.id);
+                    console.log('המשך button clicked');
+                    const nextEvent = this.getNextTimelineEvent();
+                    console.log('Next event found:', nextEvent);
+                    if (nextEvent) {
+                        console.log('Jumping to event:', nextEvent.title_hebrew);
+                        this.jumpToEventDate(nextEvent);
+                    } else {
+                        console.log('No next event found');
                     }
                 });
+            }
+
+            getNextTimelineEvent() {
+                if (!this.timelineEvents) {
+                    console.log('No timelineEvents available');
+                    return null;
+                }
+                
+                // Get all war-ending events sorted by days_from_start (oldest first)
+                const warEndingEvents = this.timelineEvents
+                    .filter(event => event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war')
+                    .sort((a, b) => parseInt(a.days_from_start) - parseInt(b.days_from_start));
+                
+                console.log('War-ending events:', warEndingEvents.map(e => ({id: e.id, title: e.title_hebrew})));
+                
+                if (warEndingEvents.length === 0) {
+                    console.log('No war-ending events found');
+                    return null;
+                }
+                
+                // Calculate current timeline position
+                const timelineSlider = document.getElementById('timelineSlider');
+                const currentSliderValue = parseInt(timelineSlider.value);
+                
+                // Calculate current date from slider position
+                const currentDaysBack = currentSliderValue;
+                const currentDate = new Date(this.todayDate);
+                currentDate.setDate(currentDate.getDate() - currentDaysBack);
+                
+                console.log('Current date:', currentDate.toDateString(), 'Slider value:', currentSliderValue);
+                
+                // Find the next war-ending event chronologically AFTER current date
+                let nextEvent = warEndingEvents.find(event => {
+                    console.log('Checking event:', event.title_hebrew, 'Date:', event.eventDate, 'After current?', event.eventDate > currentDate);
+                    return event.eventDate > currentDate;
+                });
+                
+                // If no event found after current position, loop back to the first event
+                if (!nextEvent) {
+                    console.log('No next event found, looping to first');
+                    nextEvent = warEndingEvents[0];
+                }
+                
+                return nextEvent;
+            }
+
+            getPrevTimelineEvent() {
+                if (!this.timelineEvents) return null;
+                
+                // Get all war-ending events sorted by days_from_start (newest first)
+                const warEndingEvents = this.timelineEvents
+                    .filter(event => event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war')
+                    .sort((a, b) => parseInt(b.days_from_start) - parseInt(a.days_from_start));
+                
+                if (warEndingEvents.length === 0) return null;
+                
+                // Calculate current timeline position
+                const timelineSlider = document.getElementById('timelineSlider');
+                const currentSliderValue = parseInt(timelineSlider.value);
+                
+                // Calculate current date from slider position
+                const currentDaysBack = currentSliderValue;
+                const currentDate = new Date(this.todayDate);
+                currentDate.setDate(currentDate.getDate() - currentDaysBack);
+                
+                // Find the previous war-ending event chronologically BEFORE current date
+                let prevEvent = warEndingEvents.find(event => {
+                    return event.eventDate < currentDate;
+                });
+                
+                // If no event found before current position, loop back to the last event
+                if (!prevEvent) {
+                    prevEvent = warEndingEvents[0]; // This is the newest event due to reverse sort
+                }
+                
+                return prevEvent;
             }
 
             updateTooltip(days, currentDate) {
@@ -3330,7 +3574,7 @@
                     start: () => {
                         if (autoHoverSystem.active) return;
                         autoHoverSystem.active = true;
-                        console.log('Starting auto-hover system');
+                        // console.log('Starting auto-hover system');
                         autoHoverSystem.scheduleNext();
                     },
                     
@@ -3575,14 +3819,14 @@
                             
                             // Handle image with fade-in animation
                             if (imageUrl && imageUrl.trim()) {
-                                console.log('Attempting to load image for', name, 'URL:', imageUrl);
+                                // console.log('Attempting to load image for', name, 'URL:', imageUrl);
                                 
                                 // Show container after clearing previous image
                                 soldierPhotoEl.style.display = 'block';
                                 
                                 // Set up load handler for fade-in animation
                                 soldierImageEl.onload = () => {
-                                    console.log('Image loaded successfully for', name);
+                                    // console.log('Image loaded successfully for', name);
                                     // Only fade in if this is still the current soldier being displayed
                                     if (currentSoldierName === name) {
                                         soldierImageEl.style.opacity = '1';
@@ -3591,7 +3835,7 @@
                                 
                                 // Add error handler to hide image if it fails to load
                                 soldierImageEl.onerror = () => {
-                                    console.log('Image failed to load for', name);
+                                    // console.log('Image failed to load for', name);
                                     soldierPhotoEl.style.display = 'none';
                                 };
                                 
@@ -3697,7 +3941,7 @@
             }
 
             applySafeFontSize() {
-                console.log('Applying safe fixed font size');
+                // console.log('Applying safe fixed font size');
                 const soldierNames = document.querySelectorAll('.soldier-name');
                 const isMobile = window.innerWidth <= 768;
                 const safeFontSize = isMobile ? 4 : 7; // Smaller minimum on mobile
@@ -3706,20 +3950,20 @@
                     name.style.fontSize = safeFontSize + 'px';
                 });
                 
-                console.log(`Applied safe font size: ${safeFontSize}px to ${soldierNames.length} names`);
+                // console.log(`Applied safe font size: ${safeFontSize}px to ${soldierNames.length} names`);
                 
                 // Verify it works
                 setTimeout(() => {
                     const container = document.getElementById('namesContainer');
                     const isOverflowing = container.scrollHeight > container.clientHeight;
-                    console.log(`Safe font check - overflowing: ${isOverflowing}, scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
+                    // console.log(`Safe font check - overflowing: ${isOverflowing}, scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
                 }, 100);
             }
 
             calculateOptimalFontSize(totalNames) {
                 // This function is now deprecated - redirect to the proper calculation
                 const container = document.getElementById('namesContainer');
-                console.log('calculateOptimalFontSize called - redirecting to performFontSizeCalculation');
+                // console.log('calculateOptimalFontSize called - redirecting to performFontSizeCalculation');
                 
                 setTimeout(() => {
                     const availableWidth = container.clientWidth;
@@ -3732,11 +3976,11 @@
             
             debugOverflow(container, soldierNames, checkNumber) {
                 const isOverflowing = container.scrollHeight > container.clientHeight;
-                console.log(`\n--- OVERFLOW CHECK ${checkNumber} ---`);
-                console.log(`Container scrollHeight: ${container.scrollHeight}px`);
-                console.log(`Container clientHeight: ${container.clientHeight}px`);
-                console.log(`Is overflowing: ${isOverflowing}`);
-                console.log(`Overflow amount: ${container.scrollHeight - container.clientHeight}px`);
+                // console.log(`\n--- OVERFLOW CHECK ${checkNumber} ---`);
+                // console.log(`Container scrollHeight: ${container.scrollHeight}px`);
+                // console.log(`Container clientHeight: ${container.clientHeight}px`);
+                // console.log(`Is overflowing: ${isOverflowing}`);
+                // console.log(`Overflow amount: ${container.scrollHeight - container.clientHeight}px`);
                 
                 // Check last visible elements
                 const containerRect = container.getBoundingClientRect();
@@ -3749,21 +3993,21 @@
                     }
                 });
                 
-                console.log(`Last visible name index: ${lastVisibleIndex} out of ${soldierNames.length}`);
-                console.log(`Names potentially hidden: ${soldierNames.length - lastVisibleIndex - 1}`);
+                // console.log(`Last visible name index: ${lastVisibleIndex} out of ${soldierNames.length}`);
+                // console.log(`Names potentially hidden: ${soldierNames.length - lastVisibleIndex - 1}`);
                 
                 // Show details of names around the cutoff
                 for (let i = Math.max(0, lastVisibleIndex - 2); i < Math.min(soldierNames.length, lastVisibleIndex + 10); i++) {
                     const name = soldierNames[i];
                     const rect = name.getBoundingClientRect();
                     const isVisible = rect.bottom <= containerRect.bottom && rect.top >= containerRect.top;
-                    console.log(`[${i}] "${name.textContent.substring(0, 15)}..." visible: ${isVisible}, bottom: ${rect.bottom}, container bottom: ${containerRect.bottom}`);
+                    // console.log(`[${i}] "${name.textContent.substring(0, 15)}..." visible: ${isVisible}, bottom: ${rect.bottom}, container bottom: ${containerRect.bottom}`);
                 }
                 
                 if (isOverflowing && checkNumber === 3) {
                     const isMobile = window.innerWidth <= 768;
                     const finalSize = isMobile ? '5px' : '9px';
-                    console.log(`\n!!! FINAL ATTEMPT - SETTING TO ${finalSize} !!!`);
+                    // console.log(`\n!!! FINAL ATTEMPT - SETTING TO ${finalSize} !!!`);
                     soldierNames.forEach(name => {
                         name.style.fontSize = finalSize;
                     });
@@ -3773,8 +4017,8 @@
             performFontSizeCalculation(totalNames, availableWidth, availableHeight) {
                 const soldierNames = document.querySelectorAll('.soldier-name');
                 
-                console.log(`\n=== MATHEMATICAL FONT CALCULATION ===`);
-                console.log(`Names: ${totalNames}, Available: ${availableWidth}x${availableHeight}px`);
+                // console.log(`\n=== MATHEMATICAL FONT CALCULATION ===`);
+                // console.log(`Names: ${totalNames}, Available: ${availableWidth}x${availableHeight}px`);
                 
                 // Use mathematical approach instead of trial-and-error
                 const optimalFontSize = this.calculateOptimalFontSizeMathematically(
@@ -3783,7 +4027,7 @@
                     availableHeight
                 );
                 
-                console.log(`Calculated optimal font size: ${optimalFontSize}px`);
+                // console.log(`Calculated optimal font size: ${optimalFontSize}px`);
                 
                 // Apply the calculated font size
                 soldierNames.forEach(name => {
@@ -3797,21 +4041,21 @@
                     const clientHeight = container.clientHeight;
                     const fillRatio = scrollHeight / clientHeight;
                     
-                    console.log(`Verification: scrollHeight=${scrollHeight}px, clientHeight=${clientHeight}px`);
-                    console.log(`Fill ratio: ${(fillRatio * 100).toFixed(1)}% (target: 90-98%)`);
+                    // console.log(`Verification: scrollHeight=${scrollHeight}px, clientHeight=${clientHeight}px`);
+                    // console.log(`Fill ratio: ${(fillRatio * 100).toFixed(1)}% (target: 90-98%)`);
                     
                     if (fillRatio < 0.85) {
-                        console.log('⚠️ Under-filled, could use larger font');
+                        // console.log('⚠️ Under-filled, could use larger font');
                     } else if (fillRatio > 1.02) {
-                        console.log('⚠️ Overflowing, need smaller font');
+                        // console.log('⚠️ Overflowing, need smaller font');
                         // Auto-correct if overflowing
                         const correctedSize = optimalFontSize * 0.95;
-                        console.log(`Auto-correcting to ${correctedSize.toFixed(1)}px`);
+                        // console.log(`Auto-correcting to ${correctedSize.toFixed(1)}px`);
                         soldierNames.forEach(name => {
                             name.style.fontSize = correctedSize + 'px';
                         });
                     } else {
-                        console.log('✅ Good fill ratio achieved');
+                        // console.log('✅ Good fill ratio achieved');
                     }
                 }, 100);
             }
@@ -3821,7 +4065,7 @@
                 const totalCharacters = names.reduce((sum, name) => sum + name.length, 0);
                 const avgNameLength = totalCharacters / names.length;
                 
-                console.log(`Content analysis: ${totalCharacters} chars, avg ${avgNameLength.toFixed(1)} per name`);
+                // console.log(`Content analysis: ${totalCharacters} chars, avg ${avgNameLength.toFixed(1)} per name`);
                 
                 // Step 2: Font and layout constants (measured from Handjet font)
                 const charWidthRatio = 0.55; // Character width relative to font size
@@ -3833,20 +4077,20 @@
                 const targetFillRatio = 0.95;
                 const targetHeight = availableHeight * targetFillRatio;
                 
-                console.log(`Target height: ${targetHeight}px (${(targetFillRatio*100).toFixed(0)}% of ${availableHeight}px)`);
+                // console.log(`Target height: ${targetHeight}px (${(targetFillRatio*100).toFixed(0)}% of ${availableHeight}px)`);
                 
                 // Step 4: Binary search for optimal font size (much more efficient than old method)
                 let minFont = 8;
                 let maxFont = Math.min(200, availableHeight / 5); // Reasonable upper bound
                 let bestFont = minFont;
                 
-                console.log(`Binary search range: ${minFont}px - ${maxFont}px`);
+                // console.log(`Binary search range: ${minFont}px - ${maxFont}px`);
                 
                 for (let iteration = 0; iteration < 20; iteration++) {
                     const testFont = (minFont + maxFont) / 2;
                     const predictedHeight = this.predictLayoutHeight(names, testFont, availableWidth, charWidthRatio, lineHeight, padding, gap);
                     
-                    console.log(`  Test ${testFont.toFixed(1)}px → height ${predictedHeight.toFixed(1)}px`);
+                    // console.log(`  Test ${testFont.toFixed(1)}px → height ${predictedHeight.toFixed(1)}px`);
                     
                     if (predictedHeight <= targetHeight) {
                         bestFont = testFont;
@@ -3859,7 +4103,7 @@
                     if (maxFont - minFont < 0.5) break;
                 }
                 
-                console.log(`Binary search result: ${bestFont.toFixed(1)}px`);
+                // console.log(`Binary search result: ${bestFont.toFixed(1)}px`);
                 
                 // Step 5: Ensure reasonable bounds
                 return Math.max(8, Math.min(150, bestFont));
@@ -3897,7 +4141,7 @@
                 const soldierElements = document.querySelectorAll('.soldier-name');
                 let aliveCount = 0;
                 
-                console.log('updateVisualization called, currentEndDate:', this.currentEndDate);
+                // console.log('updateVisualization called, currentEndDate:', this.currentEndDate);
                 let dyingStarted = 0;
                 
                 // First pass: identify soldiers who should start dying
@@ -3925,7 +4169,7 @@
                     this.soldierStates.set(elementId, 'dying');
                     dyingStarted++;
                     
-                    console.log(`Started dying animation for soldier ${el.textContent} (${deathDate.toDateString()})`);
+                    // console.log(`Started dying animation for soldier ${el.textContent} (${deathDate.toDateString()})`);
                     
                     // Set timeout to start fade transition after initial highlight
                     const timeoutId = setTimeout(() => {
@@ -3982,7 +4226,7 @@
                     }
                 });
                 
-                console.log('Alive count:', aliveCount, 'out of', soldierElements.length, '| Dying animations started:', dyingStarted);
+                // console.log('Alive count:', aliveCount, 'out of', soldierElements.length, '| Dying animations started:', dyingStarted);
                 
                 // Update count in draggable container - DISABLED to avoid conflicts with main updateTooltip function
                 // const aliveCountSpan = document.getElementById('aliveCount');
@@ -4000,8 +4244,164 @@
             }
         }
 
+        // Modal functionality
+        document.body.classList.add('modal-open'); // Add blur on page load
+        
+        // Populate modal with dynamic numbers once memorial is loaded
+        setTimeout(() => {
+            if (memorial.soldiers && memorial.startDate && memorial.todayDate) {
+                // Calculate total soldiers killed since ground operation start
+                const totalSoldiers = memorial.soldiers.filter(s => 
+                    s.death_date >= memorial.startDate
+                ).length;
+                
+                // Calculate months of fighting from start date to today
+                const startDate = memorial.startDate;
+                const todayDate = memorial.todayDate;
+                const monthsDiff = Math.round((todayDate - startDate) / (1000 * 60 * 60 * 24 * 30.44)); // Average days per month
+                
+                // Update modal text
+                document.getElementById('modalTotalSoldiers').textContent = totalSoldiers;
+                document.getElementById('modalMonthsOfFighting').textContent = monthsDiff;
+                
+                // console.log('Modal populated:', totalSoldiers, 'soldiers over', monthsDiff, 'months');
+            }
+        }, 1000); // Wait for data to load
+        
+        document.getElementById('modalContinueBtn').addEventListener('click', function() {
+            const overlay = document.getElementById('modalOverlay');
+            document.body.classList.remove('modal-open'); // Remove blur
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.3s ease';
+            
+            // Animate timeline to the beginning quickly with ease-out
+            const timelineSlider = document.getElementById('timelineSlider');
+            if (timelineSlider) {
+                const maxValue = parseInt(timelineSlider.max);
+                let currentValue = parseInt(timelineSlider.value);
+                
+                // Animation to beginning with dramatic ease-out
+                const duration = 2000; // 2 seconds
+                const startTime = performance.now();
+                
+                function animateToBeginning(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Dramatic ease-out function (quintic for stronger deceleration)
+                    const easeOut = 1 - Math.pow(1 - progress, 5);
+                    
+                    const newValue = currentValue + (maxValue - currentValue) * easeOut;
+                    timelineSlider.value = newValue;
+                    
+                    // Trigger the timeline update
+                    const event = new Event('input', { bubbles: true });
+                    timelineSlider.dispatchEvent(event);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateToBeginning);
+                    }
+                }
+                
+                requestAnimationFrame(animateToBeginning);
+            }
+            
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
+        });
+
         // Initialize the memorial
-        new TimelineMemorial();
+        const memorial = new TimelineMemorial();
+        
+        // Skip-back CTA functionality - jump to next war-ending event
+        document.getElementById('ctaSkipBack').addEventListener('click', function() {
+            if (!memorial.timelineEvents) return;
+            
+            // Get all war-ending events sorted by date (chronological order: past to future)
+            const warEndingEvents = memorial.timelineEvents
+                .filter(event => event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war')
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            console.log('War-ending events:', warEndingEvents.map(e => ({id: e.id, title: e.title_hebrew, date: e.date, could_have_ended: e.could_have_ended})));
+            
+            if (warEndingEvents.length === 0) return;
+            
+            // Calculate current timeline position
+            const timelineSlider = document.getElementById('timelineSlider');
+            const currentSliderValue = parseInt(timelineSlider.value);
+            const maxSliderValue = parseInt(timelineSlider.max);
+            
+            // console.log('Current slider value:', currentSliderValue);
+            // console.log('War-ending events:', warEndingEvents.map(e => ({title: e.title_hebrew, days: e.days_from_start})));
+            
+            // Calculate current date from slider position (using same logic as timeline)
+            const currentDaysBack = currentSliderValue;
+            const currentDate = new Date(memorial.todayDate);
+            currentDate.setDate(currentDate.getDate() - currentDaysBack);
+            
+            // console.log('Current slider value:', currentSliderValue, 'represents date:', currentDate.toDateString());
+            
+            // Find the current event based on timeline position
+            let currentEventIndex = -1;
+            for (let i = 0; i < warEndingEvents.length; i++) {
+                const eventDaysBack = Math.floor((memorial.todayDate - warEndingEvents[i].eventDate) / (1000 * 60 * 60 * 24));
+                console.log('Event:', warEndingEvents[i].title_hebrew, 'days back:', eventDaysBack, 'current slider:', currentSliderValue);
+                // If we're at or very close to this event (within a few days), consider it current
+                if (Math.abs(eventDaysBack - currentSliderValue) <= 3) {
+                    currentEventIndex = i;
+                    console.log('Found current event at index:', i, warEndingEvents[i].title_hebrew);
+                    break;
+                }
+            }
+            
+            // Get next event in sequence
+            let nextEvent;
+            if (currentEventIndex >= 0 && currentEventIndex < warEndingEvents.length - 1) {
+                // Move to next event in chronological order (older to newer)
+                nextEvent = warEndingEvents[currentEventIndex + 1];
+                console.log('Moving to next event:', nextEvent.title_hebrew);
+            } else {
+                // If at the end or no current event found, loop back to first
+                nextEvent = warEndingEvents[0];
+                console.log('Looping to first event:', nextEvent.title_hebrew);
+            }
+            
+            console.log('Next event selected:', nextEvent.title_hebrew, 'at date:', nextEvent.eventDate);
+            
+            // Calculate target slider position using same logic as jumpToEventDate
+            const daysBack = Math.floor((memorial.todayDate - nextEvent.eventDate) / (1000 * 60 * 60 * 24));
+            const totalDays = memorial.getTotalTimelineDays();
+            const targetSliderValue = Math.max(0, Math.min(totalDays, daysBack));
+            
+            // console.log('Target slider value:', targetSliderValue);
+            
+            // Animate to the target position
+            const startValue = currentSliderValue;
+            const duration = 1200; // 1.2 seconds
+            const startTime = performance.now();
+            
+            function animateToEvent(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease-out function (cubic for smooth deceleration)
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                
+                const newValue = startValue + (targetSliderValue - startValue) * easeOut;
+                timelineSlider.value = newValue;
+                
+                // Trigger the timeline update
+                const event = new Event('input', { bubbles: true });
+                timelineSlider.dispatchEvent(event);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateToEvent);
+                }
+            }
+            
+            requestAnimationFrame(animateToEvent);
+        });
     </script>
 </body>
 </html>
