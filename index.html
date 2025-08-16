@@ -350,7 +350,8 @@
             top: -1.5px; /* Center slider on track to align thumb with progress bar */
             cursor: default;
             -webkit-appearance: none;
-            z-index: 1; /* Allow markers to be above slider */
+            z-index: 50; /* Higher than markers */
+            pointer-events: none; /* Don't block markers */
         }
 
         .timeline-slider::-webkit-slider-track {
@@ -359,6 +360,7 @@
             background: #333;
             border: none;
             outline: none;
+            pointer-events: none; /* Don't block marker hover */
         }
 
         #timelineSlider::-webkit-slider-track {
@@ -381,7 +383,8 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
             opacity: 1;
-            z-index: 30;
+            z-index: 10000; /* Extremely high z-index for handle */
+            pointer-events: auto; /* Handle should be draggable */
         }
         
         .timeline-slider:active::-webkit-slider-thumb {
@@ -402,6 +405,7 @@
             background: #333;
             border: none;
             outline: none;
+            pointer-events: none; /* Don't block marker hover */
         }
 
         #timelineSlider::-moz-range-track {
@@ -428,6 +432,8 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
             opacity: 1;
             transition: opacity 0.2s ease;
+            z-index: 10000; /* Extremely high z-index for handle */
+            pointer-events: auto; /* Handle should be draggable */
         }
         
         .timeline-slider:active::-moz-range-thumb {
@@ -671,30 +677,18 @@
             font-weight: 300 !important;
             font-size: 13px !important;
             position: absolute !important;
-            left: -160px !important;
+            left: -120px !important;
             top: 50% !important;
             transform: translateY(-50%) !important;
             z-index: 1001 !important;
         }
 
-        /* Styles moved to first .cta-skip-back block */
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            position: absolute;
-            left: -120px;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 1001;
-            font-size: 12px;
-            white-space: nowrap;
-        }
+        /* Styles moved to first .cta-skip-back block - removing orphaned CSS */
 
         .cta-skip-back .lucide {
             width: 16px !important;
             height: 16px !important;
-            transform: scaleX(-1);
+            transform: scaleX(1); /* Remove flip */
             color: #4e4e4e;
             position: relative !important;
             top: 4px !important;
@@ -706,9 +700,8 @@
             height: 16px !important;
             stroke-width: 3 !important;
         }
-        }
-        }
-        }
+        
+        .cta-skip-back {
             flex-shrink: 0 !important;
         }
 
@@ -2662,9 +2655,9 @@
                             marker.style.position = 'absolute';
                             marker.style.left = position + '%';
                             
-                            // TEST with very high z-index on timeline track
-                            const trackOffsetFromAxis = -5; // Track is 5px above axis  
-                            marker.style.top = `${trackOffsetFromAxis}px`; // ON timeline track with z-index 500
+                            // Position markers ON the timeline track - layering is now fixed!
+                            const trackOffsetFromAxis = -4.5; // Track is 5px above axis  
+                            marker.style.top = `${trackOffsetFromAxis}px`; // ON the timeline track
                             marker.style.transform = 'translate(-50%, -50%)';
                             
                             // Original marker size
@@ -2715,7 +2708,7 @@
                             marker.classList.add('could-have-ended-marker');
                             
                             marker.style.cursor = 'pointer';
-                            marker.style.zIndex = '500'; // Much higher z-index to test
+                            marker.style.zIndex = '10'; // Lower than slider's 30/1000
                             // Remove shadow
                             // marker.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
                             marker.style.pointerEvents = 'auto';
