@@ -62,9 +62,24 @@
             top: 50px;
             right: 50px;
             display: flex;
-            gap: 50px;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 20px;
             z-index: 1000;
-            direction: rtl;
+        }
+
+        .timeline-description {
+            font-family: 'Heebo', sans-serif;
+            font-size: 14px;
+            color: #888;
+            max-width: 300px;
+            text-align: right;
+            line-height: 1.4;
+            opacity: 0.9;
+            position: absolute;
+            left: -420px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
         .header-info {
@@ -633,7 +648,7 @@
             width: auto;
             height: 32px;
             position: absolute;
-            left: -80px;
+            left: -120px;
             top: 50%;
             transform: translateY(-50%);
             z-index: 1001;
@@ -1067,17 +1082,19 @@
     </div>
 
     <div class="header-container">
-        <button class="cta-skip-back" id="ctaSkipBack" title="המשך להזדמנות הבאה">המשך</button>
-        
         <div class="names-title">
             הנופלים, ואלה שיכלו עוד להיות חיים<br>
             אם המלחמה הייתה מסתיימת&nbsp;&nbsp;<span class="selected-date-in-title">ב-<span id="selectedDateInTitle">30.1.2024</span></span>
         </div>
-        
-        <div class="header-info">
-            <div id="selectedDate">27/10/2023</div>
-            <div id="lastEvent">תחילת המלחמה</div>
+        <button class="cta-skip-back" id="ctaSkipBack" title="המשך להזדמנות הבאה">המשך</button>
+        <div class="timeline-description" id="timelineDescription">
+            <!-- Timeline description will be populated here -->
         </div>
+    </div>
+    
+    <div class="header-info">
+        <div id="selectedDate">27/10/2023</div>
+        <div id="lastEvent">תחילת המלחמה</div>
     </div>
     
     <div class="status-components-container">
@@ -2160,8 +2177,8 @@
 
             async loadTimelineEvents() {
                 try {
-                    // console.log('Attempting to load timeline-events.csv...');
-                    const response = await safeFetch('data/timeline-events.csv');
+                    // console.log('Attempting to load events-new2.csv...');
+                    const response = await safeFetch('data/events-new2.csv');
                     // console.log('Response status:', response.status, response.statusText);
                     
                     if (!response.ok) {
@@ -2369,13 +2386,7 @@
                         continue;
                     }
                     
-                    // Filter to show only events that could have ended the war
-                    if (event.could_have_ended && 
-                        event.could_have_ended.toLowerCase() !== 'yes' && 
-                        event.could_have_ended.toLowerCase() !== 'ended_war') {
-                        // console.log('Filtering out event (could_have_ended != yes/ended_war):', event.title_hebrew);
-                        continue;
-                    }
+                    // Load all events - filtering will be done during rendering
                     
                     this.timelineEvents.push(event);
                 }
@@ -2542,26 +2553,14 @@
                         const daysDiff = Math.floor((endDate - event.eventDate) / (1000 * 60 * 60 * 24));
                         const totalDays = this.getTotalTimelineDays();
                         const position = (daysDiff / totalDays) * 100;
-                        console.log(`Event "${event.title_hebrew}": eventDate=${event.eventDate.toISOString()}, daysDiff=${daysDiff}, position=${position.toFixed(1)}%`);
-                        
                         if (position >= 0 && position <= 100) {
-                            // Show events that either:
-                            // 1. Could have ended the war (could_have_ended: 'yes' or 'ended_war')
-                            // 2. Are military-related or other events with show='show' that are NOT war-ending
-                            const isMilitaryEvent = event.category === 'military' || 
-                                                  event.category === 'military_withdrawal' || 
-                                                  event.category === 'military_operation' ||
-                                                  event.category === 'extremist_statement';
-                            const isWarEndingEvent = event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war';
-                            const shouldShow = isWarEndingEvent || 
-                                             (event.show === 'show' && !isWarEndingEvent);
-                            
-                            console.log(`Event "${event.title_hebrew}": category=${event.category}, could_have_ended=${event.could_have_ended}, show=${event.show}, isMilitaryEvent=${isMilitaryEvent}, isWarEndingEvent=${isWarEndingEvent}, shouldShow=${shouldShow}`);
-                            
-                            if (!shouldShow) {
+                            // Only show events that have show='show' (skip hide events)
+                            if (event.show !== 'show') {
                                 markersSkipped++;
                                 return;
                             }
+                            
+                            markersAdded++;
                             
                             // Create event marker
                             const marker = document.createElement('div');
@@ -2579,32 +2578,37 @@
                             marker.style.width = '8px';
                             marker.style.height = '8px';
                             
-                            // Set color based on event type
+                            // Set color based on category
                             let markerColor;
-                            if (isWarEndingEvent) {
+                            const isMilitaryCategory = event.category === 'military' || 
+                                                      event.category === 'military_withdrawal' || 
+                                                      event.category === 'military_operation';
+                            
+                            // Debug military events specifically
+                            if (isMilitaryCategory) {
+                                console.log(`Military event: "${event.title_hebrew}" - category: ${event.category}, could_have_ended: ${event.could_have_ended}`);
+                            }
+                            const isPoliticalCategory = event.category === 'coalition_threat' ||
+                                                       event.category === 'extremist_statement' ||
+                                                       event.category === 'political_admission' ||
+                                                       event.category === 'coalition_departure' ||
+                                                       event.category === 'political_manipulation';
+                            
+                            if (event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war') {
                                 markerColor = '#1168FF'; // Blue for war-ending events
-                            } else if (isMilitaryEvent) {
+                            } else if (isMilitaryCategory) {
                                 markerColor = '#000000'; // Black for military events
+                            } else if (isPoliticalCategory) {
+                                markerColor = '#FFD700'; // Yellow for political events
                             } else {
-                                // Fallback colors for other events
-                                switch(event.category) {
-                                    case 'political': markerColor = '#666666'; break; // gray
-                                    case 'diplomatic': markerColor = '#666666'; break; // gray
-                                    case 'legal': markerColor = '#9900cc'; break; // purple
-                                    default: markerColor = '#666666'; // gray
-                                }
+                                markerColor = '#1168FF'; // Default to blue for other ceasefire/diplomatic events
                             }
                             marker.style.background = markerColor;
                             marker.style.border = '2px solid #ffffff';
                             marker.style.borderRadius = '50%';
                             
-                            // Add class for potential transformation
-                            if (event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war') {
-                                marker.classList.add('could-have-ended-marker');
-                            } else {
-                                // Make regular markers diamond-shaped from the beginning
-                                marker.classList.add('regular-event-diamond');
-                            }
+                            // All events use the same circular style
+                            marker.classList.add('could-have-ended-marker');
                             
                             marker.style.cursor = 'pointer';
                             marker.style.zIndex = '100';
@@ -2614,10 +2618,7 @@
                             
                             // Create diagonal label
                             const label = document.createElement('div');
-                            label.className = 'timeline-event-label';
-                            if (event.could_have_ended === 'yes' || event.could_have_ended === 'ended_war') {
-                                label.classList.add('war-ending');
-                            }
+                            label.className = 'timeline-event-label war-ending';
                             label.textContent = event.title_hebrew;
                             
                             // Position label so its RIGHT side is above and to the left of the marker
@@ -3405,6 +3406,32 @@
                     
                 if (lastEventEl && lastEvent) {
                     lastEventEl.textContent = lastEvent.title_hebrew;
+                }
+                
+                // Update timeline description
+                const timelineDescriptionEl = document.getElementById('timelineDescription');
+                if (timelineDescriptionEl) {
+                    // Check if current date exactly matches a timeline event
+                    const eventAtCurrentDate = this.getEventAtDate(currentDate);
+                    
+                    if (eventAtCurrentDate) {
+                        // Case: On a timeline event date - show that event's info
+                        timelineDescriptionEl.textContent = eventAtCurrentDate.description_hebrew || eventAtCurrentDate.title_hebrew;
+                    } else if (this.isTimelineAnimating) {
+                        // Only show "הבא:" during transitions, not for manually selected dates
+                        const targetEvent = this.getNextTimelineEvent();
+                        
+                        if (targetEvent) {
+                            // Case: During transition with target date - show target date's info
+                            timelineDescriptionEl.textContent = `הבא: ${targetEvent.description_hebrew || targetEvent.title_hebrew}`;
+                        } else {
+                            // Case: During transition but no target date - show nothing
+                            timelineDescriptionEl.textContent = '';
+                        }
+                    } else {
+                        // Case: Manually selected date with no timeline event - show nothing
+                        timelineDescriptionEl.textContent = '';
+                    }
                 }
                 
                 // Update status components
