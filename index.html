@@ -213,6 +213,7 @@
             -webkit-text-decoration-line: none;
             text-decoration-line: none;
             font-feature-settings: normal;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
 
         .soldier-name:hover,
@@ -465,7 +466,7 @@
             white-space: nowrap;
             z-index: 50;
             pointer-events: none; /* Don't block marker hover events */
-            opacity: 1;
+            opacity: 0; /* Hidden by default, shown on timeline hover */
             transform: translateX(-50%);
             bottom: 15px; /* Changed from top: -65px to grow upwards */
             font-family: 'Heebo', sans-serif;
@@ -487,10 +488,7 @@
             transition: var(--triangle-transition, left 0.1s ease); /* Dynamic transition control */
         }
 
-        /* Timeline handle tooltip is always visible */
-        .timeline-handle-tooltip {
-            opacity: 1;
-        }
+        /* Timeline handle tooltip hidden by default - only show on timeline hover */
 
         /* Timeline track hover states */
         .timeline-track.hovering .timeline-slider::-webkit-slider-thumb {
@@ -502,6 +500,11 @@
         }
 
         .timeline-track.hovering .timeline-handle-tooltip {
+            opacity: 1;
+        }
+        
+        /* Show tooltip when hovering over timeline container */
+        .timeline-container:hover .timeline-handle-tooltip {
             opacity: 1;
         }
 
@@ -605,7 +608,7 @@
         .cta-primary {
             background: transparent;
             color: #333;
-            border: none;
+            border: 2px solid rgba(0,0,0,0.3);
             padding: 10px 20px;
             font-size: 0.9em;
             font-weight: 300;
@@ -666,7 +669,7 @@
         .cta-skip-back {
             background: transparent !important;
             color: #4e4e4e !important;
-            border: none !important;
+            border: 0px;
             padding: 8px !important;
             cursor: pointer !important;
             transition: opacity 0.2s ease !important;
@@ -699,6 +702,7 @@
             width: 16px !important;
             height: 16px !important;
             stroke-width: 3 !important;
+            margin-bottom: 7px;
         }
         
         .cta-skip-back {
@@ -720,20 +724,25 @@
             pointer-events: auto;
         }
 
-        /* Initial modal container */
+        /* Initial modal container - matches narrative container design */
         .initial-modal {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 320px;
-            background: rgba(255,255,255,0.90);
-            backdrop-filter: blur(8px);
+            background: rgba(255,255,255,0.35);
+            backdrop-filter: blur(5px);
             border-radius: 4px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             border: 1px solid rgba(0,0,0,0.1);
             z-index: 20001;
             direction: rtl;
+            transition: background 0.8s ease;
+        }
+
+        .initial-modal:hover {
+            background: rgba(250,250,250,0.45);
         }
 
         .initial-modal-content {
@@ -752,6 +761,17 @@
         .initial-modal-cta {
             display: flex;
             justify-content: flex-end;
+        }
+
+        /* Override modal CTA button to original black design without chevron */
+        .initial-modal-cta .cta-primary {
+            background: #000 !important;
+            color: #fff !important;
+            border-radius: 4px;
+        }
+
+        .initial-modal-cta .cta-primary::after {
+            display: none; /* Remove chevron */
         }
 
         /* Blur and fade specific elements when modal is open */
@@ -2733,77 +2753,72 @@
                             let currentTooltipStyle = null;
                             
                             // CSS handles the hover scaling now - no JavaScript needed for basic hover
-                            // Only keep tooltip functionality
+                            // Use regular timeline tooltip when hovering over event markers
                             marker.onmouseenter = (e) => {
-                                // Fade the main timeline handle tooltip to 15% opacity
-                                const mainTooltip = document.getElementById('timelineTooltip');
-                                if (mainTooltip) {
-                                    mainTooltip.style.opacity = '0.15';
+                                // Set flag to prevent timeline hover interference
+                                if (typeof isHoveringEventMarker !== 'undefined') {
+                                    isHoveringEventMarker = true;
                                 }
                                 
-                                // Remove any existing event tooltips
-                                document.querySelectorAll('.timeline-tooltip').forEach(t => t.remove());
+                                // Calculate days from today to this event date
+                                const totalDays = this.getTotalTimelineDays();
+                                const eventDays = Math.round((this.todayDate - event.eventDate) / (1000 * 60 * 60 * 24));
                                 
-                                // Format event date
-                                const eventDay = event.eventDate.getDate().toString().padStart(2, '0');
-                                const eventMonth = (event.eventDate.getMonth() + 1).toString().padStart(2, '0');
-                                const eventYear = event.eventDate.getFullYear().toString().slice(-2);
-                                const formattedEventDate = `${eventDay}/${eventMonth}/${eventYear}`;
+                                // Use the regular updateTooltip function with the event date
+                                this.updateTooltip(eventDays, event.eventDate);
                                 
-                                // Create tooltip with timeline handle style - show title and date
-                                const tooltip = document.createElement('div');
-                                tooltip.className = 'timeline-handle-tooltip';
-                                tooltip.innerHTML = `
-                                    <div>${event.title_hebrew}</div>
-                                    <div>${formattedEventDate}</div>
-                                `;
-                                // Start invisible to prevent flash
-                                tooltip.style.opacity = '0';
-                                currentTooltip = tooltip;
+                                // Manually position tooltip at the event marker location
+                                const tooltip = document.getElementById('timelineTooltip');
+                                const track = document.querySelector('.timeline-track');
                                 
-                                // Position tooltip relative to the axis container (where markers are)
-                                const axisContainer = document.getElementById('timelineAxis');
-                                axisContainer.appendChild(tooltip);
-                                
-                                // Use the same position calculation as the marker
-                                const eventPercent = position;
-                                
-                                // Use setTimeout to ensure CSS is applied and dimensions are calculated
-                                setTimeout(() => {
-                                    // Get dimensions
-                                    const tooltipWidth = tooltip.offsetWidth;
-                                    const axisWidth = axisContainer.offsetWidth;
-                                    
-                                    // Use absolute positioning relative to axis container
-                                    tooltip.style.position = 'absolute';
-                                    
-                                    // Calculate ideal position (centered on event)
-                                    const idealLeft = (eventPercent / 100) * axisWidth - (tooltipWidth / 2);
-                                    
-                                    // Constrain within bounds
-                                    const minLeft = 0;
-                                    const maxLeft = axisWidth - tooltipWidth;
-                                    const constrainedLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
-                                    
-                                    tooltip.style.left = constrainedLeft + 'px';
-                                    tooltip.style.transform = 'none';
-                                    
-                                    // Make tooltip visible after positioning
+                                // Ensure tooltip is visible when hovering event marker
+                                if (tooltip) {
                                     tooltip.style.opacity = '1';
-                                }, 0);
+                                }
+                                if (tooltip && track) {
+                                    const trackWidth = track.offsetWidth;
+                                    const tooltipWidth = tooltip.offsetWidth;
+                                    const markerLeft = (position / 100) * trackWidth;
+                                    
+                                    // Calculate ideal tooltip position (centered on marker)
+                                    const idealLeft = markerLeft - (tooltipWidth / 2);
+                                    const minLeft = 0;
+                                    const maxLeft = trackWidth - tooltipWidth;
+                                    const wouldOverflow = idealLeft < minLeft || idealLeft > maxLeft;
+                                    
+                                    if (wouldOverflow) {
+                                        // Use constrained positioning with dynamic triangle
+                                        const constrainedLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
+                                        tooltip.style.left = constrainedLeft + 'px';
+                                        tooltip.style.transform = 'none';
+                                        
+                                        // Calculate triangle position relative to tooltip
+                                        const triangleOffset = markerLeft - constrainedLeft;
+                                        const trianglePercent = (triangleOffset / tooltipWidth) * 100;
+                                        const constrainedTrianglePercent = Math.max(5, Math.min(95, trianglePercent));
+                                        tooltip.style.setProperty('--triangle-left', constrainedTrianglePercent + '%');
+                                    } else {
+                                        // Use CSS centering method when tooltip fits comfortably
+                                        tooltip.style.left = markerLeft + 'px';
+                                        tooltip.style.transform = 'translateX(-50%)';
+                                        tooltip.style.setProperty('--triangle-left', '50%');
+                                    }
+                                }
                             };
                             
                             marker.onmouseleave = () => {
-                                // Restore the main timeline handle tooltip to full opacity
-                                const mainTooltip = document.getElementById('timelineTooltip');
-                                if (mainTooltip) {
-                                    mainTooltip.style.opacity = '1';
+                                // Clear flag to allow timeline hover again
+                                if (typeof isHoveringEventMarker !== 'undefined') {
+                                    isHoveringEventMarker = false;
                                 }
                                 
-                                // Remove the event tooltip
-                                if (currentTooltip && currentTooltip.parentNode) {
-                                    currentTooltip.remove();
-                                    currentTooltip = null;
+                                // Restore tooltip to current timeline position
+                                const slider = document.getElementById('timelineSlider');
+                                if (slider) {
+                                    const currentSliderValue = parseInt(slider.value);
+                                    const currentDate = new Date(this.todayDate);
+                                    currentDate.setDate(currentDate.getDate() - currentSliderValue);
+                                    this.updateTooltip(currentSliderValue, currentDate);
                                 }
                                 
                                 // CSS handles scaling reset automatically - just manage z-index
@@ -3482,6 +3497,7 @@
                 
                 let isHoveringHandle = false;
                 let isTrackHovering = false;
+                let isHoveringEventMarker = false;
                 
                 // Check if mouse is over the slider handle
                 const isMouseOverHandle = (e) => {
@@ -3505,6 +3521,16 @@
                            mouseY <= sliderRect.bottom + handleRadius;
                 };
                 
+                // Check if mouse is close to the timeline track (not just anywhere in container)
+                const isMouseNearTrack = (e) => {
+                    const trackRect = track.getBoundingClientRect();
+                    const mouseY = e.clientY;
+                    const trackCenterY = trackRect.top + (trackRect.height / 2);
+                    const proximityThreshold = 30; // 30px tolerance around track
+                    
+                    return Math.abs(mouseY - trackCenterY) <= proximityThreshold;
+                };
+                
                 container.addEventListener('mouseenter', (e) => {
                     // Start tracking
                 });
@@ -3512,6 +3538,11 @@
                 container.addEventListener('mousemove', (e) => {
                     // IGNORE if mouse is over a timeline marker - let markers handle their own hover
                     if (e.target && e.target.classList.contains('timeline-event-marker')) {
+                        return;
+                    }
+                    
+                    // IGNORE if we're currently hovering over an event marker
+                    if (isHoveringEventMarker) {
                         return;
                     }
                     
@@ -3531,13 +3562,19 @@
                             currentDate.setDate(currentDate.getDate() - currentSliderValue);
                             this.updateTooltip(currentSliderValue, currentDate);
                         }
-                    } else {
-                        // Mouse is over track but not handle - enable track hover
+                        
+                        // Ensure tooltip is visible when hovering handle
+                        tooltip.style.opacity = '1';
+                    } else if (isMouseNearTrack(e)) {
+                        // Mouse is near track but not handle - enable track hover
                         if (!isTrackHovering) {
                             track.classList.add('hovering');
                             container.classList.add('track-hovering');
                             isTrackHovering = true;
                         }
+                        
+                        // Ensure tooltip is visible when hovering track
+                        tooltip.style.opacity = '1';
                         
                         const rect = track.getBoundingClientRect();
                         const x = e.clientX - rect.left;
@@ -3606,10 +3643,31 @@
                         } else {
                             container.classList.remove('on-event');
                         }
+                    } else {
+                        // Mouse is not near track - disable track hover but show handle tooltip
+                        if (isTrackHovering) {
+                            track.classList.remove('hovering');
+                            container.classList.remove('track-hovering', 'on-event');
+                            isTrackHovering = false;
+                            
+                            // Restore tooltip to current slider position
+                            const currentSliderValue = parseInt(slider.value);
+                            const currentDate = new Date(this.todayDate);
+                            currentDate.setDate(currentDate.getDate() - currentSliderValue);
+                            this.updateTooltip(currentSliderValue, currentDate);
+                        }
+                        
+                        // Show handle tooltip when hovering anywhere in timeline container
+                        tooltip.style.opacity = '1';
                     }
                 });
                 
                 container.addEventListener('mouseleave', () => {
+                    // Don't interfere if we're hovering over an event marker
+                    if (isHoveringEventMarker) {
+                        return;
+                    }
+                    
                     if (isTrackHovering) {
                         track.classList.remove('hovering');
                         container.classList.remove('track-hovering', 'on-event');
@@ -3622,6 +3680,9 @@
                         this.updateTooltip(currentSliderValue, currentDate);
                     }
                     isHoveringHandle = false;
+                    
+                    // Force hide the tooltip when leaving the timeline container
+                    tooltip.style.opacity = '0';
                 });
             }
 
@@ -4016,7 +4077,7 @@
                     active: false,
                     intervals: [],
                     activeElements: new Map(), // Track active elements and their tooltip elements
-                    maxSimultaneous: 3,
+                    maxSimultaneous: 4,
                     tooltipCounter: 0, // For unique IDs
                     
                     start: () => {
@@ -4049,7 +4110,7 @@
                     scheduleNext: () => {
                         if (!autoHoverSystem.active) return;
                         
-                        const delay = Math.random() * 2000 + 1000; // 1-3 second delay between tooltips
+                        const delay = Math.random() * 1500 + 500; // 0.5-2 second delay between tooltips
                         const timeoutId = setTimeout(() => {
                             if (autoHoverSystem.activeElements.size < autoHoverSystem.maxSimultaneous) {
                                 autoHoverSystem.showRandomTooltip();
