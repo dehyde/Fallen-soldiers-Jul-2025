@@ -78,7 +78,7 @@
             line-height: 1.4;
             opacity: 0.9;
             position: absolute;
-            left: -460px;
+            left: -480px;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
@@ -260,6 +260,7 @@
             right: 0;
             height: 200px;
             background: transparent;
+            cursor: default;
             /* Remove top border */
             /* border-top: 2px solid rgba(0,0,0,0.3); */
             /* Remove shadow */
@@ -284,6 +285,8 @@
     border-radius: 0;
     margin: 5px 0 15px 0;
     border: none;
+    cursor: default;
+    z-index: 0; /* Allow markers to be on top */
 }
 
         .timeline-progress {
@@ -306,7 +309,7 @@
             right: 0;
             height: 10px;
             z-index: 5;
-            pointer-events: none;
+            pointer-events: auto;
         }
 
         .timeline-tick {
@@ -345,9 +348,9 @@
             position: absolute;
             left: -8px; /* Offset by half handle width to align handle center with track edges */
             top: -1.5px; /* Center slider on track to align thumb with progress bar */
-            cursor: pointer;
+            cursor: default;
             -webkit-appearance: none;
-            z-index: 20;
+            z-index: 1; /* Allow markers to be above slider */
         }
 
         .timeline-slider::-webkit-slider-track {
@@ -455,7 +458,7 @@
             font-weight: 500;
             white-space: nowrap;
             z-index: 50;
-            pointer-events: auto;
+            pointer-events: none; /* Don't block marker hover events */
             opacity: 1;
             transform: translateX(-50%);
             bottom: 15px; /* Changed from top: -65px to grow upwards */
@@ -668,7 +671,7 @@
             font-weight: 300 !important;
             font-size: 13px !important;
             position: absolute !important;
-            left: -120px !important;
+            left: -160px !important;
             top: 50% !important;
             transform: translateY(-50%) !important;
             z-index: 1001 !important;
@@ -691,8 +694,21 @@
         .cta-skip-back .lucide {
             width: 16px !important;
             height: 16px !important;
-            transform: scaleX(-1) !important;
-            color: #4e4e4e !important;
+            transform: scaleX(-1);
+            color: #4e4e4e;
+            position: relative !important;
+            top: 4px !important;
+            stroke-width: 4 !important;
+        }
+
+        #ctaSkipBack svg {
+            width: 16px !important;
+            height: 16px !important;
+            stroke-width: 3 !important;
+        }
+        }
+        }
+        }
             flex-shrink: 0 !important;
         }
 
@@ -799,13 +815,14 @@
 
         .timeline-area-chart {
             position: absolute;
-            top: -40px;
+            bottom: -40px;
             left: 0;
             right: 0;
             height: 40px;
             z-index: 1;
             pointer-events: none;
         }
+
 
         .timeline-area-chart svg {
             width: 100%;
@@ -825,14 +842,34 @@
         }
 
 
+
         .timeline-event-marker {
             width: 8px !important;
             height: 8px !important;
             display: block !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .timeline-event-marker:hover,
+        .could-have-ended-marker:hover {
+            width: 14px !important;
+            height: 14px !important;
+            transform: translate(-50%, -50%) scale(1.2) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .could-have-ended-marker.transform-to-triangle:hover {
+            width: 12px !important;
+            height: 12px !important;
+            transform: translate(-50%, -50%) rotate(45deg) scale(1.3) !important;
+            transition: all 0.2s ease !important;
         }
         .could-have-ended-marker {
-            transition: all 0.4s ease;
+            transition: all 0.2s ease;
+            cursor: pointer !important;
         }
+
         
         /* Diamond style for transformed markers (persists across narrative points) */
         .could-have-ended-marker.transform-to-triangle {
@@ -856,6 +893,14 @@
         .regular-event-diamond {
             width: 8px !important;
             height: 8px !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .regular-event-diamond:hover {
+            width: 14px !important;
+            height: 14px !important;
+            transform: translate(-50%, -50%) rotate(45deg) scale(1.2) !important;
         }
 
         /* Timeline event diagonal labels */
@@ -916,6 +961,18 @@
 
         .timeline-container:not(:hover) .military-bar-border {
             stroke: rgba(255, 100, 100, 0) !important;
+        }
+        
+        /* RESTORE VERY OLD SIMPLE CSS HOVER - this was the working approach! */
+        .timeline-event-marker {
+            width: 8px !important;
+            height: 8px !important;
+            transition: width 0.2s ease, height 0.2s ease;
+        }
+        
+        .timeline-container:hover .timeline-event-marker {
+            width: 12px !important;
+            height: 12px !important;
         }
 
         .soldier-tooltip {
@@ -1122,7 +1179,7 @@
         </div>
         <button class="cta-skip-back" id="ctaSkipBack">
             <i data-lucide="skip-back"></i>
-            <span id="selectedDateInTitle" style="margin-right: 4px; margin-left: 12px; font-size: 18px; font-weight: 400;">30.1.2024</span>
+            <span id="selectedDateInTitle" style="margin-right: 14px; margin-left: 12px; font-size: 22px; font-weight: 200;">30.1.2024</span>
         </button>
         <div class="timeline-description" id="timelineDescription">
             <!-- Timeline description will be populated here -->
@@ -2605,13 +2662,12 @@
                             marker.style.position = 'absolute';
                             marker.style.left = position + '%';
                             
-                            // Position marker ON the timeline track
-                            // The axis is 5px below the track, so we position relative to track
-                            const trackOffsetFromAxis = -5; // Track is 5px above axis
-                            marker.style.top = `${trackOffsetFromAxis}px`;
+                            // TEST with very high z-index on timeline track
+                            const trackOffsetFromAxis = -5; // Track is 5px above axis  
+                            marker.style.top = `${trackOffsetFromAxis}px`; // ON timeline track with z-index 500
                             marker.style.transform = 'translate(-50%, -50%)';
                             
-                            // Always create regular circular markers initially
+                            // Original marker size
                             marker.style.width = '8px';
                             marker.style.height = '8px';
                             
@@ -2650,11 +2706,16 @@
                             marker.style.border = '2px solid #ffffff';
                             marker.style.borderRadius = '50%';
                             
+                            // Restore original marker design (no debug colors)
+                            // marker.style.background = markerColor; (set above)
+                            // marker.style.border = '2px solid #ffffff'; (set above)
+                            // marker.style.borderRadius = '50%'; (set above)
+                            
                             // All events use the same circular style
                             marker.classList.add('could-have-ended-marker');
                             
                             marker.style.cursor = 'pointer';
-                            marker.style.zIndex = '100';
+                            marker.style.zIndex = '500'; // Much higher z-index to test
                             // Remove shadow
                             // marker.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
                             marker.style.pointerEvents = 'auto';
@@ -2678,6 +2739,8 @@
                             let currentTooltip = null;
                             let currentTooltipStyle = null;
                             
+                            // CSS handles the hover scaling now - no JavaScript needed for basic hover
+                            // Only keep tooltip functionality
                             marker.onmouseenter = (e) => {
                                 // Fade the main timeline handle tooltip to 15% opacity
                                 const mainTooltip = document.getElementById('timelineTooltip');
@@ -2687,10 +2750,6 @@
                                 
                                 // Remove any existing event tooltips
                                 document.querySelectorAll('.timeline-tooltip').forEach(t => t.remove());
-                                
-                                // Scale up marker while maintaining Y position
-                                marker.style.transform = 'translate(-50%, -50%) scale(1.5)';
-                                marker.style.zIndex = '200';
                                 
                                 // Format event date
                                 const eventDay = event.eventDate.getDate().toString().padStart(2, '0');
@@ -2754,8 +2813,7 @@
                                     currentTooltip = null;
                                 }
                                 
-                                // Reset marker scale and z-index
-                                marker.style.transform = 'translate(-50%, -50%) scale(1)';
+                                // CSS handles scaling reset automatically - just manage z-index
                                 marker.style.zIndex = '100';
                             };
                             
@@ -2765,6 +2823,7 @@
                             };
                             
                             axisContainer.appendChild(marker);
+                            console.log(`✅ Created marker for: ${event.title} at ${position}% with hover handlers`);
                             // console.log(`✅ Successfully added marker for: ${event.title_hebrew} (${event.stance}) at position ${position.toFixed(1)}% - BELOW timeline`);
                             markersAdded++;
                         } else {
@@ -2837,7 +2896,12 @@
                     
                     // Initialize Lucide icons
                     if (window.lucide) {
-                        lucide.createIcons();
+                        lucide.createIcons({
+                    'skip-back': {
+                        width: 16,
+                        height: 16
+                    }
+                });
                     }
                     
                     // Fade in new content
@@ -2880,6 +2944,12 @@
             }
 
             generateAreaChart() {
+                // console.log('Generating area chart for cumulative fallen soldiers');
+                
+                this.generateFallenChart();
+            }
+
+            generateFallenChart() {
                 // console.log('Generating area chart for cumulative fallen soldiers');
                 
                 const totalDays = this.getTotalTimelineDays();
@@ -2931,7 +3001,8 @@
                     // Position each week's data at its display date for better alignment
                     const displayDaysFromToday = Math.floor((this.todayDate - week.displayDate) / (1000 * 60 * 60 * 24));
                     const x = (displayDaysFromToday / totalDays) * viewBoxWidth;
-                    const y = viewBoxHeight - (week.cumulativeFallen / maxFallen) * viewBoxHeight;
+                    // Flip the chart: higher fallen count = hanging down more (lower Y = more down)
+                    const y = (week.cumulativeFallen / maxFallen) * viewBoxHeight;
                     points.push({x, y, cumulativeFallen: week.cumulativeFallen, displayDate: week.displayDate});
                 });
                 
@@ -3014,6 +3085,7 @@
                 // this.generateMilitaryEventsChart(); // Hidden as requested
             }
 
+
             generateSplitAreaChart(points, viewBoxHeight, splitPosition) {
                 if (points.length === 0) return;
                 
@@ -3047,20 +3119,21 @@
                     }
                 }
                 
-                // Generate path for past section (visible)
-                const pastPath = this.generatePathData(pastPoints, viewBoxHeight);
+                // Generate path for past section (visible) - flipped for fallen chart
+                const pastPath = this.generateFlippedPathData(pastPoints, viewBoxHeight);
                 const pastPathElement = document.getElementById('areaPathPast');
                 if (pastPathElement) {
                     pastPathElement.setAttribute('d', pastPath);
                 }
                 
-                // Generate path for future section (transparent)
-                const futurePath = this.generatePathData(futurePoints, viewBoxHeight);
+                // Generate path for future section (transparent) - flipped for fallen chart
+                const futurePath = this.generateFlippedPathData(futurePoints, viewBoxHeight);
                 const futurePathElement = document.getElementById('areaPathFuture');
                 if (futurePathElement) {
                     futurePathElement.setAttribute('d', futurePath);
                 }
             }
+
 
             generatePathData(points, viewBoxHeight) {
                 if (points.length === 0) return '';
@@ -3120,6 +3193,69 @@
                 if (points.length > 0) {
                     const lastPoint = points[points.length - 1];
                     pathData += ` L ${lastPoint.x},${viewBoxHeight} L ${points[0].x},${viewBoxHeight} Z`;
+                }
+                
+                return pathData;
+            }
+
+            generateFlippedPathData(points, viewBoxHeight) {
+                if (points.length === 0) return '';
+                
+                // Sort points by X position for proper chart drawing
+                points.sort((a, b) => a.x - b.x);
+                
+                // Start area path from top at first data point's X position (flipped)
+                let pathData = '';
+                if (points.length > 0) {
+                    pathData = `M ${points[0].x},0 L ${points[0].x},${points[0].y}`;
+                }
+                
+                // Generate smooth curve using proper spline interpolation
+                if (points.length > 1) {
+                    for (let i = 1; i < points.length; i++) {
+                        const prev = points[i-1];
+                        const curr = points[i];
+                        const next = points[i + 1] || curr;
+                        const prevPrev = points[i - 2] || prev;
+                        
+                        // Calculate smooth control points using cardinal spline method
+                        const tension = 0.3; // Controls curve tightness
+                        
+                        // Calculate tangent vectors for smooth flow
+                        let cp1x, cp1y, cp2x, cp2y;
+                        
+                        if (i === 1) {
+                            // First curve: control point 1 goes in direction toward current point
+                            cp1x = prev.x + (curr.x - prev.x) * tension;
+                            cp1y = prev.y + (curr.y - prev.y) * tension;
+                        } else {
+                            // Subsequent curves: control point 1 follows the flow from previous-previous to current
+                            const tangentX = (curr.x - prevPrev.x) * tension;
+                            const tangentY = (curr.y - prevPrev.y) * tension;
+                            cp1x = prev.x + tangentX;
+                            cp1y = prev.y + tangentY;
+                        }
+                        
+                        if (i === points.length - 1) {
+                            // Last curve: control point 2 comes from direction of previous point
+                            cp2x = curr.x - (curr.x - prev.x) * tension;
+                            cp2y = curr.y - (curr.y - prev.y) * tension;
+                        } else {
+                            // Other curves: control point 2 follows flow from previous to next
+                            const tangentX = (next.x - prev.x) * tension;
+                            const tangentY = (next.y - prev.y) * tension;
+                            cp2x = curr.x - tangentX;
+                            cp2y = curr.y - tangentY;
+                        }
+                        
+                        pathData += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${curr.x},${curr.y}`;
+                    }
+                }
+                
+                // Close the path to form an area (go up to top at last point, then back to start) - flipped
+                if (points.length > 0) {
+                    const lastPoint = points[points.length - 1];
+                    pathData += ` L ${lastPoint.x},0 L ${points[0].x},0 Z`;
                 }
                 
                 return pathData;
@@ -3381,6 +3517,11 @@
                 });
                 
                 container.addEventListener('mousemove', (e) => {
+                    // IGNORE if mouse is over a timeline marker - let markers handle their own hover
+                    if (e.target && e.target.classList.contains('timeline-event-marker')) {
+                        return;
+                    }
+                    
                     const wasHoveringHandle = isHoveringHandle;
                     isHoveringHandle = isMouseOverHandle(e);
                     
@@ -4709,7 +4850,12 @@
         // Initialize Lucide icons on page load
         document.addEventListener('DOMContentLoaded', function() {
             if (window.lucide) {
-                lucide.createIcons();
+                lucide.createIcons({
+                    'skip-back': {
+                        width: 16,
+                        height: 16
+                    }
+                });
             }
         });
     </script>
