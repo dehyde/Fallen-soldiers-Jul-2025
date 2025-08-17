@@ -1279,7 +1279,7 @@
     <div class="status-components-container">
         <div class="status-components">
             <div class="status-component alive-status">
-                <div class="status-text" id="aliveCount">0 עוד היו חיים</div>
+                <div class="status-text" id="aliveCount">0 היו יכולים להיות חיים היום</div>
             </div>
             <div class="status-component fallen-status">
                 <div class="status-text" id="fallenCount">0 חללים מאז תחילת התמרון</div>
@@ -1314,7 +1314,7 @@
             </div>
             <div class="timeline-handle-tooltip" id="timelineTooltip">
                 <div id="tooltipDate">27/07/25</div>
-                <div id="tooltipAlive" style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">עוד היו בחיים: 0</div>
+                <div id="tooltipAlive" style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">היו יכולים להיות חיים היום: 0</div>
             </div>
         </div>
         <!-- Removed timeline labels -->
@@ -3752,7 +3752,7 @@
                         const aliveSoldiers = this.soldiers.filter(s => s.death_date > hoverDate).length;
                         const tooltipAlive = document.getElementById('tooltipAlive');
                         if (tooltipAlive) {
-                            tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">עוד היו בחיים: ${aliveSoldiers.toLocaleString()}</div>`;
+                            tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">היו יכולים להיות חיים היום: ${aliveSoldiers.toLocaleString()}</div>`;
                         }
                         
                         // Check if hover date matches any timeline event for cursor state
@@ -3941,13 +3941,13 @@
                     tooltipDate.innerHTML = titleLink;
                     tooltipAlive.innerHTML = `
                         <div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px; margin-top: 4px;">
-                            עוד היו בחיים: ${aliveSoldiers.toLocaleString()}
+                            היו יכולים להיות חיים היום: ${aliveSoldiers.toLocaleString()}
                         </div>
                     `;
                 } else {
                     // Regular tooltip content
                     tooltipDate.textContent = formattedDate;
-                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">עוד היו בחיים: ${aliveSoldiers}</div>`;
+                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">היו יכולים להיות חיים היום: ${aliveSoldiers}</div>`;
                 }
                 
                 // Force layout recalculation
@@ -4067,7 +4067,7 @@
                 
                 // Update status components
                 if (aliveCountEl) {
-                    aliveCountEl.textContent = `${aliveSoldiers} עוד היו חיים`;
+                    aliveCountEl.textContent = `${aliveSoldiers} היו יכולים להיות חיים היום`;
                 }
                 
                 if (fallenCountEl) {
@@ -4102,13 +4102,13 @@
                     tooltipDate.innerHTML = titleLink;
                     tooltipAlive.innerHTML = `
                         <div style="padding-top: 6px; font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">
-                            ${formattedDate}<br>עוד היו בחיים: ${aliveSoldiers}
+                            ${formattedDate}<br>היו יכולים להיות חיים היום: ${aliveSoldiers}
                         </div>
                     `;
                 } else {
                     // Regular tooltip content
                     tooltipDate.textContent = formattedDate;
-                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">עוד היו בחיים: ${aliveSoldiers}</div>`;
+                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">היו יכולים להיות חיים היום: ${aliveSoldiers}</div>`;
                 }
                 
                 // Calculate positioning immediately for smooth animation
@@ -5036,7 +5036,7 @@
                 // Update count in draggable container - DISABLED to avoid conflicts with main updateTooltip function
                 // const aliveCountSpan = document.getElementById('aliveCount');
                 // if (aliveCountSpan) {
-                //     aliveCountSpan.textContent = `${aliveCount} עוד היו חיים`;
+                //     aliveCountSpan.textContent = `${aliveCount} היו יכולים להיות חיים היום`;
                 // }
                 
                 // Update narrative content to refresh placeholders
