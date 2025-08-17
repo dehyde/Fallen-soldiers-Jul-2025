@@ -1149,7 +1149,6 @@
             }
 
             /* Hide desktop-only elements */
-            .timeline-container,
             .draggable-container,
             .header-info {
                 display: none !important;
@@ -1206,7 +1205,7 @@
             .timeline-description {
                 display: block !important;
                 position: fixed !important;
-                top: 130px !important;
+                top: 135px !important;
                 left: 50% !important;
                 transform: translateX(-50%) !important;
                 width: calc(100% - 30px) !important;
@@ -1220,7 +1219,7 @@
                 text-align: center !important;
                 direction: rtl !important;
                 z-index: 999 !important;
-                background: white !important;
+                background: transparent !important;
             }
 
             /* Mobile description link - make entire text clickable without visual link styling */
@@ -1236,6 +1235,96 @@
             .timeline-description-mobile-link:active {
                 color: #333 !important;
                 text-decoration: none !important;
+            }
+
+            /* Mobile timeline container */
+            .timeline-container {
+                display: block !important;
+                position: fixed !important;
+                top: 105px !important;
+                left: 15px !important;
+                right: 15px !important;
+                height: 25px !important;
+                z-index: 998 !important;
+                margin: 0 !important;
+                padding: 2px 0 !important;
+            }
+
+            /* Hide all tooltips on mobile */
+            .timeline-tooltip,
+            .timeline-handle-tooltip,
+            .soldier-tooltip {
+                display: none !important;
+            }
+
+            /* Mobile timeline track */
+            .timeline-track {
+                height: 1px !important;
+                margin: 8px 0 !important;
+            }
+
+            /* Mobile timeline slider */
+            .timeline-slider {
+                height: 1px !important;
+                margin: 0 !important;
+            }
+
+            /* Mobile timeline handle */
+            .timeline-slider::-webkit-slider-thumb {
+                width: 16px !important;
+                height: 16px !important;
+                border-radius: 50% !important;
+            }
+
+            .timeline-slider::-moz-range-thumb {
+                width: 16px !important;
+                height: 16px !important;
+                border-radius: 50% !important;
+            }
+
+            /* Hide all event markers completely on mobile */
+            .event-marker,
+            .timeline-container .event-marker,
+            .timeline-track .event-marker,
+            .timeline-legend,
+            .could-have-ended-marker,
+            .war-ending-marker,
+            [class*="marker"] {
+                display: none !important;
+            }
+
+            /* Hide all timeline ticks and labels by default, then show specific ones */
+            .timeline-tick,
+            .timeline-date-label {
+                display: none !important;
+            }
+
+            /* Show only specific timeline ticks and labels on mobile */
+            .timeline-tick.mobile-show,
+            .timeline-date-label.mobile-show {
+                display: block !important;
+            }
+
+            /* Style mobile timeline ticks */
+            .timeline-tick.mobile-show {
+                height: 3px !important;
+                width: 1px !important;
+                background: rgba(0,0,0,0.6) !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+            }
+
+            /* Style mobile timeline date labels - very close to timeline */
+            .timeline-date-label.mobile-show {
+                font-size: 10px !important;
+                top: 5px !important;
+                transform: translateX(-50%) !important;
+                white-space: nowrap !important;
+                color: #666 !important;
+                background: transparent !important;
+                padding: 1px 3px !important;
+                border-radius: 2px !important;
+                z-index: 1000 !important;
             }
 
             /* Mobile status components */
@@ -1310,7 +1399,7 @@
             /* Mobile names container */
             .names-container {
                 position: fixed !important;
-                top: 190px !important;
+                top: 210px !important;
                 bottom: 20px !important;
                 left: 10px !important;
                 right: 10px !important;
@@ -2481,6 +2570,9 @@
                 // Mobile-specific elements are handled by CSS
                 // Modal will appear normally on mobile
                 
+                // Show only specific timeline dates on mobile
+                this.setupMobileTimelineDates();
+                
                 // Ensure timeline description gets populated on mobile
                 setTimeout(() => {
                     const timelineDescriptionEl = document.getElementById('timelineDescription');
@@ -2501,6 +2593,85 @@
                     }
                 }, 500); // Wait for data to load
             }
+
+            setupMobileTimelineDates() {
+                // Only run on mobile
+                if (!this.isMobile) return;
+                
+                // Wait for timeline axis to be generated
+                setTimeout(() => {
+                    const ticks = document.querySelectorAll('.timeline-tick');
+                    const labels = document.querySelectorAll('.timeline-date-label');
+                    
+                    // Target dates we want to show
+                    const targetLabels = ['27 אוק׳ 2023', 'לפני שנה', 'היום'];
+                    
+                    // Find and mark the specific labels and their corresponding ticks
+                    labels.forEach((label, index) => {
+                        const labelText = label.textContent.trim();
+                        
+                        // Check if this label matches any of our target labels
+                        const isTarget = targetLabels.some(target => {
+                            if (target === 'לפני שנה') {
+                                // More flexible matching for "year ago" variations
+                                return labelText.includes('לפני שנה') || labelText.includes('שנה');
+                            }
+                            return labelText.includes(target) || target.includes(labelText);
+                        });
+                        
+                        if (isTarget) {
+                            label.classList.add('mobile-show');
+                            // Find corresponding tick (usually same index or close)
+                            if (ticks[index]) {
+                                ticks[index].classList.add('mobile-show');
+                            }
+                        }
+                    });
+                    
+                    // If we couldn't find exact matches, try to manually create the 3 key dates
+                    const shownLabels = document.querySelectorAll('.timeline-date-label.mobile-show');
+                    if (shownLabels.length < 3) {
+                        this.createMobileKeyDates();
+                    }
+                }, 1000); // Wait longer for timeline to be fully generated
+            }
+
+            createMobileKeyDates() {
+                const axisContainer = document.querySelector('.timeline-axis');
+                if (!axisContainer) return;
+                
+                const totalDays = this.getTotalTimelineDays();
+                const startDate = new Date(2023, 9, 27); // Oct 27, 2023
+                const oneYearAgo = new Date();
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                const today = new Date();
+                
+                // Calculate positions
+                const oneYearAgoDays = Math.floor((today - oneYearAgo) / (1000 * 60 * 60 * 24));
+                const oneYearAgoPosition = Math.max(0, Math.min(100, (oneYearAgoDays / totalDays) * 100));
+                
+                const keyDates = [
+                    { position: 100, label: '27 אוק׳ 2023' },
+                    { position: oneYearAgoPosition, label: 'לפני שנה' },
+                    { position: 0, label: 'היום' }
+                ];
+                
+                keyDates.forEach(date => {
+                    // Create tick
+                    const tick = document.createElement('div');
+                    tick.className = 'timeline-tick major mobile-show';
+                    tick.style.left = date.position + '%';
+                    axisContainer.appendChild(tick);
+                    
+                    // Create label
+                    const label = document.createElement('div');
+                    label.className = 'timeline-date-label mobile-show';
+                    label.style.left = date.position + '%';
+                    label.textContent = date.label;
+                    axisContainer.appendChild(label);
+                });
+            }
+
 
             scrollToMostRecentFallen(fallenElement) {
                 // Only scroll on mobile devices
@@ -4550,9 +4721,10 @@
             }
 
             setupSoldierTooltips() {
-                // Disable auto-hover on mobile
+                // Completely disable tooltips on mobile
                 if (this.isMobile) {
                     window.autoHoverSystem = { active: false, start: () => {}, stop: () => {} };
+                    return; // Don't setup any tooltip functionality on mobile
                 }
                 
                 const soldierNames = document.querySelectorAll('.soldier-name');
