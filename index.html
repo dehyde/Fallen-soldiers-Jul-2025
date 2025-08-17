@@ -1151,8 +1151,7 @@
             /* Hide desktop-only elements */
             .timeline-container,
             .draggable-container,
-            .header-info,
-            .timeline-description {
+            .header-info {
                 display: none !important;
             }
 
@@ -1164,7 +1163,7 @@
                 right: 0 !important;
                 padding: 12px 15px !important;
                 background: white !important;
-                border-bottom: 1px solid #e0e0e0 !important;
+                border-bottom: none !important;
                 z-index: 1000 !important;
                 display: flex !important;
                 height: auto !important;
@@ -1201,6 +1200,42 @@
             /* Hide line break in mobile title */
             .names-title br {
                 display: none !important;
+            }
+
+            /* Mobile timeline description */
+            .timeline-description {
+                display: block !important;
+                position: fixed !important;
+                top: 130px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: calc(100% - 30px) !important;
+                max-width: calc(100vw - 30px) !important;
+                font-size: 12px !important;
+                line-height: 1.4 !important;
+                color: #666 !important;
+                margin: 0 !important;
+                padding: 12px 15px !important;
+                min-height: 45px !important;
+                text-align: center !important;
+                direction: rtl !important;
+                z-index: 999 !important;
+                background: white !important;
+            }
+
+            /* Mobile description link - make entire text clickable without visual link styling */
+            .timeline-description-mobile-link {
+                color: #666 !important;
+                text-decoration: none !important;
+                display: block !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            .timeline-description-mobile-link:hover,
+            .timeline-description-mobile-link:active {
+                color: #333 !important;
+                text-decoration: none !important;
             }
 
             /* Mobile status components */
@@ -1275,7 +1310,7 @@
             /* Mobile names container */
             .names-container {
                 position: fixed !important;
-                top: 120px !important;
+                top: 190px !important;
                 bottom: 20px !important;
                 left: 10px !important;
                 right: 10px !important;
@@ -2445,6 +2480,26 @@
             setupMobileLayout() {
                 // Mobile-specific elements are handled by CSS
                 // Modal will appear normally on mobile
+                
+                // Ensure timeline description gets populated on mobile
+                setTimeout(() => {
+                    const timelineDescriptionEl = document.getElementById('timelineDescription');
+                    if (timelineDescriptionEl && !timelineDescriptionEl.innerHTML.trim()) {
+                        // If description is empty, populate it with current timeline info
+                        const currentSliderValue = parseInt(document.getElementById('timelineSlider').value) || 0;
+                        const currentDate = new Date(this.todayDate);
+                        currentDate.setDate(currentDate.getDate() - currentSliderValue);
+                        const currentEvent = this.getEventAtDate(currentDate);
+                        
+                        if (currentEvent) {
+                            this.updateTimelineDescription(currentEvent);
+                        } else {
+                            // Show default description if no event
+                            timelineDescriptionEl.innerHTML = 'תחילת המלחמה';
+                            timelineDescriptionEl.style.opacity = '1';
+                        }
+                    }
+                }, 500); // Wait for data to load
             }
 
             scrollToMostRecentFallen(fallenElement) {
@@ -2456,9 +2511,6 @@
                 
                 // Use smooth scrolling to bring the fallen soldier into view
                 // Position it roughly in the center of the viewport
-                const containerRect = container.getBoundingClientRect();
-                const elementRect = fallenElement.getBoundingClientRect();
-                
                 const elementTop = fallenElement.offsetTop;
                 const containerHeight = container.clientHeight;
                 const scrollTop = elementTop - (containerHeight / 2);
@@ -2466,6 +2518,56 @@
                 // Smooth scroll to position
                 container.scrollTo({
                     top: Math.max(0, scrollTop),
+                    behavior: 'smooth'
+                });
+            }
+
+            scrollToMostRecentAlive(aliveElement) {
+                // Only scroll on mobile devices
+                if (!this.isMobile) return;
+                
+                const container = document.getElementById('namesContainer');
+                if (!container || !aliveElement) return;
+                
+                // For alive soldiers, find the boundary between alive and fallen
+                // and scroll to show the transition area
+                const allSoldiers = Array.from(container.querySelectorAll('.soldier-name'));
+                
+                // Find the last alive soldier (soldiers are sorted by death date)
+                let lastAliveIndex = -1;
+                for (let i = allSoldiers.length - 1; i >= 0; i--) {
+                    if (allSoldiers[i].classList.contains('alive')) {
+                        lastAliveIndex = i;
+                        break;
+                    }
+                }
+                
+                if (lastAliveIndex >= 0) {
+                    const lastAliveElement = allSoldiers[lastAliveIndex];
+                    const elementTop = lastAliveElement.offsetTop;
+                    const containerHeight = container.clientHeight;
+                    
+                    // Position the last alive soldier in the bottom third of viewport
+                    // This shows the alive/fallen transition area
+                    const scrollTop = elementTop - (containerHeight * 0.7);
+                    
+                    container.scrollTo({
+                        top: Math.max(0, scrollTop),
+                        behavior: 'smooth'
+                    });
+                }
+            }
+
+            scrollToBeginning() {
+                // Only scroll on mobile devices
+                if (!this.isMobile) return;
+                
+                const container = document.getElementById('namesContainer');
+                if (!container) return;
+                
+                // Scroll to the very top to show the beginning (alive soldiers)
+                container.scrollTo({
+                    top: 0,
                     behavior: 'smooth'
                 });
             }
@@ -3155,12 +3257,21 @@
                 
                 setTimeout(() => {
                     console.log('🔧 DEBUG: Setting content after 300ms delay');
-                    // Update content
-                    const content = event.source && event.source.startsWith('http') ? 
-                        `${prefix}${descriptionText} <a href="${event.source}" target="_blank" class="timeline-description-link" title="קישור למקור">
+                    // Update content - different behavior for mobile vs desktop
+                    let content;
+                    
+                    if (this.isMobile && event.source && event.source.startsWith('http')) {
+                        // Mobile: Make entire text clickable without icon
+                        content = `<a href="${event.source}" target="_blank" class="timeline-description-mobile-link" title="קישור למקור">${prefix}${descriptionText}</a>`;
+                    } else if (event.source && event.source.startsWith('http')) {
+                        // Desktop: Text + icon link
+                        content = `${prefix}${descriptionText} <a href="${event.source}" target="_blank" class="timeline-description-link" title="קישור למקור">
                              <i data-lucide="link"></i>
-                         </a>` :
-                        `${prefix}${descriptionText}`;
+                         </a>`;
+                    } else {
+                        // No link: just text
+                        content = `${prefix}${descriptionText}`;
+                    }
                     
                     console.log('🔧 DEBUG: Setting innerHTML:', content);
                     timelineDescriptionEl.innerHTML = content;
@@ -5200,6 +5311,11 @@
                                 this.dyingTimeouts.delete(elementId);
                             }
                             el.className = 'soldier-name alive';
+                            
+                            // Mobile auto-scroll to show soldier becoming alive
+                            if (this.isMobile && (previousState === 'fallen' || wasFallen)) {
+                                this.scrollToMostRecentAlive(el);
+                            }
                         }
                         aliveCount++;
                     } else {
@@ -5294,6 +5410,13 @@
                     
                     if (progress < 1) {
                         requestAnimationFrame(animateToBeginning);
+                    } else {
+                        // Animation complete - trigger mobile scroll to show alive soldiers
+                        if (memorial.isMobile) {
+                            setTimeout(() => {
+                                memorial.scrollToBeginning();
+                            }, 100); // Small delay to ensure DOM updates are complete
+                        }
                     }
                 }
                 
