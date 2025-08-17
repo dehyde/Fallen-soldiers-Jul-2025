@@ -2205,8 +2205,9 @@
                 this.soldiers = [];
                 this.timelineEvents = [];
                 this.militaryEvents = [];
-                this.startDate = new Date('2023-10-27');
+                this.startDate = new Date(2023, 9, 27, 12, 0, 0); // Oct 27, 2023 at noon
                 this.todayDate = new Date(); // Dynamic current date
+                this.todayDate.setHours(12, 0, 0, 0); // Normalize today to noon
                 this.currentEndDate = new Date(); // Start at today so all soldiers are "fallen"
                 
                 this.navigationState = 'month_back'; // 'month_back' or 'today'
@@ -2219,9 +2220,15 @@
             }
 
             getTotalTimelineDays() {
-                // Calculate days from start date (Oct 27, 2023) to today
-                // Add 1 to include today as day 0 in the slider range
-                return Math.floor((this.todayDate - this.startDate) / (1000 * 60 * 60 * 24)) + 1;
+                // Calculate days from start date (Oct 27, 2023) to today using normalized dates
+                const todayNormalized = new Date(this.todayDate);
+                todayNormalized.setHours(12, 0, 0, 0);
+                
+                const startNormalized = new Date(this.startDate);
+                startNormalized.setHours(12, 0, 0, 0);
+                
+                const msPerDay = 1000 * 60 * 60 * 24;
+                return Math.round((todayNormalized - startNormalized) / msPerDay);
             }
 
 
@@ -2484,7 +2491,8 @@
                     if (event.date) {
                         // Remove quotes and parse YYYY-MM-DD format directly
                         const cleanDate = event.date.replace(/"/g, '');
-                        event.eventDate = new Date(cleanDate);
+                        const [year, month, day] = cleanDate.split('-').map(n => parseInt(n));
+                        event.eventDate = new Date(year, month - 1, day, 12, 0, 0); // Parse at noon
                         // console.log('Timeline event parsed:', event.title_hebrew, 'Original date:', event.date, 'Parsed date:', event.eventDate);
                     }
                     
@@ -2814,13 +2822,13 @@
                                     isHoveringEventMarker = false;
                                 }
                                 
-                                // Restore tooltip to current timeline position
+                                // Restore tooltip to current timeline position without affecting description
                                 const slider = document.getElementById('timelineSlider');
                                 if (slider) {
                                     const currentSliderValue = parseInt(slider.value);
                                     const currentDate = new Date(this.todayDate);
                                     currentDate.setDate(currentDate.getDate() - currentSliderValue);
-                                    this.updateTooltip(currentSliderValue, currentDate);
+                                    this.updateTooltipOnly(currentSliderValue, currentDate);
                                 }
                                 
                                 // CSS handles scaling reset automatically - just manage z-index
@@ -2853,9 +2861,9 @@
             }
 
             getEventAtDate(currentDate) {
-                // Find timeline event that matches the current date (within same day)
-                const currentDateOnly = new Date(currentDate);
-                currentDateOnly.setHours(0, 0, 0, 0);
+                // Find timeline event that matches the current date exactly
+                const currentNormalized = new Date(currentDate);
+                currentNormalized.setHours(12, 0, 0, 0);
                 
                 const result = this.timelineEvents.find(event => {
                     if (!event.eventDate) return false;
@@ -2863,10 +2871,10 @@
                     // Only show events that are marked as visible
                     if (event.show !== 'show') return false;
                     
-                    const eventDateOnly = new Date(event.eventDate);
-                    eventDateOnly.setHours(0, 0, 0, 0);
+                    const eventNormalized = new Date(event.eventDate);
+                    eventNormalized.setHours(12, 0, 0, 0);
                     
-                    const isMatch = Math.abs(currentDateOnly - eventDateOnly) < 24 * 60 * 60 * 1000; // Same day
+                    const isMatch = currentNormalized.getTime() === eventNormalized.getTime();
                     
                     return isMatch;
                 });
@@ -2936,14 +2944,15 @@
                 // Handle both event objects and date objects
                 const eventDate = eventOrDate.eventDate || eventOrDate;
                 
-                // Calculate days back from today to the event date using date-only comparison
-                const todayOnly = new Date(this.todayDate);
-                todayOnly.setHours(0, 0, 0, 0);
+                // Calculate days back from today to the event date using normalized dates
+                const todayNormalized = new Date(this.todayDate);
+                todayNormalized.setHours(12, 0, 0, 0);
                 
-                const eventOnly = new Date(eventDate);
-                eventOnly.setHours(0, 0, 0, 0);
+                const eventNormalized = new Date(eventDate);
+                eventNormalized.setHours(12, 0, 0, 0);
                 
-                const daysBack = Math.floor((todayOnly - eventOnly) / (1000 * 60 * 60 * 24));
+                const msPerDay = 1000 * 60 * 60 * 24;
+                const daysBack = Math.round((todayNormalized - eventNormalized) / msPerDay);
                 
                 
                 // Ensure the value is within slider bounds
@@ -4974,44 +4983,8 @@
             
             console.log('Next event selected:', nextEvent.title_hebrew, 'at date:', nextEvent.eventDate);
             
-            // Calculate target slider position using same logic as jumpToEventDate
-            const todayOnly = new Date(memorial.todayDate);
-            todayOnly.setHours(0, 0, 0, 0);
-            
-            const eventOnly = new Date(nextEvent.eventDate);
-            eventOnly.setHours(0, 0, 0, 0);
-            
-            const daysBack = Math.floor((todayOnly - eventOnly) / (1000 * 60 * 60 * 24));
-            const totalDays = memorial.getTotalTimelineDays();
-            const targetSliderValue = Math.max(0, Math.min(totalDays, daysBack));
-            
-            // console.log('Target slider value:', targetSliderValue);
-            
-            // Animate to the target position
-            const startValue = currentSliderValue;
-            const duration = 300; // 0.3 seconds (much faster)
-            const startTime = performance.now();
-            
-            function animateToEvent(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Extreme ease-out function (quadratic for dramatic deceleration)
-                const easeOut = 1 - Math.pow(1 - progress, 2);
-                
-                const newValue = startValue + (targetSliderValue - startValue) * easeOut;
-                timelineSlider.value = newValue;
-                
-                // Trigger the timeline update
-                const event = new Event('input', { bubbles: true });
-                timelineSlider.dispatchEvent(event);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animateToEvent);
-                }
-            }
-            
-            requestAnimationFrame(animateToEvent);
+            // Use the consistent jumpToEventDate method instead of duplicate logic
+            memorial.jumpToEventDate(nextEvent);
         });
 
         // Initialize Lucide icons on page load
