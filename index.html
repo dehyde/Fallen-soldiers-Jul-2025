@@ -45,9 +45,11 @@
         .names-container {
             position: fixed;
             top: 200px;
-            bottom: 50px;
+            bottom: 170px; /* Stop 170px from bottom (130px timeline height + 40px margin) */
             left: 40px;
             right: 40px;
+            z-index: 2000; /* Above timeline and other elements */
+            overflow: visible; /* Make overflow visible instead of scrolling */
             display: flex;
             flex-wrap: wrap;
             align-items: flex-start;
@@ -259,7 +261,7 @@
             bottom: 20px;
             left: 0;
             right: 0;
-            height: 200px;
+            height: 130px; /* Reduced from 200px to 130px for more names space */
             background: transparent;
             cursor: default;
             /* Remove top border */
@@ -269,7 +271,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 100px 50px 30px 50px;
+            padding: 20px 50px 30px 50px; /* Reduced top padding from 100px to 20px */
             z-index: 100;
         }
 
@@ -994,10 +996,10 @@
             color: #333 !important;
             padding: 4px !important;
             border-radius: 6px !important;
+            z-index: 5000; /* Above names list (2000) and other elements */
             font-size: 11px !important;
             width: auto !important;
             white-space: normal !important;
-            z-index: 1000 !important;
             pointer-events: none !important;
             text-align: center !important;
             font-family: 'Heebo', sans-serif !important;
@@ -1086,7 +1088,7 @@
             .names-container {
                 gap: 1px; /* Reduce from 3.3px */
                 top: 160px; /* Increased for mobile header space */
-                bottom: 90px; /* Adjust for smaller timeline at bottom */
+                bottom: 110px; /* Stop 110px from bottom (70px mobile timeline + 40px margin) */
             }
             
             .soldier-name {
@@ -4252,7 +4254,7 @@
                             return;
                         }
                         
-                        // HARD CHECK: only start if ALL visible soldiers are fallen
+                        // SIMPLE CHECK: only start if ALL visible soldiers are fallen
                         const shouldActivate = window.autoHoverSystem.shouldActivateAutoHover();
                         if (!shouldActivate) {
                             console.log('🚫 AUTO-HOVER BLOCKED - Not all soldiers are fallen yet');
@@ -4467,6 +4469,7 @@
                 
                 // Start/stop auto-hover based on narrative point
                 const updateAutoHover = () => {
+                    console.log(`UpdateAutoHover called - isCurrentDate: ${isCurrentDateNarrative()}`);
                     if (isCurrentDateNarrative()) {
                         window.autoHoverSystem.start();
                     } else {
@@ -4494,8 +4497,9 @@
                             clearTimeout(hoverTimeout);
                         }
                         
-                        // Set delay before showing tooltip - shorter for current_date narrative
-                        const delay = isCurrentDateNarrative() ? 500 : 600; // 0.5s vs 1s
+                        // Set delay before showing tooltip - very fast and responsive
+                        const delay = 100; // Almost immediate for all cases
+                        console.log(`Manual hover delay: ${delay}ms`);
                         hoverTimeout = setTimeout(() => {
                             const name = nameEl.textContent;
                             const rank = nameEl.dataset.rank;
@@ -4742,16 +4746,33 @@
                     const clientHeight = container.clientHeight;
                     const fillRatio = scrollHeight / clientHeight;
                     
-                    // console.log(`Verification: scrollHeight=${scrollHeight}px, clientHeight=${clientHeight}px`);
-                    // console.log(`Fill ratio: ${(fillRatio * 100).toFixed(1)}% (target: 90-98%)`);
+                    console.log(`🔍 FILL RATIO DEBUG: scrollHeight=${scrollHeight}px, clientHeight=${clientHeight}px`);
+                    console.log(`🔍 Fill ratio: ${(fillRatio * 100).toFixed(1)}% (target: 98%+)`);
+                    console.log(`🔍 Original font size: ${optimalFontSize}px`);
                     
-                    if (fillRatio < 0.85) {
-                        // console.log('⚠️ Under-filled, could use larger font');
-                    } else if (fillRatio > 1.02) {
-                        // console.log('⚠️ Overflowing, need smaller font');
+                    // FORCE larger font size to truly fill the space - ignore "perfect" 100% calculation
+                    if (fillRatio <= 1.0) {
+                        console.log('🚀 FORCING larger font size to fill visible empty space');
+                        // Force increase font size by 15% when it thinks it's "perfect" but we see empty space
+                        const correctedSize = optimalFontSize * 1.15;
+                        console.log(`🔧 Force-increasing to ${correctedSize.toFixed(1)}px (15% increase)`);
+                        soldierNames.forEach(name => {
+                            name.style.fontSize = correctedSize + 'px';
+                        });
+                    } else if (fillRatio < 0.98) {
+                        console.log('⚠️ Under-filled, increasing font size aggressively');
+                        // Auto-increase font size much more aggressively to fill the space
+                        const increaseFactor = Math.min(1.5, 0.98 / fillRatio); // Cap at 50% increase, target 98%
+                        const correctedSize = optimalFontSize * increaseFactor;
+                        console.log(`🔧 Auto-increasing to ${correctedSize.toFixed(1)}px (factor: ${increaseFactor.toFixed(2)})`);
+                        soldierNames.forEach(name => {
+                            name.style.fontSize = correctedSize + 'px';
+                        });
+                    } else if (fillRatio > 1.01) {
+                        console.log('⚠️ Overflowing, need smaller font');
                         // Auto-correct if overflowing
                         const correctedSize = optimalFontSize * 0.95;
-                        // console.log(`Auto-correcting to ${correctedSize.toFixed(1)}px`);
+                        console.log(`🔧 Auto-correcting to ${correctedSize.toFixed(1)}px`);
                         soldierNames.forEach(name => {
                             name.style.fontSize = correctedSize + 'px';
                         });
