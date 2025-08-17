@@ -4189,27 +4189,88 @@
                 let currentSoldierName = null;
                 
                 // Auto-hover system for current_date narrative
-                let autoHoverSystem = {
+                // Capture 'this' context for use in autoHoverSystem
+                const timelineInstance = this;
+                
+                // Make autoHoverSystem globally accessible for timeline updates
+                window.autoHoverSystem = {
                     active: false,
                     intervals: [],
                     activeElements: new Map(), // Track active elements and their tooltip elements
                     maxSimultaneous: 4,
                     tooltipCounter: 0, // For unique IDs
                     
+                    // Check if ALL visible soldiers on screen are in fallen state
+                    shouldActivateAutoHover: () => {
+                        const soldierNames = document.querySelectorAll('.soldier-name');
+                        if (soldierNames.length === 0) {
+                            console.log('DEBUG: No soldier names found on screen');
+                            return false;
+                        }
+                        
+                        let totalVisible = 0;
+                        let fallenVisible = 0;
+                        let aliveVisible = 0;
+                        let samples = [];
+                        
+                        soldierNames.forEach((nameEl, index) => {
+                            totalVisible++;
+                            const classes = Array.from(nameEl.classList);
+                            
+                            if (nameEl.classList.contains('fallen')) {
+                                fallenVisible++;
+                            } else if (nameEl.classList.contains('alive')) {
+                                aliveVisible++;
+                            }
+                            
+                            // Sample first 5 for debugging
+                            if (index < 5) {
+                                samples.push({
+                                    name: nameEl.textContent.substring(0, 20),
+                                    classes: classes
+                                });
+                            }
+                        });
+                        
+                        const allAreFallen = (fallenVisible === totalVisible) && (aliveVisible === 0);
+                        
+                        // Only log when state changes or for debugging
+                        if (!allAreFallen && aliveVisible > 0) {
+                            console.log(`Auto-hover check: ${aliveVisible} soldiers still alive - BLOCKED`);
+                        } else if (allAreFallen) {
+                            console.log(`Auto-hover check: All ${totalVisible} soldiers fallen - ACTIVE`);
+                        }
+                        
+                        return allAreFallen;
+                    },
+                    
                     start: () => {
-                        if (autoHoverSystem.active) return;
-                        autoHoverSystem.active = true;
-                        // console.log('Starting auto-hover system');
-                        autoHoverSystem.scheduleNext();
+                        console.log('=== AUTO-HOVER START CALLED ===');
+                        
+                        if (window.autoHoverSystem.active) {
+                            console.log('Auto-hover already active, returning');
+                            return;
+                        }
+                        
+                        // HARD CHECK: only start if ALL visible soldiers are fallen
+                        const shouldActivate = window.autoHoverSystem.shouldActivateAutoHover();
+                        if (!shouldActivate) {
+                            console.log('🚫 AUTO-HOVER BLOCKED - Not all soldiers are fallen yet');
+                            return;
+                        }
+                        
+                        console.log('✅ AUTO-HOVER STARTING - All soldiers are fallen');
+                        window.autoHoverSystem.active = true;
+                        window.autoHoverSystem.scheduleNext();
                     },
                     
                     stop: () => {
-                        autoHoverSystem.active = false;
-                        autoHoverSystem.intervals.forEach(id => clearTimeout(id));
-                        autoHoverSystem.intervals = [];
+                        window.autoHoverSystem.active = false;
+                        window.autoHoverSystem.intervals.forEach(id => clearTimeout(id));
+                        window.autoHoverSystem.intervals = [];
                         
                         // Clear all active elements and their tooltips
-                        autoHoverSystem.activeElements.forEach((data, nameEl) => {
+                        window.autoHoverSystem.activeElements.forEach((data, nameEl) => {
                             nameEl.classList.remove('auto-hover-active');
                             clearTimeout(data.hideTimeout);
                             // Remove the tooltip element
@@ -4217,32 +4278,47 @@
                                 data.tooltipElement.remove();
                             }
                         });
-                        autoHoverSystem.activeElements.clear();
+                        window.autoHoverSystem.activeElements.clear();
                         
                         // Hide main tooltip if showing
                         tooltip.classList.remove('visible');
                     },
                     
                     scheduleNext: () => {
-                        if (!autoHoverSystem.active) return;
+                        if (!window.autoHoverSystem.active) return;
                         
-                        const delay = Math.random() * 1500 + 500; // 0.5-2 second delay between tooltips
+                        // CHECK EVERY TIME: Stop if not all soldiers are fallen anymore
+                        if (!window.autoHoverSystem.shouldActivateAutoHover()) {
+                            console.log('🛑 AUTO-HOVER STOPPING - Some soldiers are alive now');
+                            window.autoHoverSystem.stop();
+                            return;
+                        }
+                        
+                        // Original behavior: 0.5-2 second delay between tooltips
+                        const delay = Math.random() * 1500 + 500;
                         const timeoutId = setTimeout(() => {
-                            if (autoHoverSystem.activeElements.size < autoHoverSystem.maxSimultaneous) {
-                                autoHoverSystem.showRandomTooltip();
+                            // Check again before showing tooltip
+                            if (!window.autoHoverSystem.shouldActivateAutoHover()) {
+                                console.log('🛑 AUTO-HOVER STOPPING - Some soldiers are alive now');
+                                window.autoHoverSystem.stop();
+                                return;
                             }
-                            autoHoverSystem.scheduleNext(); // Schedule the next one
+                            
+                            if (window.autoHoverSystem.activeElements.size < window.autoHoverSystem.maxSimultaneous) {
+                                window.autoHoverSystem.showRandomTooltip();
+                            }
+                            window.autoHoverSystem.scheduleNext(); // Schedule the next one
                         }, delay);
                         
-                        autoHoverSystem.intervals.push(timeoutId);
+                        window.autoHoverSystem.intervals.push(timeoutId);
                     },
                     
                     showRandomTooltip: () => {
-                        if (!autoHoverSystem.active) return;
+                        if (!window.autoHoverSystem.active) return;
                         
                         // Get available soldier names (only fallen soldiers, not currently active)
                         const availableNames = Array.from(soldierNames).filter(nameEl => 
-                            !autoHoverSystem.activeElements.has(nameEl) &&
+                            !window.autoHoverSystem.activeElements.has(nameEl) &&
                             !nameEl.classList.contains('alive')
                         );
                         
@@ -4253,23 +4329,23 @@
                         const duration = Math.random() * 1000 + 3000; // 4-5 seconds
                         
                         // Create unique tooltip element for this soldier
-                        const tooltipId = `autoTooltip${autoHoverSystem.tooltipCounter++}`;
-                        const newTooltip = autoHoverSystem.createTooltipElement(tooltipId);
+                        const tooltipId = `autoTooltip${window.autoHoverSystem.tooltipCounter++}`;
+                        const newTooltip = window.autoHoverSystem.createTooltipElement(tooltipId);
                         
                         // Schedule hide with proper timeout tracking
                         const hideTimeoutId = setTimeout(() => {
-                            autoHoverSystem.simulateHover(randomName, false);
-                            autoHoverSystem.activeElements.delete(randomName);
+                            window.autoHoverSystem.simulateHover(randomName, false);
+                            window.autoHoverSystem.activeElements.delete(randomName);
                         }, duration);
                         
                         // Track this element as active with its tooltip
-                        autoHoverSystem.activeElements.set(randomName, { 
+                        window.autoHoverSystem.activeElements.set(randomName, { 
                             hideTimeout: hideTimeoutId,
                             tooltipElement: newTooltip
                         });
                         
                         // Show tooltip
-                        autoHoverSystem.simulateHover(randomName, true);
+                        window.autoHoverSystem.simulateHover(randomName, true);
                     },
                     
                     createTooltipElement: (tooltipId) => {
@@ -4292,7 +4368,7 @@
                     },
                     
                     simulateHover: (nameEl, show) => {
-                        const data = autoHoverSystem.activeElements.get(nameEl);
+                        const data = window.autoHoverSystem.activeElements.get(nameEl);
                         if (!data) return;
                         
                         if (show) {
@@ -4305,7 +4381,7 @@
                                 clientX: rect.left + rect.width/2, 
                                 clientY: rect.top + rect.height/2 
                             };
-                            autoHoverSystem.showTooltipForElement(nameEl, mouseEvent, data.tooltipElement);
+                            window.autoHoverSystem.showTooltipForElement(nameEl, mouseEvent, data.tooltipElement);
                         } else {
                             // Remove visual hover state from name element
                             nameEl.classList.remove('auto-hover-active');
@@ -4392,9 +4468,9 @@
                 // Start/stop auto-hover based on narrative point
                 const updateAutoHover = () => {
                     if (isCurrentDateNarrative()) {
-                        autoHoverSystem.start();
+                        window.autoHoverSystem.start();
                     } else {
-                        autoHoverSystem.stop();
+                        window.autoHoverSystem.stop();
                     }
                 };
                 
@@ -4983,8 +5059,43 @@
             
             console.log('Next event selected:', nextEvent.title_hebrew, 'at date:', nextEvent.eventDate);
             
-            // Use the consistent jumpToEventDate method instead of duplicate logic
-            memorial.jumpToEventDate(nextEvent);
+            // Calculate target slider position using timezone-safe method
+            const todayNormalized = new Date(memorial.todayDate);
+            todayNormalized.setHours(12, 0, 0, 0);
+            
+            const eventNormalized = new Date(nextEvent.eventDate);
+            eventNormalized.setHours(12, 0, 0, 0);
+            
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const daysBack = Math.round((todayNormalized - eventNormalized) / msPerDay);
+            const totalDays = memorial.getTotalTimelineDays();
+            const targetSliderValue = Math.max(0, Math.min(totalDays, daysBack));
+            
+            // Animate to the target position
+            const startValue = currentSliderValue;
+            const duration = 300; // 0.3 seconds (fast but smooth)
+            const startTime = performance.now();
+            
+            function animateToEvent(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease-out function for smooth deceleration
+                const easeOut = 1 - Math.pow(1 - progress, 2);
+                
+                const newValue = startValue + (targetSliderValue - startValue) * easeOut;
+                timelineSlider.value = newValue;
+                
+                // Trigger the timeline update
+                const event = new Event('input', { bubbles: true });
+                timelineSlider.dispatchEvent(event);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateToEvent);
+                }
+            }
+            
+            requestAnimationFrame(animateToEvent);
         });
 
         // Initialize Lucide icons on page load
