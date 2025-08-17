@@ -75,23 +75,34 @@
             font-family: 'Heebo', sans-serif;
             font-size: 14px;
             color: #888;
-            max-width: 300px;
-            text-align: right;
+            max-width: 500px;
+            text-align: right !important; /* Force right alignment */
             line-height: 1.4;
             opacity: 0.9;
             position: absolute;
-            left: -460px;
+            right: 560px;
             top: 50%;
+            direction: rtl !important; /* Ensure RTL direction */
             transform: translateY(-50%);
             display: flex;
-            align-items: center;
+            flex-wrap: wrap;
+            align-items: flex-start;
             gap: 8px;
-            direction: rtl;
             transition: opacity 0.3s ease;
         }
 
         .timeline-description-text {
-            flex: 1;
+            text-align: right !important; /* Force right alignment for description text */
+            direction: rtl !important; /* Ensure RTL direction */
+            flex: 1 1 auto;
+            word-wrap: break-word;
+        }
+        
+        .timeline-description span:not(.timeline-description-link),
+        .timeline-description .timeline-description-text,
+        span.timeline-description-text {
+            text-align: right !important; /* Force right alignment for all child elements */
+            direction: rtl !important; /* Force RTL direction */
         }
 
         .timeline-description-link {
@@ -99,8 +110,9 @@
             text-decoration: none;
             opacity: 0.7;
             transition: opacity 0.2s ease;
-            display: flex;
-            align-items: center;
+            display: inline;
+            direction: ltr !important; /* Keep icon in normal LTR direction */
+            margin-left: 8px;
         }
 
         .timeline-description-link:hover {
@@ -214,6 +226,7 @@
             text-decoration: none;
             -webkit-text-decoration-line: none;
             text-decoration-line: none;
+            overflow: visible; /* Ensure names aren't cut off */
             font-feature-settings: normal;
             transition: background-color 0.15s ease, color 0.15s ease;
         }
@@ -1083,27 +1096,45 @@
             color: #333 !important;
         }
 
-        /* Mobile optimizations */
+        /* Mobile - Desktop Only Message */
         @media (max-width: 768px) {
-            .names-container {
-                gap: 1px; /* Reduce from 3.3px */
-                top: 160px; /* Increased for mobile header space */
-                bottom: 110px; /* Stop 110px from bottom (70px mobile timeline + 40px margin) */
+            .main-container,
+            .header,
+            .names-container,
+            .timeline-container,
+            .draggable-container {
+                display: none !important;
             }
             
-            .soldier-name {
-                padding: 0.5px 1px; /* Reduce from 2px 4px */
-                line-height: 1.0 !important; /* Tighter line height for mobile */
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                overflow: hidden !important;
+                background: #f5f5f5 !important;
+                font-family: 'Heebo', sans-serif !important;
+                position: relative !important;
             }
             
-            .timeline-container {
-                height: 70px; /* Reduce from 110px */
-                padding: 5px 10px; /* Reduce padding dramatically */
-            }
-            
-            .timeline-labels {
-                margin-top: 5px; /* Reduce from 12px */
-                font-size: 11px; /* Reduce from 13px */
+            body::before {
+                content: "אתר זה מיועד לצפייה במחשב שולחני בלבד\A\AThis website is intended for desktop viewing only";
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                display: block !important;
+                white-space: pre-line !important;
+                text-align: center !important;
+                font-size: 20px !important;
+                color: #333 !important;
+                line-height: 1.8 !important;
+                z-index: 99999 !important;
+                background: white !important;
+                padding: 30px !important;
+                border-radius: 10px !important;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+                max-width: 90vw !important;
             }
             
             .timeline-tooltip,
@@ -4753,9 +4784,9 @@
                     // FORCE larger font size to truly fill the space - ignore "perfect" 100% calculation
                     if (fillRatio <= 1.0) {
                         console.log('🚀 FORCING larger font size to fill visible empty space');
-                        // Force increase font size by 15% when it thinks it's "perfect" but we see empty space
-                        const correctedSize = optimalFontSize * 1.15;
-                        console.log(`🔧 Force-increasing to ${correctedSize.toFixed(1)}px (15% increase)`);
+                        // Force increase font size by 6% when it thinks it's "perfect" but we see empty space (more conservative)
+                        const correctedSize = optimalFontSize * 1.06;
+                        console.log(`🔧 Force-increasing to ${correctedSize.toFixed(1)}px (8% increase)`);
                         soldierNames.forEach(name => {
                             name.style.fontSize = correctedSize + 'px';
                         });
