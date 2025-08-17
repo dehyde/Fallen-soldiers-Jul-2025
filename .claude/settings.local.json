@@ -31,7 +31,8 @@
       "Bash(open:*)",
       "Bash(lsof:*)",
       "Bash(gh repo view:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(git ls-tree:*)"
     ],
     "deny": []
   }

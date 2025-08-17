@@ -43,4 +43,10 @@ title_hebrew,id,date,days_from_start,description_hebrew,source,category,stance,c
 נסיגה חלקית מלבנון,42,2025-01-26,476,Continued strategic presence in southern Lebanon,UNIFIL Statement,military,,no,show
 תחילת מבצע ׳מרכבות גדעון׳,43,2025-05-16,527,Renewed offensive with territorial occupation goals,https://acleddata.com/2025/05/29/qa-what-do-israels-shifting-tactics-in-gaza-tell-us-about-whats-ahead/,military,,no,show
 "שליטה ב-40% מעזה, מטרה ל-75%",44,2025-05-01,571,Large-scale territorial control and civilian concentration plan,https://www.timesofisrael.com/idf-aims-to-capture-75-of-gaza-strip-in-2-months-in-new-offensive-against-hamas/,military,,no,show
-היום,today_point,2025-08-16,679,נקודת זמן נוכחית - דינמית,,,,,show
+"פלישה קרקעית ללבנון" ,45,2024-09-30,?,תחילת מבצע קרקעי מוגבל בלבנון לוויית סיוע אווירי,https://www.axios.com/2024/09/30/israel-ground-invasion-lebanon,מילוי סיוע,neutral,no,show
+"נסיגה או סיום בלבנון" ,46,2024-11-27,?,הפסקת אש עם נסיגה חלקית והחזרת תושבים,https://www.reuters.com/world/middle-east/israel-hezbollah-ceasefire-takes-effect-2024-11-27/,דיפלומטי,neutral,yes,show
+"מלחמה עם איראן" ,47,2025-06-??,?,מלחמה בת 12 ימים בין ישראל לאיראן שהסתיימה בהפסקת אש,https://en.wikipedia.org/wiki/Iran–Israel_war,צבאי,neutral,yes,show
+"התייחסות טראמפ על המשך המלחמה ממניעים פוליטיים של נתניהו" ,448,2025-07-??,?,טראמפ מאמין שנתניהו מאריך את המלחמה כדי להישאר בשלטון,https://www.timesofisrael.com/trump-convinced-netanyahu-prolonging-gaza-war-for-political-reasons-report/,political_manipulation,critical,maybe,show
+"הצהרות על כיבוש מלא של עזה",49,2025-08-07,?,"ראש הממשלה נתניהו הצהיר כי בכוונתו לכבוש צבאית את כל רצועת עזה, ולאחר מכן להעבירה לריבונות אזורית שאינה של חמאס או הרשות הפלסטינית",https://www.timesofisrael.com/netanyahu-israel-intends-to-capture-all-of-gaza-hand-it-over-to-non-pa-arab-forces/,extremist_statement,,no,show
+"כניסה של צה״ל לח'אן יונס",50,2023-12-10,64,"שריון צה""ל חדר לשכונות המרכזיות של ח'אן יונס – פריסת כוחות קרקעיים בעיר הגדולה בדרום עזה",https://www.reuters.com/world/middle-east/palestinians-report-israeli-battles-khan-younis-after-us-blocks-gaza-ceasefire-2023-12-10/,צבאי,neutral,yes,show
+היום,today_point,2025-08-16,679,כל חודש שהמלחמה נמשכת וחיילים נשלחים לחזית הוא חודש נוסף של חיילים שלא חוזרים הביתה ושל משפחות שמצטרפות למעגל השכול,,,,,show
