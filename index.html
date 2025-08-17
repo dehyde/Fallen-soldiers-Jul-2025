@@ -133,10 +133,11 @@
         }
 
         .status-components-container {
-            position: fixed;
-            top: 120px;
-            right: 50px;
-            z-index: 1000;
+            display: none; /* Hidden on desktop, shown on mobile */
+        }
+
+        .mobile-title-cta-row {
+            display: contents; /* On desktop, don't create flex container */
         }
 
         .status-components {
@@ -1135,57 +1136,184 @@
             color: #333 !important;
         }
 
-        /* Mobile - Desktop Only Message */
+        /* Mobile Layout */
         @media (max-width: 768px) {
-            .main-container,
-            .header,
-            .names-container,
-            .timeline-container,
-            .draggable-container {
-                display: none !important;
-            }
-            
             html, body {
                 margin: 0 !important;
                 padding: 0 !important;
                 width: 100vw !important;
                 height: 100vh !important;
                 overflow: hidden !important;
-                background: #f5f5f5 !important;
-                font-family: 'Heebo', sans-serif !important;
-                position: relative !important;
-            }
-            
-            body::before {
-                content: "אתר זה מיועד לצפייה במחשב שולחני בלבד\A\AThis website is intended for desktop viewing only";
-                position: fixed !important;
-                top: 50% !important;
-                left: 50% !important;
-                transform: translate(-50%, -50%) !important;
-                display: block !important;
-                white-space: pre-line !important;
-                text-align: center !important;
-                font-size: 20px !important;
-                color: #333 !important;
-                line-height: 1.8 !important;
-                z-index: 99999 !important;
                 background: white !important;
-                padding: 30px !important;
-                border-radius: 10px !important;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
-                max-width: 90vw !important;
+                font-family: 'Heebo', sans-serif !important;
             }
-            
-            .timeline-tooltip,
-            .timeline-handle-tooltip {
-                display: none !important; /* Hide timeline tooltips on mobile */
+
+            /* Hide desktop-only elements */
+            .timeline-container,
+            .draggable-container,
+            .header-info,
+            .timeline-description {
+                display: none !important;
             }
-            
-            .draggable-container {
-                right: 50%; /* Center horizontally */
-                top: 50%; /* Keep vertical centering */
-                transform: translateX(50%) translateY(-50%); /* Center both horizontally and vertically */
-                max-width: 90vw; /* Ensure it fits on small screens */
+
+            /* Mobile header container */
+            .header-container {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                padding: 12px 15px !important;
+                background: white !important;
+                border-bottom: 1px solid #e0e0e0 !important;
+                z-index: 1000 !important;
+                display: flex !important;
+                height: auto !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+            }
+
+            /* Mobile title and CTA container */
+            .mobile-title-cta-row {
+                display: flex !important;
+                flex-direction: row-reverse !important;
+                justify-content: flex-start !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+                width: 100% !important;
+            }
+
+            /* Mobile title */
+            .names-title {
+                flex: 1 !important;
+                font-size: 16px !important;
+                line-height: 1.3 !important;
+                text-align: right !important;
+                margin-bottom: 0 !important;
+                padding-right: 0 !important;
+                margin-right: 0 !important;
+                overflow-wrap: break-word !important;
+                word-break: break-word !important;
+                min-width: 0 !important;
+            }
+
+            /* Hide line break in mobile title */
+            .names-title br {
+                display: none !important;
+            }
+
+            /* Mobile status components */
+            .status-components-container {
+                position: relative !important;
+                top: auto !important;
+                right: auto !important;
+                margin-top: 8px !important;
+                display: block !important;
+                width: 100% !important;
+                flex: 1 !important;
+            }
+
+            .status-components {
+                display: flex !important;
+                flex-direction: row !important;
+                width: 100% !important;
+                gap: 4px !important;
+                align-items: stretch !important;
+                justify-content: space-between !important;
+            }
+
+            .status-component {
+                flex: 1 !important;
+                padding: 4px !important;
+                border-radius: 4px !important;
+                width: auto !important;
+                margin: 0 !important;
+                height: auto !important;
+                text-align: center !important;
+            }
+
+            .status-text {
+                font-size: 11px !important;
+                text-align: center !important;
+                white-space: normal !important;
+                line-height: 1.3 !important;
+            }
+
+            /* Mobile skip-back button */
+            .cta-skip-back {
+                position: relative !important;
+                bottom: auto !important;
+                left: auto !important;
+                transform: none !important;
+                top: auto !important;
+                background: transparent !important;
+                color: #4e4e4e !important;
+                padding: 8px 12px !important;
+                border-radius: 15px !important;
+                box-shadow: none !important;
+                font-size: 14px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 4px !important;
+                z-index: 999 !important;
+                border: none !important;
+                flex-shrink: 0 !important;
+                white-space: nowrap !important;
+            }
+
+            .cta-skip-back #selectedDateInTitle {
+                font-size: 14px !important;
+                margin-right: 8px !important;
+                margin-left: 4px !important;
+            }
+
+            .cta-skip-back:active {
+                transform: scale(0.95) !important;
+            }
+
+            /* Mobile names container */
+            .names-container {
+                position: fixed !important;
+                top: 120px !important;
+                bottom: 20px !important;
+                left: 10px !important;
+                right: 10px !important;
+                overflow: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding: 5px !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                align-content: flex-start !important;
+                gap: 2px !important;
+                justify-content: center !important;
+                direction: rtl !important;
+            }
+
+            /* Mobile soldier names */
+            .soldier-name {
+                font-size: 9px !important;
+                padding: 1px 3px !important;
+                line-height: 1.2 !important;
+            }
+
+            /* Simplified tooltip for mobile */
+            .soldier-tooltip {
+                max-width: 250px !important;
+                font-size: 10px !important;
+                padding: 8px !important;
+            }
+
+            .soldier-tooltip .soldier-photo {
+                display: none !important;
+            }
+
+            .soldier-tooltip strong {
+                font-size: 11px !important;
+            }
+
+            .soldier-tooltip .soldier-details {
+                font-size: 9px !important;
             }
         }
         
@@ -1258,14 +1386,27 @@
     </div>
 
     <div class="header-container">
-        <div class="names-title">
-            הנופלים, ואלה שיכלו עוד להיות חיים<br>
-            אם המלחמה הייתה מסתיימת
+        <div class="mobile-title-cta-row">
+            <div class="names-title">
+                הנופלים, ואלה שיכלו עוד להיות חיים<br>
+                אם המלחמה הייתה מסתיימת
+            </div>
+            <button class="cta-skip-back" id="ctaSkipBack">
+                <i data-lucide="skip-back"></i>
+                <span id="selectedDateInTitle" style="margin-right: 14px; margin-left: 12px; font-size: 22px; font-weight: 200;">30.1.2024</span>
+            </button>
         </div>
-        <button class="cta-skip-back" id="ctaSkipBack">
-            <i data-lucide="skip-back"></i>
-            <span id="selectedDateInTitle" style="margin-right: 14px; margin-left: 12px; font-size: 22px; font-weight: 200;">30.1.2024</span>
-        </button>
+        <!-- Mobile status components - moved here for mobile layout -->
+        <div class="status-components-container">
+            <div class="status-components">
+                <div class="status-component alive-status">
+                    <div class="status-text" id="aliveCount">0 היו יכולים להיות חיים</div>
+                </div>
+                <div class="status-component fallen-status">
+                    <div class="status-text" id="fallenCount">0 חללים</div>
+                </div>
+            </div>
+        </div>
         <div class="timeline-description" id="timelineDescription">
             <!-- Timeline description will be populated here -->
         </div>
@@ -1276,16 +1417,6 @@
         <div id="lastEvent">תחילת המלחמה</div>
     </div>
     
-    <div class="status-components-container">
-        <div class="status-components">
-            <div class="status-component alive-status">
-                <div class="status-text" id="aliveCount">0 היו יכולים להיות חיים היום</div>
-            </div>
-            <div class="status-component fallen-status">
-                <div class="status-text" id="fallenCount">0 חללים מאז תחילת התמרון</div>
-            </div>
-        </div>
-    </div>
     
     <div class="timeline-container">
         <div class="timeline-track">
@@ -2288,6 +2419,12 @@
 
         class TimelineMemorial {
             constructor() {
+                // Mobile detection
+                this.isMobile = window.innerWidth <= 768;
+                if (this.isMobile) {
+                    this.setupMobileLayout();
+                }
+                
                 this.soldiers = [];
                 this.timelineEvents = [];
                 this.militaryEvents = [];
@@ -2303,6 +2440,34 @@
                 this.isTimelineAnimating = false; // Track if timeline is actively animating
                 this.lastTooltipUpdate = 0; // Track last manual tooltip update
                 this.init();
+            }
+
+            setupMobileLayout() {
+                // Mobile-specific elements are handled by CSS
+                // Modal will appear normally on mobile
+            }
+
+            scrollToMostRecentFallen(fallenElement) {
+                // Only scroll on mobile devices
+                if (!this.isMobile) return;
+                
+                const container = document.getElementById('namesContainer');
+                if (!container || !fallenElement) return;
+                
+                // Use smooth scrolling to bring the fallen soldier into view
+                // Position it roughly in the center of the viewport
+                const containerRect = container.getBoundingClientRect();
+                const elementRect = fallenElement.getBoundingClientRect();
+                
+                const elementTop = fallenElement.offsetTop;
+                const containerHeight = container.clientHeight;
+                const scrollTop = elementTop - (containerHeight / 2);
+                
+                // Smooth scroll to position
+                container.scrollTo({
+                    top: Math.max(0, scrollTop),
+                    behavior: 'smooth'
+                });
             }
 
             getTotalTimelineDays() {
@@ -3543,6 +3708,15 @@
 
                 // Recalculate font size when window is resized with buffer
                 window.addEventListener('resize', () => {
+                    // Check if we switched between mobile and desktop
+                    const wasIsMobile = this.isMobile;
+                    this.isMobile = window.innerWidth <= 768;
+                    
+                    if (wasIsMobile !== this.isMobile) {
+                        // Reload page on mobile/desktop switch
+                        window.location.reload();
+                    }
+                    
                     const container = document.getElementById('namesContainer');
                     const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.startDate);
                     setTimeout(() => {
@@ -4265,6 +4439,11 @@
             }
 
             setupSoldierTooltips() {
+                // Disable auto-hover on mobile
+                if (this.isMobile) {
+                    window.autoHoverSystem = { active: false, start: () => {}, stop: () => {} };
+                }
+                
                 const soldierNames = document.querySelectorAll('.soldier-name');
                 const tooltip = document.getElementById('soldierTooltip');
                 const soldierNameEl = document.getElementById('soldierName');
@@ -4885,8 +5064,8 @@
                 // console.log(`Target height: ${targetHeight}px (${(targetFillRatio*100).toFixed(0)}% of ${availableHeight}px)`);
                 
                 // Step 4: Binary search for optimal font size (much more efficient than old method)
-                let minFont = 8;
-                let maxFont = Math.min(200, availableHeight / 5); // Reasonable upper bound
+                let minFont = this.isMobile ? 6 : 8;
+                let maxFont = this.isMobile ? Math.min(50, availableHeight / 8) : Math.min(200, availableHeight / 5);
                 let bestFont = minFont;
                 
                 // console.log(`Binary search range: ${minFont}px - ${maxFont}px`);
@@ -4988,6 +5167,11 @@
                             if (el.classList.contains('dying-fade')) {
                                 el.className = 'soldier-name fallen';
                                 this.soldierStates.set(elementId, 'fallen');
+                                
+                                // Mobile auto-scroll to show most recent fallen soldier
+                                if (this.isMobile) {
+                                    this.scrollToMostRecentFallen(el);
+                                }
                             }
                         }, 600); // Match CSS transition duration
                         
@@ -5027,6 +5211,11 @@
                             // Should be fallen - handle case where soldier was never alive in this session
                             el.className = 'soldier-name fallen';
                             this.soldierStates.set(elementId, 'fallen');
+                            
+                            // Mobile auto-scroll to show most recent fallen soldier
+                            if (this.isMobile && previousState === 'alive') {
+                                this.scrollToMostRecentFallen(el);
+                            }
                         }
                     }
                 });
