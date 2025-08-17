@@ -75,6 +75,7 @@
             font-family: 'Heebo', sans-serif;
             font-size: 14px;
             color: #888;
+            width: 75%;
             max-width: 500px;
             text-align: right !important; /* Force right alignment */
             line-height: 1.4;
@@ -84,18 +85,13 @@
             top: 50%;
             direction: rtl !important; /* Ensure RTL direction */
             transform: translateY(-50%);
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            gap: 8px;
             transition: opacity 0.3s ease;
+            white-space: normal;
         }
 
         .timeline-description-text {
             text-align: right !important; /* Force right alignment for description text */
             direction: rtl !important; /* Ensure RTL direction */
-            flex: 1 1 auto;
-            word-wrap: break-word;
         }
         
         .timeline-description span:not(.timeline-description-link),
@@ -112,7 +108,6 @@
             transition: opacity 0.2s ease;
             display: inline;
             direction: ltr !important; /* Keep icon in normal LTR direction */
-            margin-left: 8px;
         }
 
         .timeline-description-link:hover {
@@ -326,6 +321,50 @@
             height: 10px;
             z-index: 5;
             pointer-events: auto;
+        }
+
+        .timeline-legend {
+            position: absolute;
+            top: -25px;
+            left: 20px;
+            display: flex;
+            gap: 12px;
+            font-family: 'Heebo', sans-serif;
+            font-size: 9px;
+            font-weight: 400;
+            direction: rtl;
+            z-index: 10;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            direction: rtl;
+        }
+
+        .legend-color {
+            width: 6px;
+            height: 6px;
+            border-radius: 1px;
+            transform: rotate(45deg);
+        }
+
+        .legend-color.blue {
+            background: #1168FF;
+        }
+
+        .legend-color.orange {
+            background: #FF8800;
+        }
+
+        .legend-color.black {
+            background: #000000;
+        }
+
+        .legend-text {
+            color: #666;
+            white-space: nowrap;
         }
 
         .timeline-tick {
@@ -1259,6 +1298,20 @@
             <div class="timeline-progress" id="timelineProgress"></div>
             <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="1" value="0">
             <div class="timeline-axis" id="timelineAxis"></div>
+            <div class="timeline-legend">
+                <div class="legend-item">
+                    <span class="legend-text">הזדמנויות לסיום המלחמה</span>
+                    <div class="legend-color blue"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">לחץ פוליטי להמשיך את המלחמה</span>
+                    <div class="legend-color orange"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">אירועים משמעותיים במלחמה</span>
+                    <div class="legend-color black"></div>
+                </div>
+            </div>
             <div class="timeline-handle-tooltip" id="timelineTooltip">
                 <div id="tooltipDate">27/07/25</div>
                 <div id="tooltipAlive" style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">עוד היו בחיים: 0</div>
@@ -2939,11 +2992,10 @@
                     console.log('🔧 DEBUG: Setting content after 300ms delay');
                     // Update content
                     const content = event.source && event.source.startsWith('http') ? 
-                        `<span class="timeline-description-text">${prefix}${descriptionText}</span>
-                         <a href="${event.source}" target="_blank" class="timeline-description-link" title="קישור למקור">
+                        `${prefix}${descriptionText} <a href="${event.source}" target="_blank" class="timeline-description-link" title="קישור למקור">
                              <i data-lucide="link"></i>
                          </a>` :
-                        `<span class="timeline-description-text">${prefix}${descriptionText}</span>`;
+                        `${prefix}${descriptionText}`;
                     
                     console.log('🔧 DEBUG: Setting innerHTML:', content);
                     timelineDescriptionEl.innerHTML = content;
