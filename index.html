@@ -133,7 +133,10 @@
         }
 
         .status-components-container {
-            display: none; /* Hidden on desktop, shown on mobile */
+            position: fixed;
+            top: 120px;
+            right: 50px;
+            z-index: 1000;
         }
 
         .mobile-title-cta-row {
@@ -1540,19 +1543,19 @@
                 <span class="header-date" id="selectedDateInTitle">30.1.2024</span>
             </div>
         </div>
-        <!-- Mobile status components - moved here for mobile layout -->
-        <div class="status-components-container">
-            <div class="status-components">
-                <div class="status-component alive-status">
-                    <div class="status-text" id="aliveCount">0 היו יכולים להיות חיים</div>
-                </div>
-                <div class="status-component fallen-status">
-                    <div class="status-text" id="fallenCount">0 חללים</div>
-                </div>
-            </div>
-        </div>
         <div class="timeline-description" id="timelineDescription">
             <!-- Timeline description will be populated here -->
+        </div>
+    </div>
+    
+    <div class="status-components-container">
+        <div class="status-components">
+            <div class="status-component alive-status">
+                <div class="status-text" id="aliveCount">0 היו יכולים להיות חיים</div>
+            </div>
+            <div class="status-component fallen-status">
+                <div class="status-text" id="fallenCount">0 חללים</div>
+            </div>
         </div>
     </div>
     
