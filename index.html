@@ -413,12 +413,13 @@
         }
 
         .timeline-slider {
-            width: calc(100% + 16px);
+            --handle-width: 6px;
+            width: calc(100% + var(--handle-width) + 2px);
             height: 4px;
             background: transparent;
             outline: none;
             position: absolute;
-            left: -8px; /* Offset by half handle width to align handle center with track edges */
+            left: calc(-1 * (var(--handle-width) + 2px) / 2); /* Offset by half handle width to align handle center with track edges */
             top: -1.5px; /* Center slider on track to align thumb with progress bar */
             cursor: default;
             -webkit-appearance: none;
@@ -446,13 +447,13 @@
 
         .timeline-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 12px;
-            height: 12px;
+            width: var(--handle-width);
+            height: 24px;
             background: var(--handle-background, linear-gradient(135deg, #333 0%, #555 100%));
-            border: var(--handle-border, 2px solid #fff);
-            border-radius: 50%;
+            border: var(--handle-border, 3px solid #fff);
+            border-radius: 8px;
             cursor: grab;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+            box-shadow: none; /* No shadow by default */
             transition: all 0.2s ease;
             opacity: 1;
             z-index: 10000; /* Extremely high z-index for handle */
@@ -465,11 +466,12 @@
 
         .timeline-container:hover .timeline-slider::-webkit-slider-thumb {
             opacity: 1;
+            transform: scale(1.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
         }
 
         .timeline-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.2);
+            /* Hover effects only apply when timeline container is hovered - handled by .timeline-container:hover */
         }
 
         .timeline-slider::-moz-range-track {
@@ -495,15 +497,15 @@
         }
 
         .timeline-slider::-moz-range-thumb {
-            width: 12px;
-            height: 12px;
+            width: var(--handle-width);
+            height: 24px;
             background: var(--handle-background, linear-gradient(135deg, #333 0%, #555 100%));
-            border: var(--handle-border, 2px solid #fff);
-            border-radius: 50%;
+            border: var(--handle-border, 3px solid #fff);
+            border-radius: 8px;
             cursor: grab;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+            box-shadow: none; /* No shadow by default */
             opacity: 1;
-            transition: opacity 0.2s ease;
+            transition: all 0.2s ease;
             z-index: 10000; /* Extremely high z-index for handle */
             pointer-events: auto; /* Handle should be draggable */
         }
@@ -514,6 +516,8 @@
 
         .timeline-container:hover .timeline-slider::-moz-range-thumb {
             opacity: 1;
+            transform: scale(1.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
         }
 
         .timeline-labels {
@@ -1325,14 +1329,14 @@
 
             /* Mobile timeline handle */
             .timeline-slider::-webkit-slider-thumb {
-                width: 16px !important;
-                height: 16px !important;
+                width: 12px !important;
+                height: 12px !important;
                 border-radius: 50% !important;
             }
 
             .timeline-slider::-moz-range-thumb {
-                width: 16px !important;
-                height: 16px !important;
+                width: 12px !important;
+                height: 12px !important;
                 border-radius: 50% !important;
             }
 
@@ -2842,6 +2846,40 @@
                 
                 const msPerDay = 1000 * 60 * 60 * 24;
                 return Math.round((todayNormalized - startNormalized) / msPerDay);
+            }
+
+            findClosestEventToMousePosition(mouseXPixels, trackWidth, totalDays) {
+                // Define proximity threshold in pixels - if mouse is within this distance from a marker, snap to it
+                const snapThreshold = 4; // pixels (half the width of 8px markers)
+                
+                let closestEvent = null;
+                let smallestDistance = Infinity;
+                
+                // Check all visible timeline events
+                this.timelineEvents.forEach(event => {
+                    if (!event.eventDate || event.show !== 'show') return;
+                    
+                    // Calculate pixel position of this event on the timeline track
+                    const eventDate = new Date(event.eventDate);
+                    const todayDate = new Date(this.todayDate);
+                    const timeDiff = todayDate.getTime() - eventDate.getTime();
+                    const eventDaysBack = Math.round(timeDiff / (1000 * 60 * 60 * 24));
+                    
+                    // Convert to percentage and then to pixel position
+                    const eventPercentage = (eventDaysBack / totalDays) * 100;
+                    const eventPixelX = (eventPercentage / 100) * trackWidth;
+                    
+                    // Calculate distance from mouse to event marker
+                    const distance = Math.abs(mouseXPixels - eventPixelX);
+                    
+                    // If this event is closer than previous closest and within snap threshold
+                    if (distance < smallestDistance && distance <= snapThreshold) {
+                        smallestDistance = distance;
+                        closestEvent = event;
+                    }
+                });
+                
+                return closestEvent;
             }
 
 
@@ -4550,6 +4588,68 @@
                     
                     // Force hide the tooltip when leaving the timeline container
                     tooltip.style.opacity = '0';
+                });
+                
+                // Add mousedown handler for track seeking with drag support
+                let isDraggingTrack = false;
+                
+                const updateSliderFromMousePosition = (e) => {
+                    const rect = track.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const trackWidth = rect.width;
+                    
+                    // Calculate percentage position along track
+                    const percentage = (x / trackWidth) * 100;
+                    const clampedPercentage = Math.max(0, Math.min(100, percentage));
+                    
+                    // Calculate corresponding timeline value
+                    const totalDays = this.getTotalTimelineDays();
+                    let daysBack = Math.round((clampedPercentage / 100) * totalDays);
+                    
+                    // Check if mouse is near any timeline marker (within reasonable proximity)
+                    const mouseXPixels = x;
+                    const closestEvent = this.findClosestEventToMousePosition(mouseXPixels, trackWidth, totalDays);
+                    
+                    // If hovering near a marker, snap to the exact event date
+                    if (closestEvent) {
+                        // Calculate exact days back for the closest event date
+                        const eventDate = new Date(closestEvent.date);
+                        const todayDate = new Date(this.todayDate);
+                        const timeDiff = todayDate.getTime() - eventDate.getTime();
+                        daysBack = Math.round(timeDiff / (1000 * 60 * 60 * 24));
+                    }
+                    
+                    // Update slider value
+                    slider.value = daysBack;
+                    
+                    // Trigger slider input event to update timeline
+                    const inputEvent = new Event('input', { bubbles: true });
+                    slider.dispatchEvent(inputEvent);
+                };
+                
+                container.addEventListener('mousedown', (e) => {
+                    // Don't seek if clicking on handle or event markers
+                    if (isMouseOverHandle(e) || isHoveringEventMarker) {
+                        return;
+                    }
+                    
+                    isDraggingTrack = true;
+                    updateSliderFromMousePosition(e);
+                    
+                    // Prevent text selection during drag
+                    e.preventDefault();
+                });
+                
+                // Add mousemove handler for dragging
+                document.addEventListener('mousemove', (e) => {
+                    if (isDraggingTrack) {
+                        updateSliderFromMousePosition(e);
+                    }
+                });
+                
+                // Add mouseup handler to stop dragging
+                document.addEventListener('mouseup', () => {
+                    isDraggingTrack = false;
                 });
             }
 
