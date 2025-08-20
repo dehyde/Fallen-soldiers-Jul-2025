@@ -3794,8 +3794,8 @@
                 try {
                     console.log('Generating living chart...');
                     
-                    const viewBoxWidth = 100;
-                    const viewBoxHeight = 40;
+                    const totalDays = this.getTotalTimelineDays();
+                    const weeklyData = [];
                     
                     // Calculate total soldiers
                     const totalSoldiers = this.soldiers ? this.soldiers.filter(soldier => 
@@ -3807,50 +3807,182 @@
                         return;
                     }
                     
-                    // Get current timeline position for splitting (same logic as fallen chart)
-                    const totalDays = this.getTotalTimelineDays();
+                    // Add starting point at war beginning (Oct 7th) with all soldiers alive
+                    weeklyData.push({
+                        week: -1,
+                        livingCount: totalSoldiers,
+                        weekStart: new Date(this.startDate),
+                        weekEnd: new Date(this.startDate),
+                        displayDate: new Date(this.startDate)
+                    });
+                    
+                    // Group by week and calculate living count (total minus fallen up to week end)
+                    for (let week = 0; week < Math.ceil(totalDays / 7); week++) {
+                        const weekStart = new Date(this.startDate);
+                        weekStart.setDate(weekStart.getDate() + (week * 7));
+                        const weekEnd = new Date(weekStart);
+                        weekEnd.setDate(weekEnd.getDate() + 6);
+                        
+                        const totalFallenUpToThisWeek = this.soldiers.filter(soldier => {
+                            return soldier.death_date <= weekEnd && soldier.death_date >= this.startDate;
+                        }).length;
+                        
+                        const livingAtWeekEnd = totalSoldiers - totalFallenUpToThisWeek;
+                        
+                        weeklyData.push({
+                            week: week,
+                            livingCount: livingAtWeekEnd,
+                            weekStart: weekStart,
+                            weekEnd: weekEnd,
+                            displayDate: weekEnd
+                        });
+                    }
+                    
+                    // Generate SVG path points (RTL: newest weeks on left, oldest on right)
+                    const viewBoxWidth = 100;
+                    const viewBoxHeight = 40;
+                    const points = [];
+                    
+                    weeklyData.forEach(week => {
+                        const displayDaysFromToday = Math.floor((this.todayDate - week.displayDate) / (1000 * 60 * 60 * 24));
+                        const x = (displayDaysFromToday / totalDays) * viewBoxWidth;
+                        // Living chart: higher living count = higher up (lower Y)
+                        const y = viewBoxHeight - (week.livingCount / totalSoldiers) * viewBoxHeight;
+                        points.push({x, y, livingCount: week.livingCount, displayDate: week.displayDate});
+                    });
+                    
+                    // Get current timeline position for splitting
                     const daysFromToday = this.currentEndDate ? 
                         Math.ceil((this.todayDate - this.currentEndDate) / (1000 * 60 * 60 * 24)) : 0;
-                    const currentTimelineProgress = daysFromToday / totalDays;
-                    const splitX = currentTimelineProgress * viewBoxWidth;
+                    const currentTimelineProgress = (daysFromToday / totalDays) * 100;
                     
-                    // Calculate living soldiers at the selected date
-                    const selectedDate = this.currentEndDate || this.todayDate;
-                    const fallenAtSelectedDate = this.soldiers.filter(soldier => {
-                        return soldier.death_date <= selectedDate && soldier.death_date >= this.startDate;
-                    }).length;
-                    const livingAtSelectedDate = totalSoldiers - fallenAtSelectedDate;
+                    console.log(`Living chart timeline calculation:`);
+                    console.log(`  currentEndDate: ${this.currentEndDate}`);
+                    console.log(`  todayDate: ${this.todayDate}`);
+                    console.log(`  daysFromToday: ${daysFromToday}`);
+                    console.log(`  totalDays: ${totalDays}`);
+                    console.log(`  currentTimelineProgress: ${currentTimelineProgress.toFixed(3)}`);
+                    console.log(`Living chart: ${points.length} weekly data points, split at ${currentTimelineProgress.toFixed(3)}`);
                     
-                    // Calculate Y position for living count (higher count = lower Y = further up)
-                    const selectedY = viewBoxHeight - (livingAtSelectedDate / totalSoldiers) * viewBoxHeight;
+                    // Split the chart at current timeline position
+                    this.generateSplitLivingChart(points, viewBoxHeight, currentTimelineProgress);
                     
-                    console.log(`Living chart: ${livingAtSelectedDate}/${totalSoldiers} alive at selected date, Y=${selectedY}`);
+                    // Debug points removed for clean visualization
+                    // this.addLivingChartDebugPoints(points, viewBoxWidth, viewBoxHeight, currentTimelineProgress);
                     
-                    // Create declining line from start (all alive) to selected date
-                    const pastPath = `M ${viewBoxWidth} ${viewBoxHeight} L ${viewBoxWidth} 0 L ${splitX} ${selectedY} L ${splitX} ${viewBoxHeight} Z`;
-                    const pastPathElement = document.getElementById('livingPathPast');
-                    if (pastPathElement) {
-                        pastPathElement.setAttribute('d', pastPath);
-                        console.log('Past path set:', pastPath);
-                    } else {
-                        console.error('livingPathPast element not found!');
-                    }
-                    
-                    // Create flat future projection at the living count from selected date
-                    const futurePath = `M ${splitX} ${viewBoxHeight} L ${splitX} ${selectedY} L 0 ${selectedY} L 0 ${viewBoxHeight} Z`;
-                    const futurePathElement = document.getElementById('livingPathFuture');
-                    if (futurePathElement) {
-                        futurePathElement.setAttribute('d', futurePath);
-                        console.log('Future path set:', futurePath);
-                    } else {
-                        console.error('livingPathFuture element not found!');
-                    }
-                    
-                    console.log('Living chart generation completed. SplitX:', splitX);
+                    console.log(`Living chart generated: ${weeklyData.length} weeks, total soldiers: ${totalSoldiers}`);
                     
                 } catch (error) {
                     console.error('Error in generateLivingChart:', error);
                 }
+            }
+
+            generateSplitLivingChart(points, viewBoxHeight, splitPosition) {
+                if (points.length === 0) return;
+                
+                console.log(`Splitting living chart at position: ${splitPosition}`);
+                console.log(`All points X range: ${Math.min(...points.map(p => p.x)).toFixed(2)} to ${Math.max(...points.map(p => p.x)).toFixed(2)}`);
+                
+                // Split points into past (right of split) and future (left of split) 
+                const pastPoints = points.filter(p => p.x >= splitPosition);
+                const futurePoints = points.filter(p => p.x <= splitPosition);
+                
+                console.log(`Past points: ${pastPoints.length}, Future points: ${futurePoints.length}`);
+                console.log(`Past X range: ${pastPoints.length > 0 ? Math.min(...pastPoints.map(p => p.x)).toFixed(2) + ' to ' + Math.max(...pastPoints.map(p => p.x)).toFixed(2) : 'none'}`);
+                console.log(`Future X range: ${futurePoints.length > 0 ? Math.min(...futurePoints.map(p => p.x)).toFixed(2) + ' to ' + Math.max(...futurePoints.map(p => p.x)).toFixed(2) : 'none'}`);
+                
+                // Add split point if needed to connect the two sections (same logic as fallen chart)
+                if (pastPoints.length > 0 && futurePoints.length > 0) {
+                    // Find the interpolated value at the split position (exact same logic as fallen chart)
+                    const leftPoint = points.find(p => p.x <= splitPosition) || points[0];
+                    const rightPoint = points.find(p => p.x >= splitPosition) || points[points.length - 1];
+                    
+                    if (leftPoint && rightPoint && leftPoint !== rightPoint) {
+                        const ratio = (splitPosition - leftPoint.x) / (rightPoint.x - leftPoint.x);
+                        const interpolatedY = leftPoint.y + (rightPoint.y - leftPoint.y) * ratio;
+                        const splitPoint = { x: splitPosition, y: interpolatedY, livingCount: 0 };
+                        
+                        console.log(`Split point interpolated: (${splitPosition.toFixed(2)}, ${interpolatedY.toFixed(2)})`);
+                        
+                        // Add split point to both arrays (same logic as fallen chart)
+                        if (!futurePoints.find(p => p.x === splitPosition)) {
+                            futurePoints.push(splitPoint);
+                        }
+                        if (!pastPoints.find(p => p.x === splitPosition)) {
+                            pastPoints.unshift(splitPoint);
+                        }
+                    }
+                }
+                
+                // Generate path for past section (actual declining living count)
+                const pastPath = this.generatePathData(pastPoints, viewBoxHeight);
+                const pastPathElement = document.getElementById('livingPathPast');
+                if (pastPathElement) {
+                    pastPathElement.setAttribute('d', pastPath);
+                    console.log('Past path set with', pastPoints.length, 'points');
+                }
+                
+                // Generate projection rectangle using exact interpolated Y height
+                let projectionY = viewBoxHeight; // Default to bottom if no interpolation
+                
+                // Get the exact interpolated Y at the split position
+                if (pastPoints.length > 0 && futurePoints.length > 0) {
+                    const splitPointInPast = pastPoints.find(p => p.x === splitPosition);
+                    const splitPointInFuture = futurePoints.find(p => p.x === splitPosition);
+                    
+                    if (splitPointInPast) {
+                        projectionY = splitPointInPast.y;
+                        console.log(`Using split point Y from past: ${projectionY.toFixed(2)}`);
+                    } else if (splitPointInFuture) {
+                        projectionY = splitPointInFuture.y;
+                        console.log(`Using split point Y from future: ${projectionY.toFixed(2)}`);
+                    }
+                }
+                
+                // Create flat projection rectangle from split position to left edge
+                const projectionPath = `M ${splitPosition} ${viewBoxHeight} L ${splitPosition} ${projectionY} L 0 ${projectionY} L 0 ${viewBoxHeight} Z`;
+                const futurePathElement = document.getElementById('livingPathFuture');
+                if (futurePathElement) {
+                    futurePathElement.setAttribute('d', projectionPath);
+                    console.log(`Projection rectangle set: Y=${projectionY.toFixed(2)}, from X=${splitPosition.toFixed(2)} to X=0`);
+                }
+            }
+
+            addLivingChartDebugPoints(points, viewBoxWidth, viewBoxHeight, splitPosition) {
+                const svg = document.querySelector('#timelineLivingChart svg');
+                if (!svg) return;
+                
+                // Remove existing debug markers
+                svg.querySelectorAll('.debug-point').forEach(el => el.remove());
+                
+                // Add small circles for each weekly data point
+                points.forEach((point, i) => {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', point.x);
+                    circle.setAttribute('cy', point.y);
+                    circle.setAttribute('r', '0.8');
+                    
+                    // Color code: past = blue, future = light blue, split = red
+                    let color = 'lightblue';
+                    if (point.x >= splitPosition) {
+                        color = 'blue'; // Past points
+                    }
+                    if (Math.abs(point.x - splitPosition) < 0.01) {
+                        color = 'red'; // Split point
+                    }
+                    
+                    circle.setAttribute('fill', color);
+                    circle.setAttribute('stroke', 'white');
+                    circle.setAttribute('stroke-width', '0.3');
+                    circle.classList.add('debug-point');
+                    svg.appendChild(circle);
+                    
+                    if (i % 10 === 0) { // Log every 10th point to avoid spam
+                        console.log(`Point ${i}: (${point.x.toFixed(1)}, ${point.y.toFixed(1)}) - ${point.livingCount} living`);
+                    }
+                });
+                
+                console.log(`Added ${points.length} debug points to living chart`);
             }
 
             generatePathData(points, viewBoxHeight) {
