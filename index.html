@@ -335,8 +335,9 @@
 
         .timeline-legend {
             position: absolute;
-            top: -25px;
-            left: 20px;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             gap: 12px;
             font-family: 'Heebo', sans-serif;
@@ -344,6 +345,12 @@
             font-weight: 400;
             direction: rtl;
             z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .timeline-container:hover .timeline-legend {
+            opacity: 1;
         }
 
         .legend-item {
@@ -1086,6 +1093,7 @@
         .timeline-container:hover .timeline-event-marker {
             width: 12px !important;
             height: 12px !important;
+            border-radius: 2px !important;
         }
 
         .soldier-tooltip {
@@ -1636,16 +1644,16 @@
             <div class="timeline-axis" id="timelineAxis"></div>
             <div class="timeline-legend">
                 <div class="legend-item">
-                    <span class="legend-text">הזדמנויות לסיום המלחמה</span>
                     <div class="legend-color blue"></div>
+                    <span class="legend-text">הזדמנויות לסיום המלחמה</span>
                 </div>
                 <div class="legend-item">
-                    <span class="legend-text">לחץ פוליטי להמשיך את המלחמה</span>
                     <div class="legend-color orange"></div>
+                    <span class="legend-text">לחץ פוליטי להמשיך את המלחמה</span>
                 </div>
                 <div class="legend-item">
-                    <span class="legend-text">אירועים משמעותיים במלחמה</span>
                     <div class="legend-color black"></div>
+                    <span class="legend-text">אירועים משמעותיים במלחמה</span>
                 </div>
             </div>
             <div class="timeline-handle-tooltip" id="timelineTooltip">
@@ -3332,7 +3340,8 @@
                             }
                             marker.style.background = markerColor;
                             marker.style.border = '2px solid #ffffff';
-                            marker.style.borderRadius = '50%';
+                            marker.style.borderRadius = '1px';
+                            marker.style.transform = 'translate(-50%, -50%) rotate(45deg)';
                             
                             // Restore original marker design (no debug colors)
                             // marker.style.background = markerColor; (set above)
