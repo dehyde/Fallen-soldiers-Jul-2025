@@ -173,6 +173,7 @@
 
         .alive-status {
             background: #E7F0FF; /* Same as living soldier background */
+            display: none; /* Hide since we're showing this on the bracket now */
         }
 
         .fallen-status {
@@ -1048,6 +1049,37 @@
             stroke-width: 1;
             fill: none;
             transition: all 0.3s ease;
+        }
+
+        .timeline-bracket-label {
+            font-family: 'Heebo', sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            color: #1168FF;
+            background: #E7F0FF;
+            direction: rtl;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 7; /* Above bracket */
+            padding: 4px 8px;
+            border-radius: 0; /* No rounded corners */
+            position: relative;
+            height: 21px;
+            display: flex;
+            align-items: center;
+        }
+
+        .timeline-bracket-label::before {
+            content: '';
+            position: absolute;
+            left: 0px; /* Position at leftmost part of tooltip */
+            bottom: -6px; /* Position at bottom edge, pointing down */
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 6px 6px 0 0; /* Triangle pointing down, right edge going up 45deg */
+            border-color: #E7F0FF transparent transparent transparent;
         }
 
 
@@ -4106,10 +4138,15 @@
                         return;
                     }
 
-                    // Remove existing bracket
+                    // Remove existing bracket and label
                     const existingBracket = document.querySelector('.timeline-height-bracket');
                     if (existingBracket) {
                         existingBracket.remove();
+                    }
+                    
+                    const existingLabel = document.querySelector('.timeline-bracket-label');
+                    if (existingLabel) {
+                        existingLabel.remove();
                     }
 
                     // Calculate current living count for dynamic height (same logic as living chart)
@@ -4180,6 +4217,17 @@
                     
                     // Add to timeline track (same parent as axis and living chart)
                     timelineTrack.appendChild(bracketSvg);
+                    
+                    // Create living count label positioned above the bracket (tooltip style)
+                    const bracketLabel = document.createElement('div');
+                    bracketLabel.classList.add('timeline-bracket-label');
+                    bracketLabel.textContent = `${currentLivingCount} היו יכולים להיות חיים`;
+                    bracketLabel.style.position = 'absolute';
+                    bracketLabel.style.top = (bracketTop - 35) + 'px'; // 35px above bracket top to accommodate tooltip height
+                    bracketLabel.style.left = '-9px'; // Align left edge with horizontal center of bracket (bracket is at -14px, width 10px, so center is -14+5 = -9px)
+                    
+                    // Add label to timeline track
+                    timelineTrack.appendChild(bracketLabel);
                     
                     console.log(`Height bracket: living ratio ${livingRatio.toFixed(2)}, chart height ${currentChartHeight.toFixed(1)}px, bracket ${bracketHeight.toFixed(1)}px from ${currentLivingTop.toFixed(1)}px to ${axisCenter}px`);
                     
