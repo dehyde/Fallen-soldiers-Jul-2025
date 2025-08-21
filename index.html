@@ -277,7 +277,7 @@
         .timeline-container {
             position: fixed;
             bottom: 20px;
-            left: 0;
+            left: 20px; /* Add 20px margin to accommodate bracket */
             right: 0;
             height: 130px; /* Reduced from 200px to 130px for more names space */
             background: transparent;
@@ -291,6 +291,7 @@
             justify-content: center;
             padding: 20px 50px 30px 50px; /* Reduced top padding from 100px to 20px */
             z-index: 100;
+            overflow: visible; /* Allow bracket to show outside container */
         }
 
 .timeline-track {
@@ -470,6 +471,14 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
         }
 
+        /* Handle shape when positioned on a marker - COMMENTED OUT AS BACKUP */
+        /* .timeline-slider.on-marker::-webkit-slider-thumb {
+            border-radius: 4px; /* Large corner radius for square-ish shape */
+            /* width: 10px; /* Smaller square width */
+            /* height: 10px; /* Smaller square height */
+            /* transform-origin: center center; /* Anchor transformation at geometric center */
+        /* } */
+
         .timeline-slider::-webkit-slider-thumb:hover {
             /* Hover effects only apply when timeline container is hovered - handled by .timeline-container:hover */
         }
@@ -519,6 +528,14 @@
             transform: scale(1.15);
             box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
         }
+
+        /* Handle shape when positioned on a marker - COMMENTED OUT AS BACKUP */
+        /* .timeline-slider.on-marker::-moz-range-thumb {
+            border-radius: 4px; /* Large corner radius for square-ish shape */
+            /* width: 10px; /* Smaller square width */
+            /* height: 10px; /* Smaller square height */
+            /* transform-origin: center center; /* Anchor transformation at geometric center */
+        /* } */
 
         .timeline-labels {
             display: flex;
@@ -786,6 +803,44 @@
             stroke-width: 2 !important;
         }
 
+        /* Click outline effect */
+        .click-outline {
+            position: relative;
+            --outline-width: 3px;
+        }
+
+        .click-outline::after {
+            content: '';
+            position: absolute;
+            top: calc(-1 * var(--outline-width));
+            left: calc(-1 * var(--outline-width));
+            right: calc(-1 * var(--outline-width));
+            bottom: calc(-1 * var(--outline-width));
+            border: var(--outline-width) solid rgba(51, 51, 51, 0.3);
+            border-radius: inherit;
+            pointer-events: none;
+            opacity: 1;
+            transition: all 0.8s ease-out;
+        }
+
+        .click-outline.shrinking::after {
+            --outline-width: 0px;
+            opacity: 0;
+        }
+
+        /* Specific outline colors for different button types */
+        .cta-primary.click-outline::after {
+            border-color: rgba(51, 51, 51, 0.4);
+        }
+
+        .cta-tertiary.click-outline::after {
+            border-color: rgba(102, 102, 102, 0.3);
+        }
+
+        .cta-primary.icon-only.click-outline::after {
+            border-color: rgba(0, 0, 0, 0.5);
+        }
+
         /* Header date styling */
         .header-date {
             font-family: 'Heebo', sans-serif !important;
@@ -963,6 +1018,36 @@
             fill: rgba(180, 180, 180, 0);
             stroke: none;
             transition: fill 0.2s ease;
+        }
+
+        .timeline-height-bracket {
+            position: absolute;
+            z-index: 6;
+            pointer-events: none;
+            opacity: 0.7;
+            overflow: visible;
+            transition: all 0.3s ease;
+        }
+
+        .height-bracket-line {
+            stroke: #1168FF;
+            stroke-width: 1;
+            fill: none;
+            transition: all 0.3s ease;
+        }
+
+        .height-bracket-top {
+            stroke: #1168FF;
+            stroke-width: 1;
+            fill: none;
+            transition: all 0.3s ease;
+        }
+
+        .height-bracket-bottom {
+            stroke: #1168FF;
+            stroke-width: 1;
+            fill: none;
+            transition: all 0.3s ease;
         }
 
 
@@ -2882,6 +2967,20 @@
                 return closestEvent;
             }
 
+            // COMMENTED OUT AS BACKUP - Handle shape changing behavior
+            /* updateHandleShapeForMarker(currentDate, slider) {
+                // Check if current date matches any timeline event exactly
+                const eventAtCurrentDate = this.getEventAtDate(currentDate);
+                
+                if (eventAtCurrentDate) {
+                    // Handle is on a marker - change to square shape
+                    slider.classList.add('on-marker');
+                } else {
+                    // Handle is not on a marker - use default rectangular shape
+                    slider.classList.remove('on-marker');
+                }
+            } */
+
 
             async init() {
                 await this.loadData();
@@ -3919,6 +4018,9 @@
                     
                     console.log(`Living chart generated: ${weeklyData.length} weeks, total soldiers: ${totalSoldiers}`);
                     
+                    // Update height bracket to match the living chart
+                    this.updateHeightBracket(); // Instant update, no delay
+                    
                 } catch (error) {
                     console.error('Error in generateLivingChart:', error);
                 }
@@ -3992,6 +4094,97 @@
                 if (futurePathElement) {
                     futurePathElement.setAttribute('d', projectionPath);
                     console.log(`Projection rectangle set: Y=${projectionY.toFixed(2)}, from X=${splitPosition.toFixed(2)} to X=0`);
+                }
+            }
+
+            updateHeightBracket() {
+                try {
+                    // Get the timeline track container (same as axis uses)
+                    const timelineTrack = document.querySelector('.timeline-track');
+                    if (!timelineTrack) {
+                        console.warn('Timeline track not found for height bracket');
+                        return;
+                    }
+
+                    // Remove existing bracket
+                    const existingBracket = document.querySelector('.timeline-height-bracket');
+                    if (existingBracket) {
+                        existingBracket.remove();
+                    }
+
+                    // Calculate current living count for dynamic height (same logic as living chart)
+                    const totalSoldiers = this.soldiers ? this.soldiers.filter(soldier => 
+                        soldier.death_date >= this.startDate
+                    ).length : 0;
+                    
+                    if (totalSoldiers === 0) {
+                        console.warn('No soldiers data for height bracket');
+                        return;
+                    }
+
+                    const currentFallenCount = this.soldiers.filter(soldier => {
+                        return soldier.death_date <= this.currentEndDate && soldier.death_date >= this.startDate;
+                    }).length;
+                    
+                    const currentLivingCount = totalSoldiers - currentFallenCount;
+                    const livingRatio = currentLivingCount / totalSoldiers;
+                    
+                    // Use same coordinate system as living chart
+                    // Living chart: viewBoxHeight = 40, positioned at top: -40px, height: 40px
+                    const viewBoxHeight = 40;
+                    const livingChartHeightPx = 40; // CSS height of living chart container
+                    
+                    // Calculate actual living chart height in pixels (same as chart generation)
+                    const currentChartHeight = livingRatio * livingChartHeightPx;
+                    
+                    // Position bracket using CSS positioning (same as timeline elements)
+                    // Timeline axis is at top: 5px, height: 10px
+                    // Living chart is at top: -40px, height: 40px
+                    // Bracket should measure from axis center to current living chart height
+                    
+                    const axisTop = 5; // From CSS
+                    const axisCenter = axisTop + 7 - 10; // Move up 10px to align with axis center
+                    const livingChartTop = -40; // From CSS
+                    const livingChartBottom = livingChartTop + livingChartHeightPx; // -40 + 40 = 0
+                    
+                    // Current actual top of living area (where chart currently reaches)
+                    const currentLivingTop = livingChartBottom - currentChartHeight; // 0 - currentHeight
+                    
+                    // Bracket height: from axis center to current living chart peak
+                    const bracketHeight = axisCenter - currentLivingTop; // Distance from axis to living chart peak
+                    const bracketTop = currentLivingTop; // Start at current living chart peak
+                    
+                    // Create SVG bracket using same approach as living chart
+                    const bracketSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    bracketSvg.setAttribute('viewBox', `0 0 10 ${bracketHeight}`);
+                    bracketSvg.setAttribute('width', '10');
+                    bracketSvg.setAttribute('height', bracketHeight);
+                    bracketSvg.classList.add('timeline-height-bracket');
+
+                    // Position using absolute positioning within timeline track (same as other elements)
+                    bracketSvg.style.position = 'absolute';
+                    bracketSvg.style.top = bracketTop + 'px';
+                    bracketSvg.style.left = '-14px'; // 4px to the left of track edge
+                    bracketSvg.style.width = '10px';
+                    bracketSvg.style.height = bracketHeight + 'px';
+
+                    // Create the bracket path
+                    const bracketPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const pathData = `M 6,0 L 2,0 L 2,${bracketHeight} L 6,${bracketHeight}`;
+                    bracketPath.setAttribute('d', pathData);
+                    bracketPath.setAttribute('fill', 'none');
+                    bracketPath.setAttribute('stroke', '#1168FF'); // Blue to match text
+                    bracketPath.setAttribute('stroke-width', '1');
+
+                    bracketSvg.appendChild(bracketPath);
+                    
+                    // Add to timeline track (same parent as axis and living chart)
+                    timelineTrack.appendChild(bracketSvg);
+                    
+                    console.log(`Height bracket: living ratio ${livingRatio.toFixed(2)}, chart height ${currentChartHeight.toFixed(1)}px, bracket ${bracketHeight.toFixed(1)}px from ${currentLivingTop.toFixed(1)}px to ${axisCenter}px`);
+                    
+                } catch (error) {
+                    console.error('Error updating height bracket:', error);
                 }
             }
 
@@ -4303,6 +4496,9 @@
                     const progress = ((totalDays - days) / totalDays) * 100;
                     document.getElementById('timelineProgress').style.width = progress + '%';
                     
+                    // Check if handle is positioned on a marker and update handle shape - COMMENTED OUT
+                    // this.updateHandleShapeForMarker(newEndDate, slider);
+                    
                     // Update tooltip
                     this.updateTooltip(days, newEndDate);
                     
@@ -4314,6 +4510,9 @@
 
                 // Setup navigation CTAs
                 this.setupNavigationCTAs();
+                
+                // Setup click outline effects
+                this.setupClickOutlineEffects();
                 
                 // Setup timeline track hover functionality
                 this.setupTimelineTrackHover();
@@ -4338,6 +4537,9 @@
                             this.performFontSizeCalculation(relevantSoldiers.length, availableWidth, availableHeight);
                         }
                     }, 100);
+                    
+                    // Update height bracket on resize
+                    this.updateHeightBracket();
                 });
             }
 
@@ -4651,6 +4853,50 @@
                 document.addEventListener('mouseup', () => {
                     isDraggingTrack = false;
                 });
+            }
+
+            addClickOutlineEffect(element) {
+                // Add the click outline class immediately (instant appearance)
+                element.classList.add('click-outline');
+                
+                // Force a reflow to ensure the initial state is rendered
+                element.offsetHeight;
+                
+                // Add shrinking class after a tiny delay to trigger the animation
+                requestAnimationFrame(() => {
+                    element.classList.add('shrinking');
+                });
+                
+                // Remove all classes after animation completes
+                setTimeout(() => {
+                    element.classList.remove('click-outline', 'shrinking');
+                }, 800);
+            }
+
+            setupClickOutlineEffects() {
+                // Add click outline effect to all CTA buttons
+                const ctaButtons = document.querySelectorAll('.cta-primary, .cta-tertiary');
+                ctaButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        this.addClickOutlineEffect(e.target);
+                    });
+                });
+
+                // Add click outline effect to timeline markers
+                const timelineContainer = document.querySelector('.timeline-container');
+                if (timelineContainer) {
+                    timelineContainer.addEventListener('click', (e) => {
+                        // Check if clicked element is a marker or clickable element
+                        if (e.target.classList.contains('event-marker') || 
+                            e.target.closest('.event-marker') ||
+                            e.target.onclick) {
+                            const targetElement = e.target.classList.contains('event-marker') ? 
+                                                 e.target : 
+                                                 (e.target.closest('.event-marker') || e.target);
+                            this.addClickOutlineEffect(targetElement);
+                        }
+                    });
+                }
             }
 
             setupNavigationCTAs() {
