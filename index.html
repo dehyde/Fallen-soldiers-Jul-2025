@@ -4148,6 +4148,11 @@
                     if (existingLabel) {
                         existingLabel.remove();
                     }
+                    
+                    const existingFallenLabel = document.querySelector('.timeline-bracket-fallen-label');
+                    if (existingFallenLabel) {
+                        existingFallenLabel.remove();
+                    }
 
                     // Calculate current living count for dynamic height (same logic as living chart)
                     const totalSoldiers = this.soldiers ? this.soldiers.filter(soldier => 
@@ -4218,6 +4223,30 @@
                     // Add to timeline track (same parent as axis and living chart)
                     timelineTrack.appendChild(bracketSvg);
                     
+                    // Create fallen count label positioned above the living count (gray text) - only if there are fallen soldiers
+                    if (currentFallenCount > 0) {
+                        const fallenLabel = document.createElement('div');
+                        fallenLabel.classList.add('timeline-bracket-fallen-label');
+                        fallenLabel.textContent = `${currentFallenCount} חללים`;
+                        fallenLabel.style.position = 'absolute';
+                        fallenLabel.style.top = (bracketTop - 50) + 'px'; // Closer to the living count tooltip
+                        fallenLabel.style.left = '-1px'; // Adjusted to align right edge of text with living tooltip text
+                        fallenLabel.style.fontFamily = "'Heebo', sans-serif";
+                        fallenLabel.style.fontSize = '9px';
+                        fallenLabel.style.fontWeight = '400';
+                        fallenLabel.style.color = '#999';
+                        fallenLabel.style.background = 'transparent';
+                        fallenLabel.style.padding = '0';
+                        fallenLabel.style.borderRadius = '0';
+                        fallenLabel.style.direction = 'rtl';
+                        fallenLabel.style.whiteSpace = 'nowrap';
+                        fallenLabel.style.pointerEvents = 'none';
+                        fallenLabel.style.zIndex = '7';
+                        
+                        // Add fallen label to timeline track
+                        timelineTrack.appendChild(fallenLabel);
+                    }
+
                     // Create living count label positioned above the bracket (tooltip style)
                     const bracketLabel = document.createElement('div');
                     bracketLabel.classList.add('timeline-bracket-label');
@@ -4226,7 +4255,7 @@
                     bracketLabel.style.top = (bracketTop - 35) + 'px'; // 35px above bracket top to accommodate tooltip height
                     bracketLabel.style.left = '-9px'; // Align left edge with horizontal center of bracket (bracket is at -14px, width 10px, so center is -14+5 = -9px)
                     
-                    // Add label to timeline track
+                    // Add living label to timeline track
                     timelineTrack.appendChild(bracketLabel);
                     
                     console.log(`Height bracket: living ratio ${livingRatio.toFixed(2)}, chart height ${currentChartHeight.toFixed(1)}px, bracket ${bracketHeight.toFixed(1)}px from ${currentLivingTop.toFixed(1)}px to ${axisCenter}px`);
