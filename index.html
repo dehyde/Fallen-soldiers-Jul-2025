@@ -1628,6 +1628,28 @@
                 gap: 2px !important;
                 justify-content: center !important;
                 direction: rtl !important;
+                scrollbar-width: auto !important;
+                -webkit-scrollbar: auto !important;
+            }
+
+            /* Make scrollbar always visible on mobile */
+            .names-container::-webkit-scrollbar {
+                width: 8px !important;
+                display: block !important;
+            }
+
+            .names-container::-webkit-scrollbar-track {
+                background: rgba(0,0,0,0.02) !important;
+                border-radius: 4px !important;
+            }
+
+            .names-container::-webkit-scrollbar-thumb {
+                background: rgba(0,0,0,0.08) !important;
+                border-radius: 4px !important;
+            }
+
+            .names-container::-webkit-scrollbar-thumb:hover {
+                background: rgba(0,0,0,0.15) !important;
             }
 
             /* Mobile soldier names */
