@@ -1013,7 +1013,7 @@
         }
 
         .living-path-future {
-            fill: rgba(17, 104, 255, 0.05);
+            fill: #E7F0FF;
             stroke: none;
             transition: fill 0.2s ease;
         }
@@ -1063,7 +1063,7 @@
         .timeline-bracket-label {
             font-family: 'Heebo', sans-serif;
             font-size: 9px;
-            font-weight: 600;
+            font-weight: 300;
             color: #1168FF;
             background: #E7F0FF;
             direction: rtl;
@@ -1344,7 +1344,7 @@
                 display: block !important;
                 position: fixed !important;
                 top: 83px !important;
-                left: 35px !important;
+                left: 20px !important;
                 bottom: auto !important;
                 right: auto !important;
                 transform: none !important;
@@ -1403,11 +1403,13 @@
 
             /* Mobile timeline description */
             .timeline-description {
-                display: block !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
                 position: fixed !important;
-                top: 135px !important;
+                top: 180px !important;
                 left: 50% !important;
-                transform: translateX(-50%) !important;
+                transform: translateX(-50%) translateY(-50%) !important;
                 width: calc(100% - 50px) !important;
                 max-width: calc(100vw - 50px) !important;
                 font-size: 12px !important;
@@ -1442,8 +1444,8 @@
                 display: block !important;
                 position: fixed !important;
                 top: 105px !important;
-                left: 35px !important;
-                right: 25px !important;
+                left: 20px !important;
+                right: 16px !important;
                 height: 25px !important;
                 z-index: 998 !important;
                 margin: 0 !important;
@@ -1517,6 +1519,7 @@
             /* Style mobile timeline date labels - very close to timeline */
             .timeline-date-label.mobile-show {
                 font-size: 10px !important;
+                font-weight: 300 !important;
                 top: 5px !important;
                 transform: translateX(-50%) !important;
                 white-space: nowrap !important;
@@ -4254,13 +4257,13 @@
                     if (currentFallenCount > 0) {
                         const fallenLabel = document.createElement('div');
                         fallenLabel.classList.add('timeline-bracket-fallen-label');
-                        fallenLabel.textContent = `${currentFallenCount} חללים`;
+                        fallenLabel.innerHTML = `<span style="font-weight: 300;">חללים</span>&nbsp;&nbsp;<span style="font-weight: 600;">${currentFallenCount}</span>`;
                         fallenLabel.style.position = 'absolute';
                         fallenLabel.style.top = (bracketTop - 50) + 'px'; // Closer to the living count tooltip
                         fallenLabel.style.left = '-1px'; // Adjusted to align right edge of text with living tooltip text
                         fallenLabel.style.fontFamily = "'Heebo', sans-serif";
                         fallenLabel.style.fontSize = '9px';
-                        fallenLabel.style.fontWeight = '400';
+                        fallenLabel.style.fontWeight = '300';
                         fallenLabel.style.color = '#999';
                         fallenLabel.style.background = 'transparent';
                         fallenLabel.style.padding = '0';
@@ -4277,7 +4280,7 @@
                     // Create living count label positioned above the bracket (tooltip style)
                     const bracketLabel = document.createElement('div');
                     bracketLabel.classList.add('timeline-bracket-label');
-                    bracketLabel.textContent = `${currentLivingCount} היו יכולים להיות חיים`;
+                    bracketLabel.innerHTML = `<span style="font-weight: 300;">היו יכולים להיות חיים</span>&nbsp;&nbsp;<span style="font-weight: 600;">${currentLivingCount}</span>`;
                     
                     // Double-check mobile detection for immediate positioning
                     const isMobileCheck = window.innerWidth <= 768;
@@ -4286,7 +4289,7 @@
                         // Mobile positioning: static at top of page above timeline
                         bracketLabel.style.position = 'fixed';
                         bracketLabel.style.top = '83px';
-                        bracketLabel.style.left = '35px';
+                        bracketLabel.style.left = '20px';
                         bracketLabel.style.transform = 'none';
                         bracketLabel.style.margin = '0';
                         bracketLabel.style.padding = '4px 8px';
