@@ -921,15 +921,19 @@
         /* Blur and fade specific elements when modal is open */
         .timeline-container,
         .header-container,
+        .cta-container,
         .status-components-container,
-        .desktop-status-components-container {
+        .desktop-status-components-container,
+        .timeline-bracket-label {
             transition: filter 0.4s ease, opacity 0.4s ease;
         }
 
         .modal-open .timeline-container,
         .modal-open .header-container,
+        .modal-open .cta-container,
         .modal-open .status-components-container,
-        .modal-open .desktop-status-components-container {
+        .modal-open .desktop-status-components-container,
+        .modal-open .timeline-bracket-label {
             filter: blur(3px);
             opacity: 0.3;
         }
@@ -1330,8 +1334,24 @@
             /* Hide desktop-only elements */
             .draggable-container,
             .header-info,
-            .timeline-living-chart {
+            .timeline-living-chart,
+            .timeline-height-bracket,
+            .timeline-bracket-fallen-label {
                 display: none !important;
+            }
+
+            /* Make tooltip static at bottom position on mobile */
+            .timeline-bracket-label {
+                display: block !important;
+                position: fixed !important;
+                top: 83px !important;
+                left: 35px !important;
+                bottom: auto !important;
+                right: auto !important;
+                transform: none !important;
+                z-index: 999 !important;
+                margin: 0 !important;
+                padding: 4px 8px !important;
             }
 
             /* Mobile header container */
@@ -1357,7 +1377,7 @@
             /* Mobile CTA container positioning */
             .cta-container {
                 position: fixed !important;
-                top: 12px !important;
+                top: 8px !important;
                 left: 15px !important;
                 z-index: 1001 !important;
             }
@@ -1389,13 +1409,13 @@
                 top: 135px !important;
                 left: 50% !important;
                 transform: translateX(-50%) !important;
-                width: calc(100% - 30px) !important;
-                max-width: calc(100vw - 30px) !important;
+                width: calc(100% - 50px) !important;
+                max-width: calc(100vw - 50px) !important;
                 font-size: 12px !important;
                 line-height: 1.4 !important;
                 color: #666 !important;
                 margin: 0 !important;
-                padding: 12px 15px !important;
+                padding: 12px 20px 12px 25px !important;
                 min-height: 45px !important;
                 text-align: center !important;
                 direction: rtl !important;
@@ -1423,8 +1443,8 @@
                 display: block !important;
                 position: fixed !important;
                 top: 105px !important;
-                left: 15px !important;
-                right: 15px !important;
+                left: 35px !important;
+                right: 25px !important;
                 height: 25px !important;
                 z-index: 998 !important;
                 margin: 0 !important;
@@ -1563,6 +1583,7 @@
                 z-index: 999 !important;
                 flex-shrink: 0 !important;
                 white-space: nowrap !important;
+                height: 32px !important;
             }
 
             /* Mobile icon button */
@@ -4236,12 +4257,33 @@
                     const bracketLabel = document.createElement('div');
                     bracketLabel.classList.add('timeline-bracket-label');
                     bracketLabel.textContent = `${currentLivingCount} היו יכולים להיות חיים`;
-                    bracketLabel.style.position = 'absolute';
-                    bracketLabel.style.top = (bracketTop - 35) + 'px'; // 35px above bracket top to accommodate tooltip height
-                    bracketLabel.style.left = '-9px'; // Align left edge with horizontal center of bracket (bracket is at -14px, width 10px, so center is -14+5 = -9px)
                     
-                    // Add living label to timeline track
-                    timelineTrack.appendChild(bracketLabel);
+                    // Double-check mobile detection for immediate positioning
+                    const isMobileCheck = window.innerWidth <= 768;
+                    
+                    if (isMobileCheck) {
+                        // Mobile positioning: static at top of page above timeline
+                        bracketLabel.style.position = 'fixed';
+                        bracketLabel.style.top = '83px';
+                        bracketLabel.style.left = '35px';
+                        bracketLabel.style.transform = 'none';
+                        bracketLabel.style.margin = '0';
+                        bracketLabel.style.padding = '4px 8px';
+                        bracketLabel.style.right = 'auto';
+                        bracketLabel.style.bottom = 'auto';
+                        bracketLabel.style.zIndex = '999';
+                        
+                        // Add to body for mobile to avoid timeline-track positioning context
+                        document.body.appendChild(bracketLabel);
+                    } else {
+                        // Desktop positioning: dynamic above bracket
+                        bracketLabel.style.position = 'absolute';
+                        bracketLabel.style.top = (bracketTop - 35) + 'px'; // 35px above bracket top to accommodate tooltip height
+                        bracketLabel.style.left = '-9px'; // Align left edge with horizontal center of bracket (bracket is at -14px, width 10px, so center is -14+5 = -9px)
+                        
+                        // Add to timeline track for desktop
+                        timelineTrack.appendChild(bracketLabel);
+                    }
                     
                     console.log(`Height bracket: living ratio ${livingRatio.toFixed(2)}, chart height ${currentChartHeight.toFixed(1)}px, bracket ${bracketHeight.toFixed(1)}px from ${currentLivingTop.toFixed(1)}px to ${axisCenter}px`);
                     
