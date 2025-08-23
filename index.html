@@ -3242,7 +3242,7 @@
                 const spaceMatch = line.match(spacePattern);
                 
                 if (spaceMatch) {
-                    name = spaceMatch[2].trim();
+                    name = spaceMatch[2].trim().replace(/\s*\(במיל'\)\s*/g, '');
                 } else {
                     // Fallback to original single line pattern
                     const namePattern = /\s+([א-ת\s'\-\(\)׳״""]+?)\s+ז""ל/;
