@@ -1782,12 +1782,14 @@
                 <svg viewBox="0 0 100 40" preserveAspectRatio="none">
                     <path class="living-path-future" id="livingPathFuture" d=""></path>
                     <path class="living-path-past" id="livingPathPast" d=""></path>
+                    <line class="living-left-edge" id="livingLeftEdge" x1="0" y1="0" x2="0" y2="40" stroke="#666" stroke-width="0.05" opacity="0" style="mix-blend-mode: multiply;"></line>
                 </svg>
             </div>
             <div class="timeline-area-chart" id="timelineAreaChart">
                 <svg viewBox="0 0 100 40" preserveAspectRatio="none">
                     <path class="area-path-future" id="areaPathFuture" d=""></path>
                     <path class="area-path-past" id="areaPathPast" d=""></path>
+                    <line class="area-left-edge" id="areaLeftEdge" x1="0" y1="0" x2="0" y2="40" stroke="#666" stroke-width="0.05" opacity="0" style="mix-blend-mode: multiply;"></line>
                 </svg>
             </div>
             <div class="timeline-progress" id="timelineProgress"></div>
@@ -3345,6 +3347,25 @@
                     // Load all events - filtering will be done during rendering
                     this.timelineEvents.push(event);
                 }
+                
+                // Add dynamic "today" marker
+                const today = new Date(this.todayDate);
+                const todayStr = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+                
+                const todayMarker = {
+                    id: 'today_point',
+                    date: todayStr,
+                    title_hebrew: 'היום',
+                    description_hebrew: 'כל חודש שהמלחמה נמשכת וחיילים נשלחים לחזית הוא חודש נוסף של חיילים שלא יחזרו יותר הביתה.',
+                    eventDate: new Date(today),
+                    show: 'show',
+                    category: 'marker',
+                    stance: '',
+                    could_have_ended: '',
+                    source: ''
+                };
+                
+                this.timelineEvents.push(todayMarker);
             }
             
             parseMilitaryEvents(csvText) {
@@ -4019,6 +4040,30 @@
                 if (futurePathElement) {
                     futurePathElement.setAttribute('d', futurePath);
                 }
+                
+                // Update fallen chart left edge line position and height
+                const areaLeftEdge = document.getElementById('areaLeftEdge');
+                if (areaLeftEdge && futurePoints.length > 0) {
+                    // Calculate line position using splitPosition for accurate alignment
+                    const linePosition = splitPosition;
+                    
+                    // Find the Y value at the split position to match chart height
+                    let splitY = 0; // Default to axis level (no deaths)
+                    const splitPointInPast = pastPoints.find(p => p.x === splitPosition);
+                    if (splitPointInPast) {
+                        // For fallen chart, the raw Y coordinate represents fallen count level
+                        // Since fallen chart hangs down from axis, we use the raw Y value
+                        splitY = splitPointInPast.y;
+                    }
+                    
+                    areaLeftEdge.setAttribute('x1', linePosition);
+                    areaLeftEdge.setAttribute('x2', linePosition);
+                    areaLeftEdge.setAttribute('y1', 0); // Always start at top (axis level - STATIC)
+                    areaLeftEdge.setAttribute('y2', splitY); // End at fallen count level (GROWS DOWN)
+                    areaLeftEdge.setAttribute('opacity', '0.4');
+                } else if (areaLeftEdge) {
+                    areaLeftEdge.setAttribute('opacity', '0');
+                }
             }
 
             generateLivingChart() {
@@ -4154,6 +4199,28 @@
                 if (pastPathElement) {
                     pastPathElement.setAttribute('d', pastPath);
                     console.log('Past path set with', pastPoints.length, 'points');
+                }
+                
+                // Update living chart left edge line position and height
+                const livingLeftEdge = document.getElementById('livingLeftEdge');
+                if (livingLeftEdge && futurePoints.length > 0) {
+                    // Calculate line position using splitPosition for accurate alignment
+                    const linePosition = splitPosition;
+                    
+                    // Find the Y value at the split position to match chart height
+                    let splitY = viewBoxHeight; // Default to bottom
+                    const splitPointInPast = pastPoints.find(p => p.x === splitPosition);
+                    if (splitPointInPast) {
+                        splitY = splitPointInPast.y;
+                    }
+                    
+                    livingLeftEdge.setAttribute('x1', linePosition);
+                    livingLeftEdge.setAttribute('x2', linePosition);
+                    livingLeftEdge.setAttribute('y1', splitY); // Top of line at chart level
+                    livingLeftEdge.setAttribute('y2', viewBoxHeight); // Bottom of line at bottom
+                    livingLeftEdge.setAttribute('opacity', '0.4');
+                } else if (livingLeftEdge) {
+                    livingLeftEdge.setAttribute('opacity', '0');
                 }
                 
                 // Generate projection rectangle using exact interpolated Y height
