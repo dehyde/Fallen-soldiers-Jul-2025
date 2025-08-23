@@ -1809,7 +1809,7 @@
             </div>
             <div class="timeline-handle-tooltip" id="timelineTooltip">
                 <div id="tooltipDate">27/07/25</div>
-                <div id="tooltipAlive" style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">היו יכולים להיות חיים היום: 0</div>
+                <div id="tooltipAlive" style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;"></div>
             </div>
         </div>
         <!-- Removed timeline labels -->
@@ -4265,7 +4265,7 @@
 
                     // Create the bracket path
                     const bracketPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    const pathData = `M 6,0 L 2,0 L 2,${bracketHeight} L 6,${bracketHeight}`;
+                    const pathData = `M 6,0 L 2,0 L 2,${bracketHeight - 1} L 6,${bracketHeight - 1}`;
                     bracketPath.setAttribute('d', pathData);
                     bracketPath.setAttribute('fill', 'none');
                     bracketPath.setAttribute('stroke', '#1168FF'); // Blue to match text
@@ -4891,7 +4891,7 @@
                         const aliveSoldiers = this.soldiers.filter(s => s.death_date > hoverDate).length;
                         const tooltipAlive = document.getElementById('tooltipAlive');
                         if (tooltipAlive) {
-                            tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">היו יכולים להיות חיים היום: ${aliveSoldiers.toLocaleString()}</div>`;
+                            tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;"></div>`;
                         }
                         
                         // Check if hover date matches any timeline event for cursor state
@@ -5186,13 +5186,12 @@
                     tooltipDate.innerHTML = titleLink;
                     tooltipAlive.innerHTML = `
                         <div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px; margin-top: 4px;">
-                            היו יכולים להיות חיים היום: ${aliveSoldiers.toLocaleString()}
                         </div>
                     `;
                 } else {
                     // Regular tooltip content
                     tooltipDate.textContent = formattedDate;
-                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">היו יכולים להיות חיים היום: ${aliveSoldiers}</div>`;
+                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;"></div>`;
                 }
                 
                 // Force layout recalculation
@@ -5371,13 +5370,13 @@
                     tooltipDate.innerHTML = titleLink;
                     tooltipAlive.innerHTML = `
                         <div style="padding-top: 6px; font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">
-                            ${formattedDate}<br>היו יכולים להיות חיים היום: ${aliveSoldiers}
+                            ${formattedDate}
                         </div>
                     `;
                 } else {
                     // Regular tooltip content
                     tooltipDate.textContent = formattedDate;
-                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">היו יכולים להיות חיים היום: ${aliveSoldiers}</div>`;
+                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;"></div>`;
                 }
                 
                 // Calculate positioning immediately for smooth animation
