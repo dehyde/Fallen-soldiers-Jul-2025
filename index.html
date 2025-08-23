@@ -3084,17 +3084,31 @@
 
             async loadData() {
                 try {
-                    const response = await safeFetch('data/idf-url-increment.csv');
-                    const csvText = await response.text();
-                    this.parseCsvData(csvText);
-                    // console.log(`Loaded ${this.soldiers.length} soldiers`);
+                    // Load IDF soldiers
+                    const idfResponse = await safeFetch('data/idf-url-increment.csv');
+                    const idfCsvText = await idfResponse.text();
+                    this.parseCsvData(idfCsvText);
+                    
+                    // Load police officers
+                    try {
+                        const policeResponse = await safeFetch('data/police_officers_complete_idf_format.csv');
+                        const policeCsvText = await policeResponse.text();
+                        this.parseCsvData(policeCsvText);
+                    } catch (policeError) {
+                        console.warn('Police data not found or failed to load:', policeError);
+                    }
+                    
+                    // Sort all soldiers chronologically after loading both datasets
+                    this.soldiers.sort((a, b) => a.death_date - b.death_date);
+                    
+                    console.log(`Loaded ${this.soldiers.length} total fallen heroes (IDF + Police)`);
                     
                     if (this.soldiers.length > 0) {
                         const dates = this.soldiers.map(s => s.death_date).sort((a,b) => a - b);
                         // console.log('Date range:', dates[0].toLocaleDateString(), 'to', dates[dates.length-1].toLocaleDateString());
                         
                         const afterOct26 = this.soldiers.filter(s => s.death_date >= this.startDate);
-                        // console.log(`${afterOct26.length} soldiers died after Oct 27, 2023`);
+                        console.log(`${afterOct26.length} heroes died after Oct 27, 2023`);
                     }
                 } catch (error) {
                     console.error('Error loading data:', error);
@@ -3161,7 +3175,7 @@
                     const line = lines[i].trim();
                     if (!line) continue;
                     
-                    if (line.match(/^"\d+-\d+"/)) {
+                    if (line.match(/^"(\d+-\d+|police-\d+-\d+)"/)) {
                         if (currentRecord) {
                             const soldier = this.parseCsvLine(currentRecord);
                             if (soldier && soldier.death_date) {
@@ -3222,14 +3236,23 @@
                 let rank = 'Unknown'; 
                 let unit = 'Unknown';
                 
-                // IMPROVED: Better name extraction - include more Hebrew name characters
-                const namePattern = /\s+([א-ת\s'\-\(\)׳״""]+?)\s+ז""ל/;
-                const nameMatch = line.match(namePattern);
-                if (nameMatch) {
-                    const fullName = nameMatch[1].trim();
-                    // Remove rank prefix if it exists - expanded list
-                    const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם|אל""ם|רס""ן|תא""ל|אל""ף)\s*\([^)]*\)?\s*/, '').replace(/\s*\(במיל'\)\s*/g, '');
-                    name = cleanName.trim();
+                // IMPROVED: Better name extraction - handle space-concatenated format from CSV parser
+                // The CSV parser joins lines with spaces, so "רב פקד    ארנון זמורה    ז"ל"
+                const spacePattern = /(רב פקד|רב נגד|סמל ראשון|רב סמל בכיר|רב סמל מתקדם|רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם|אל""ם|רס""ן|תא""ל|אל""ף)\s+([א-ת\s'\-\(\)׳״""]+?)\s+ז""ל/;
+                const spaceMatch = line.match(spacePattern);
+                
+                if (spaceMatch) {
+                    name = spaceMatch[2].trim();
+                } else {
+                    // Fallback to original single line pattern
+                    const namePattern = /\s+([א-ת\s'\-\(\)׳״""]+?)\s+ז""ל/;
+                    const nameMatch = line.match(namePattern);
+                    if (nameMatch) {
+                        const fullName = nameMatch[1].trim();
+                        // Remove rank prefix if it exists - expanded list
+                        const cleanName = fullName.replace(/^(רס""[א-ת]+|סמל|סרן|רב""ט|סמ""ר|רס""ל|רס""ם|אל""ם|רס""ן|תא""ל|אל""ף|רב פקד|רב נגד|סמל ראשון|רב סמל בכיר|רב סמל מתקדם)\s*\([^)]*\)?\s*/, '').replace(/\s*\(במיל'\)\s*/g, '');
+                        name = cleanName.trim();
+                    }
                 }
                 
                 // IMPROVED: Extract rank and unit from proper CSV fields instead of regex
