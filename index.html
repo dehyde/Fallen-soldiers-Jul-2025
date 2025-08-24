@@ -1136,6 +1136,7 @@
             transition: fill 0.2s ease;
         }
 
+
         .area-path-past {
             fill: rgba(180, 180, 180, 0.175);
             stroke: none;
@@ -1207,6 +1208,42 @@
             border-style: solid;
             border-width: 6px 6px 0 0; /* Triangle pointing down, right edge going up 45deg */
             border-color: #E7F0FF transparent transparent transparent;
+        }
+
+        .timeline-bracket-fallen-label {
+            font-family: 'Heebo', sans-serif;
+            font-size: 9px;
+            font-weight: 300;
+            color: #999;
+            background: rgba(0,0,0,0.05);
+            direction: rtl;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            border-radius: 0; /* No rounded corners */
+            padding: 4px 8px;
+            position: absolute;
+            z-index: 8;
+            box-sizing: border-box;
+            height: 21px;
+            display: none; /* Hidden */
+            align-items: center;
+            opacity: 0.8;
+        }
+
+        .timeline-bracket-fallen-label::before {
+            content: '';
+            position: absolute;
+            left: 0px; /* Position at leftmost part of tooltip - same side as living */
+            top: -6px; /* Position at top edge, pointing up */
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 0 6px 6px; /* Triangle pointing up */
+            border-color: transparent transparent rgba(0,0,0,0.05) transparent;
+        }
+
+        .timeline-height-bracket-fallen {
+            display: none; /* Hidden */
         }
 
 
@@ -1981,7 +2018,7 @@
     
     
     <div class="header-info">
-        <div id="selectedDate">27/10/2023</div>
+        <div id="selectedDate">27.10.23</div>
         <div id="lastEvent">תחילת המלחמה</div>
     </div>
     
@@ -2020,7 +2057,7 @@
                 </div>
             </div>
             <div class="timeline-handle-tooltip" id="timelineTooltip">
-                <div id="tooltipDate">27/07/25</div>
+                <div id="tooltipDate">27.07.25</div>
                 <div id="tooltipAlive" style="font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 12px;"></div>
             </div>
         </div>
@@ -4191,42 +4228,50 @@
             }
 
             generateFallenChart() {
-                // console.log('Generating area chart for cumulative fallen soldiers');
-                
-                const totalDays = this.getTotalTimelineDays();
-                const weeklyData = [];
-                
-                // Add starting point at war beginning (Oct 7th) with 0 casualties
-                weeklyData.push({
-                    week: -1,
-                    cumulativeFallen: 0,
-                    weekStart: new Date(this.startDate),
-                    weekEnd: new Date(this.startDate),
-                    displayDate: new Date(this.startDate)
-                });
-                
-                // Group soldiers by week and calculate cumulative totals
-                let cumulativeTotal = 0;
-                for (let week = 0; week < Math.ceil(totalDays / 7); week++) {
-                    const weekStart = new Date(this.startDate);
-                    weekStart.setDate(weekStart.getDate() + (week * 7));
-                    const weekEnd = new Date(weekStart);
-                    weekEnd.setDate(weekEnd.getDate() + 6);
+                try {
+                    console.log('Generating fallen chart...');
                     
-                    // Count soldiers who died up to the end of this week
-                    const totalFallenUpToThisWeek = this.soldiers.filter(soldier => {
-                        return soldier.death_date <= weekEnd && soldier.death_date >= this.startDate;
-                    }).length;
+                    const totalDays = this.getTotalTimelineDays();
+                    const weeklyData = [];
                     
-                    // Position this week's data at the END of the week (weekEnd) for chart alignment
+                    // Calculate total soldiers
+                    const totalSoldiers = this.soldiers ? this.soldiers.filter(soldier => 
+                        soldier.death_date >= this.startDate
+                    ).length : 0;
+                    
+                    if (totalSoldiers === 0) {
+                        console.warn('No soldiers data for fallen chart');
+                        return;
+                    }
+                    
+                    // Add starting point at war beginning (Oct 7th) with 0 fallen
                     weeklyData.push({
-                        week: week,
-                        cumulativeFallen: totalFallenUpToThisWeek,
-                        weekStart: weekStart,
-                        weekEnd: weekEnd,
-                        displayDate: weekEnd  // Use week end for positioning
+                        week: -1,
+                        fallenCount: 0,
+                        weekStart: new Date(this.startDate),
+                        weekEnd: new Date(this.startDate),
+                        displayDate: new Date(this.startDate)
                     });
-                }
+                    
+                    // Group by week and calculate fallen count up to week end
+                    for (let week = 0; week < Math.ceil(totalDays / 7); week++) {
+                        const weekStart = new Date(this.startDate);
+                        weekStart.setDate(weekStart.getDate() + (week * 7));
+                        const weekEnd = new Date(weekStart);
+                        weekEnd.setDate(weekEnd.getDate() + 6);
+                        
+                        const totalFallenUpToThisWeek = this.soldiers.filter(soldier => {
+                            return soldier.death_date <= weekEnd && soldier.death_date >= this.startDate;
+                        }).length;
+                        
+                        weeklyData.push({
+                            week: week,
+                            fallenCount: totalFallenUpToThisWeek,
+                            weekStart: weekStart,
+                            weekEnd: weekEnd,
+                            displayDate: weekEnd
+                        });
+                    }
                 
                 // Find max value for scaling (use cumulative values)
                 const maxFallen = Math.max(...weeklyData.map(d => d.cumulativeFallen));
@@ -4324,6 +4369,10 @@
                 
                 // Generate military events chart
                 // this.generateMilitaryEventsChart(); // Hidden as requested
+                
+                } catch (error) {
+                    console.error('Error in generateFallenChart:', error);
+                }
             }
 
 
@@ -4582,6 +4631,113 @@
                 }
             }
 
+            generateSplitFallenChart(points, viewBoxHeight, splitPosition) {
+                if (points.length === 0) return;
+                
+                console.log('Splitting fallen chart at position:', splitPosition, 'with', points.length, 'points');
+                
+                // Split points into past (right of split) and future (left of split)  
+                const pastPoints = points.filter(p => p.x >= splitPosition);
+                const futurePoints = points.filter(p => p.x <= splitPosition);
+                
+                console.log('Fallen chart - Past points:', pastPoints.length, 'Future points:', futurePoints.length);
+                
+                // Add split point if needed to connect the two sections
+                if (pastPoints.length > 0 && futurePoints.length > 0) {
+                    const leftPoint = points.find(p => p.x <= splitPosition) || points[0];
+                    const rightPoint = points.find(p => p.x >= splitPosition) || points[points.length - 1];
+                    
+                    if (leftPoint && rightPoint && leftPoint !== rightPoint) {
+                        const ratio = (splitPosition - leftPoint.x) / (rightPoint.x - leftPoint.x);
+                        const interpolatedY = leftPoint.y + (rightPoint.y - leftPoint.y) * ratio;
+                        const splitPoint = { x: splitPosition, y: interpolatedY, fallenCount: 0 };
+                        
+                        if (!futurePoints.find(p => p.x === splitPosition)) {
+                            futurePoints.push(splitPoint);
+                        }
+                        if (!pastPoints.find(p => p.x === splitPosition)) {
+                            pastPoints.unshift(splitPoint);
+                        }
+                    }
+                }
+                
+                // Generate path for past section (visible)
+                const pastPath = this.generateFallenPathData(pastPoints, viewBoxHeight);
+                const pastPathElement = document.getElementById('fallenPathPast');
+                if (pastPathElement) {
+                    pastPathElement.setAttribute('d', pastPath);
+                }
+                
+                // Generate path for future section (projection) 
+                const futurePath = this.generateFallenPathData(futurePoints, viewBoxHeight);
+                const futurePathElement = document.getElementById('fallenPathFuture');
+                if (futurePathElement) {
+                    futurePathElement.setAttribute('d', futurePath);
+                }
+                
+                // Update fallen chart left edge line
+                const fallenLeftEdge = document.getElementById('fallenLeftEdge');
+                if (fallenLeftEdge && futurePoints.length > 0) {
+                    const linePosition = splitPosition;
+                    let splitY = 0; // Default to axis level
+                    const splitPointInPast = pastPoints.find(p => p.x === splitPosition);
+                    if (splitPointInPast) {
+                        splitY = splitPointInPast.y; // Fallen chart goes down, so Y represents depth
+                    }
+                    
+                    fallenLeftEdge.setAttribute('x1', linePosition);
+                    fallenLeftEdge.setAttribute('x2', linePosition);
+                    fallenLeftEdge.setAttribute('y1', 0); // Start at axis (top)
+                    fallenLeftEdge.setAttribute('y2', splitY); // End at fallen count depth
+                    fallenLeftEdge.setAttribute('opacity', '0.4');
+                } else if (fallenLeftEdge) {
+                    fallenLeftEdge.setAttribute('opacity', '0');
+                }
+                
+                // Generate fallen projection rectangle
+                let projectionY = 0; // Default to axis level (no deaths)
+                if (pastPoints.length > 0 && futurePoints.length > 0) {
+                    const splitPointInPast = pastPoints.find(p => p.x === splitPosition);
+                    const splitPointInFuture = futurePoints.find(p => p.x === splitPosition);
+                    
+                    if (splitPointInPast) {
+                        projectionY = splitPointInPast.y;
+                        console.log(`Using fallen split point Y from past: ${projectionY.toFixed(2)}`);
+                    } else if (splitPointInFuture) {
+                        projectionY = splitPointInFuture.y;
+                        console.log(`Using fallen split point Y from future: ${projectionY.toFixed(2)}`);
+                    }
+                }
+                
+                // Create fallen projection rectangle from split position to left edge
+                const projectionPath = `M ${splitPosition} 0 L ${splitPosition} ${projectionY} L 0 ${projectionY} L 0 0 Z`;
+                const futurePathElement2 = document.getElementById('fallenPathFuture');
+                if (futurePathElement2) {
+                    futurePathElement2.setAttribute('d', projectionPath);
+                    console.log(`Fallen projection rectangle set: Y=${projectionY.toFixed(2)}, from X=${splitPosition.toFixed(2)} to X=0`);
+                }
+            }
+
+            generateFallenPathData(points, viewBoxHeight) {
+                if (points.length === 0) return '';
+                
+                // Sort points by X for proper drawing
+                points.sort((a, b) => a.x - b.x);
+                
+                // Start path at top (axis level) at first point's X position
+                let pathData = `M ${points[0].x},0 L ${points[0].x},${points[0].y}`;
+                
+                // Add lines/curves to connect points (simplified for now)
+                for (let i = 1; i < points.length; i++) {
+                    pathData += ` L ${points[i].x},${points[i].y}`;
+                }
+                
+                // Close path by returning to axis level
+                pathData += ` L ${points[points.length - 1].x},0 Z`;
+                
+                return pathData;
+            }
+
             updateHeightBracket() {
                 try {
                     // Get the timeline track container (same as axis uses)
@@ -4605,6 +4761,11 @@
                     const existingFallenLabel = document.querySelector('.timeline-bracket-fallen-label');
                     if (existingFallenLabel) {
                         existingFallenLabel.remove();
+                    }
+                    
+                    const existingFallenBracket = document.querySelector('.timeline-height-bracket-fallen');
+                    if (existingFallenBracket) {
+                        existingFallenBracket.remove();
                     }
 
                     // Calculate current living count for dynamic height (same logic as living chart)
@@ -4724,35 +4885,56 @@
                             timelineTrack.appendChild(bracketLabel);
                         }
                     
-                    // Always create fallen count label on desktop but conditionally show it
-                    if (window.innerWidth > 768) {
+                    // Always create fallen bracket and label on desktop but conditionally show them
+                    if (window.innerWidth > 768 && currentFallenCount > 0) {
+                        // Calculate fallen bracket dimensions (mirror of living bracket logic but going downward)
+                        const fallenRatio = currentFallenCount / totalSoldiers;
+                        const fallenChartHeightPx = 40; // Same as living chart height
+                        const currentFallenChartHeight = fallenRatio * fallenChartHeightPx;
+                        
+                        // Position fallen bracket going downward from axis center
+                        const fallenBracketTop = axisCenter; // Start at axis center
+                        const fallenBracketHeight = currentFallenChartHeight; // Height based on fallen ratio
+                        
+                        // Create SVG fallen bracket 
+                        const fallenBracketSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        fallenBracketSvg.setAttribute('viewBox', `0 0 10 ${fallenBracketHeight}`);
+                        fallenBracketSvg.setAttribute('width', '10');
+                        fallenBracketSvg.setAttribute('height', fallenBracketHeight);
+                        fallenBracketSvg.classList.add('timeline-height-bracket-fallen');
+
+                        // Position using absolute positioning within timeline track
+                        fallenBracketSvg.style.position = 'absolute';
+                        fallenBracketSvg.style.top = fallenBracketTop + 'px';
+                        fallenBracketSvg.style.left = '-14px'; // Same as living bracket
+                        fallenBracketSvg.style.width = '10px';
+                        fallenBracketSvg.style.height = fallenBracketHeight + 'px';
+
+                        // Create the fallen bracket path (downward bracket)
+                        const fallenBracketPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        const fallenPathData = `M 6,0 L 2,0 L 2,${fallenBracketHeight - 1} L 6,${fallenBracketHeight - 1}`;
+                        fallenBracketPath.setAttribute('d', fallenPathData);
+                        fallenBracketPath.setAttribute('fill', 'none');
+                        fallenBracketPath.setAttribute('stroke', '#999'); // Match fallen tooltip text color
+                        fallenBracketPath.setAttribute('stroke-width', '1');
+
+                        fallenBracketSvg.appendChild(fallenBracketPath);
+                        timelineTrack.appendChild(fallenBracketSvg);
+                        
+                        // Create fallen count label with new tooltip styling
                         const fallenLabel = document.createElement('div');
                         fallenLabel.classList.add('timeline-bracket-fallen-label');
                         fallenLabel.innerHTML = `<span style="font-weight: 300;">חללים</span>&nbsp;&nbsp;<span style="font-weight: 600;">${currentFallenCount}</span>`;
-                        fallenLabel.style.position = 'absolute';
-                        fallenLabel.style.top = (bracketTop - 50) + 'px';
-                        fallenLabel.style.left = '-1px';
-                        fallenLabel.style.fontFamily = "'Heebo', sans-serif";
-                        fallenLabel.style.fontSize = '9px';
-                        fallenLabel.style.fontWeight = '300';
-                        fallenLabel.style.color = '#999';
-                        fallenLabel.style.background = 'transparent';
-                        fallenLabel.style.padding = '0';
-                        fallenLabel.style.borderRadius = '0';
-                        fallenLabel.style.direction = 'rtl';
-                        fallenLabel.style.whiteSpace = 'nowrap';
-                        fallenLabel.style.pointerEvents = 'none';
-                        fallenLabel.style.zIndex = '7';
-                        fallenLabel.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
                         
-                        // Show/hide fallen label with smooth transition
-                        if (currentFallenCount > 0) {
-                            fallenLabel.style.opacity = '1';
-                            fallenLabel.style.transform = 'scale(1)';
-                        } else {
-                            fallenLabel.style.opacity = '0';
-                            fallenLabel.style.transform = 'scale(0.9)';
-                        }
+                        // Position below the fallen bracket (downward from axis)
+                        fallenLabel.style.top = (fallenBracketTop + fallenBracketHeight + 12) + 'px'; // 12px below bracket end
+                        fallenLabel.style.left = '-9px'; // Align with bracket center like living tooltip
+                        
+                        // Show with smooth transition
+                        fallenLabel.style.opacity = '1';
+                        fallenLabel.style.transform = 'scale(1)';
+                        fallenBracketSvg.style.opacity = '1';
+                        fallenBracketSvg.style.transition = 'opacity 0.4s ease';
                         
                         timelineTrack.appendChild(fallenLabel);
                     }
@@ -5311,7 +5493,7 @@
                         const day = hoverDate.getDate().toString().padStart(2, '0');
                         const month = (hoverDate.getMonth() + 1).toString().padStart(2, '0');
                         const year = hoverDate.getFullYear().toString().slice(-2);
-                        const formattedDate = `${day}/${month}/${year}`;
+                        const formattedDate = `${day}.${month}.${year}`;
                         
                         const tooltipDate = document.getElementById('tooltipDate');
                         if (tooltipDate) {
@@ -5711,11 +5893,11 @@
                     return; // Elements or data not ready yet
                 }
                 
-                // Format date as dd/mm/yy
+                // Format date as dd.mm.yy
                 const day = currentDate.getDate().toString().padStart(2, '0');
                 const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
                 const year = currentDate.getFullYear().toString().slice(-2);
-                const formattedDate = `${day}/${month}/${year}`;
+                const formattedDate = `${day}.${month}.${year}`;
                 
                 // Calculate alive soldiers for this date
                 const aliveSoldiers = this.soldiers.filter(s => s.death_date > currentDate).length;
@@ -5790,11 +5972,11 @@
                     return; // Elements or data not ready yet
                 }
                 
-                // Format date as dd/mm/yy
+                // Format date as dd.mm.yy
                 const day = currentDate.getDate().toString().padStart(2, '0');
                 const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
                 const year = currentDate.getFullYear().toString().slice(-2);
-                const formattedDate = `${day}/${month}/${year}`;
+                const formattedDate = `${day}.${month}.${year}`;
                 
                 // Calculate alive and fallen soldiers count based on current timeline position
                 // Alive = soldiers who died after the current date (would still be alive at currentDate)
@@ -5985,7 +6167,8 @@
                 const ctaButton = document.getElementById('ctaSkipBack');
                 if (!ctaButton) return;
                 
-                const iconElement = ctaButton.querySelector('i');
+                // Try multiple selectors to find the icon (i element or svg after Lucide conversion)
+                let iconElement = ctaButton.querySelector('i') || ctaButton.querySelector('svg') || ctaButton.querySelector('[data-lucide]');
                 if (!iconElement) return;
                 
                 if (days === 0) {
@@ -6000,7 +6183,7 @@
                 
                 // Recreate the icon to apply the change
                 if (window.lucide) {
-                    window.lucide.createIcons({
+                    lucide.createIcons({
                         'skip-back': {
                             width: 16,
                             height: 16
@@ -6010,6 +6193,9 @@
                             height: 16
                         }
                     });
+                    
+                    // Force a reflow to ensure changes take effect
+                    iconElement.offsetHeight;
                 }
             }
 
