@@ -2979,7 +2979,18 @@
                 this.soldierStates = new Map(); // Track actual soldier states independently of CSS
                 this.isTimelineAnimating = false; // Track if timeline is actively animating
                 this.lastTooltipUpdate = 0; // Track last manual tooltip update
+                
+                // Mobile autoscroll management
+                this.isAutoScrolling = false; // Track if autoscroll is currently active
+                this.isUserScrolling = false; // Track if user is manually scrolling
+                this.userScrollTimeout = null; // Timeout to reset user scrolling flag
+                this.lastScrollTop = 0; // Track last scroll position
                 this.init();
+                
+                // Setup mobile scroll detection after initialization
+                if (this.isMobile) {
+                    this.setupMobileScrollDetection();
+                }
             }
 
             setupMobileLayout() {
@@ -3088,13 +3099,89 @@
                 });
             }
 
+            setupMobileScrollDetection() {
+                // Only setup on mobile
+                if (!this.isMobile) return;
+                
+                const container = document.getElementById('namesContainer');
+                if (!container) return;
+                
+                // Track touch and scroll events to detect manual scrolling
+                let touchStart = null;
+                let scrollStart = null;
+                
+                // Touch start - user begins interaction
+                container.addEventListener('touchstart', (e) => {
+                    // If autoscroll is active, cancel it when user touches
+                    if (this.isAutoScrolling) {
+                        this.isUserScrolling = true;
+                        clearTimeout(this.userScrollTimeout);
+                    }
+                    
+                    touchStart = e.touches[0].clientY;
+                    scrollStart = container.scrollTop;
+                }, { passive: true });
+                
+                // Touch move - detect if user is scrolling
+                container.addEventListener('touchmove', (e) => {
+                    if (touchStart === null || scrollStart === null) return;
+                    
+                    const touchCurrent = e.touches[0].clientY;
+                    const scrollCurrent = container.scrollTop;
+                    const touchDelta = Math.abs(touchCurrent - touchStart);
+                    const scrollDelta = Math.abs(scrollCurrent - scrollStart);
+                    
+                    // If significant touch movement or scroll change, user is manually scrolling
+                    if (touchDelta > 10 || scrollDelta > 5) {
+                        this.isUserScrolling = true;
+                        clearTimeout(this.userScrollTimeout);
+                    }
+                }, { passive: true });
+                
+                // Touch end - start timeout to reset user scrolling flag
+                container.addEventListener('touchend', () => {
+                    touchStart = null;
+                    scrollStart = null;
+                    
+                    // Reset user scrolling flag after 2 seconds of inactivity
+                    clearTimeout(this.userScrollTimeout);
+                    this.userScrollTimeout = setTimeout(() => {
+                        this.isUserScrolling = false;
+                    }, 2000);
+                }, { passive: true });
+                
+                // Scroll event - detect programmatic vs manual scroll
+                container.addEventListener('scroll', (e) => {
+                    const currentScrollTop = container.scrollTop;
+                    
+                    // If not autoscrolling and scroll position changed significantly,
+                    // assume user is manually scrolling
+                    if (!this.isAutoScrolling && Math.abs(currentScrollTop - this.lastScrollTop) > 5) {
+                        this.isUserScrolling = true;
+                        clearTimeout(this.userScrollTimeout);
+                        
+                        // Reset user scrolling flag after inactivity
+                        this.userScrollTimeout = setTimeout(() => {
+                            this.isUserScrolling = false;
+                        }, 2000);
+                    }
+                    
+                    this.lastScrollTop = currentScrollTop;
+                }, { passive: true });
+            }
 
             scrollToMostRecentFallen(fallenElement) {
                 // Only scroll on mobile devices
                 if (!this.isMobile) return;
                 
+                // Don't autoscroll if user was manually scrolling or another scroll is active
+                if (this.isUserScrolling || this.isAutoScrolling) return;
+                
                 const container = document.getElementById('namesContainer');
                 if (!container || !fallenElement) return;
+                
+                // Set autoscroll active flag
+                this.isAutoScrolling = true;
                 
                 // Use smooth scrolling to bring the fallen soldier into view
                 // Position it roughly in the center of the viewport
@@ -3107,14 +3194,25 @@
                     top: Math.max(0, scrollTop),
                     behavior: 'smooth'
                 });
+                
+                // Clear autoscroll flag after animation completes
+                setTimeout(() => {
+                    this.isAutoScrolling = false;
+                }, 800); // Slightly longer than smooth scroll duration
             }
 
             scrollToMostRecentAlive(aliveElement) {
                 // Only scroll on mobile devices
                 if (!this.isMobile) return;
                 
+                // Don't autoscroll if user was manually scrolling or another scroll is active
+                if (this.isUserScrolling || this.isAutoScrolling) return;
+                
                 const container = document.getElementById('namesContainer');
                 if (!container || !aliveElement) return;
+                
+                // Set autoscroll active flag
+                this.isAutoScrolling = true;
                 
                 // For alive soldiers, find the boundary between alive and fallen
                 // and scroll to show the transition area
@@ -3143,6 +3241,11 @@
                         behavior: 'smooth'
                     });
                 }
+                
+                // Clear autoscroll flag after animation completes
+                setTimeout(() => {
+                    this.isAutoScrolling = false;
+                }, 800); // Slightly longer than smooth scroll duration
             }
 
             scrollToBeginning() {
@@ -6764,9 +6867,18 @@
                 });
                 
                 // Second pass: start all dying animations simultaneously
+                let mostRecentDyingSoldier = null;
+                let latestDeathDate = null;
+                
                 soldiersToStartDying.forEach(el => {
                     const deathDate = new Date(parseInt(el.dataset.deathDate));
                     const elementId = el.dataset.deathDate;
+                    
+                    // Track the most recent soldier for single autoscroll
+                    if (!latestDeathDate || deathDate > latestDeathDate) {
+                        latestDeathDate = deathDate;
+                        mostRecentDyingSoldier = el;
+                    }
                     
                     el.className = 'soldier-name dying';
                     this.soldierStates.set(elementId, 'dying');
@@ -6786,11 +6898,6 @@
                             if (el.classList.contains('dying-fade')) {
                                 el.className = 'soldier-name fallen';
                                 this.soldierStates.set(elementId, 'fallen');
-                                
-                                // Mobile auto-scroll to show most recent fallen soldier
-                                if (this.isMobile) {
-                                    this.scrollToMostRecentFallen(el);
-                                }
                             }
                         }, 600); // Match CSS transition duration
                         
@@ -6800,7 +6907,14 @@
                     this.dyingTimeouts.set(elementId, timeoutId);
                 });
                 
+                // Single autoscroll to most recent dying soldier (prevents jittering)
+                if (this.isMobile && mostRecentDyingSoldier && !this.isUserScrolling) {
+                    this.scrollToMostRecentFallen(mostRecentDyingSoldier);
+                }
+                
                 // Third pass: handle all other states
+                let soldiersBecomingAlive = [];
+                
                 soldierElements.forEach(el => {
                     const deathDate = new Date(parseInt(el.dataset.deathDate));
                     const elementId = el.dataset.deathDate;
@@ -6820,9 +6934,9 @@
                             }
                             el.className = 'soldier-name alive';
                             
-                            // Mobile auto-scroll to show soldier becoming alive
+                            // Collect soldiers becoming alive for single scroll
                             if (this.isMobile && (previousState === 'fallen' || wasFallen)) {
-                                this.scrollToMostRecentAlive(el);
+                                soldiersBecomingAlive.push(el);
                             }
                         }
                         aliveCount++;
@@ -6843,6 +6957,12 @@
                         }
                     }
                 });
+                
+                // Single autoscroll to show alive/fallen boundary (prevents jittering)
+                if (soldiersBecomingAlive.length > 0 && !this.isUserScrolling) {
+                    // Use any of the alive soldiers since scrollToMostRecentAlive finds the boundary
+                    this.scrollToMostRecentAlive(soldiersBecomingAlive[0]);
+                }
                 
                 // console.log('Alive count:', aliveCount, 'out of', soldierElements.length, '| Dying animations started:', dyingStarted);
                 
