@@ -139,12 +139,56 @@
             width: 100%; /* Animate underline to full width */
         }
 
+        .share-button {
+            position: fixed;
+            left: 108px; /* Positioned after about button (50px + ~58px for "אודות" width) */
+            top: 54px; /* Same as about button */
+            background: none;
+            border: none;
+            font-family: 'Heebo', sans-serif;
+            font-size: 14px; /* Match about button font size */
+            font-weight: 400; /* Match about button font weight */
+            color: #989898; /* Match about button color exactly */
+            cursor: pointer;
+            padding: 4px 0; /* Same as about button */
+            transition: color 0.2s ease;
+            z-index: 1001;
+        }
+
+        .share-button::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background-color: #989898;
+            transition: width 0.3s ease;
+        }
+
+        .share-button:hover {
+            color: #989898;
+        }
+
+        .share-button:hover::after {
+            width: 100%;
+        }
+
         /* About modal specific styling - more white background */
         #aboutModal {
             background: rgba(255, 255, 255, 0.9) !important;
         }
 
         #aboutModal:hover {
+            background: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        /* Share modal (endTimelineModal) specific styling - match about modal background */
+        #endTimelineModal {
+            background: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        #endTimelineModal:hover {
             background: rgba(255, 255, 255, 0.95) !important;
         }
 
@@ -481,6 +525,27 @@
             align-items: center;
             gap: 3px;
             direction: rtl;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        /* Show all legend items when hovering over timeline container */
+        .timeline-container:hover .legend-item {
+            opacity: 1;
+        }
+
+        /* Show specific legend item when slider is on a marker (and not hovering) */
+        .timeline-legend.show-specific .legend-item {
+            opacity: 0;
+        }
+
+        .timeline-legend.show-specific .legend-item.active {
+            opacity: 1;
+        }
+
+        /* Override: when hovering, show all items regardless of specific state */
+        .timeline-container:hover .timeline-legend.show-specific .legend-item {
+            opacity: 1;
         }
 
         .legend-color {
@@ -1040,6 +1105,7 @@
         .desktop-status-components-container,
         .timeline-bracket-label,
         .about-button,
+        .share-button,
         .mobile-about-button {
             transition: filter 0.4s ease, opacity 0.4s ease;
         }
@@ -1051,6 +1117,7 @@
         .modal-open .desktop-status-components-container,
         .modal-open .timeline-bracket-label,
         .modal-open .about-button,
+        .modal-open .share-button,
         .modal-open .mobile-about-button {
             filter: blur(3px);
             opacity: 0.3;
@@ -1556,8 +1623,9 @@
                 display: none !important;
             }
 
-            /* Hide about button on mobile */
-            .about-button {
+            /* Hide about and share buttons on mobile */
+            .about-button,
+            .share-button {
                 display: none !important;
             }
 
@@ -1996,6 +2064,9 @@
 
     <!-- About button - viewport positioned -->
     <button class="about-button" id="aboutButton">אודות</button>
+    
+    <!-- Share button - viewport positioned -->
+    <button class="share-button" id="shareButton">שיתוף</button>
 
     <div class="header-container">
         <div class="names-title">
@@ -6243,6 +6314,62 @@
                 // Apply the color using CSS custom properties
                 slider.style.setProperty('--handle-background', handleColor);
                 slider.style.setProperty('--handle-border', `2px solid ${borderColor}`);
+                
+                // Update legend display based on event state
+                this.updateLegendDisplay(eventAtCurrentDate);
+            }
+
+            updateLegendDisplay(eventAtCurrentDate) {
+                const legend = document.querySelector('.timeline-legend');
+                if (!legend) return;
+                
+                if (eventAtCurrentDate) {
+                    // Determine which legend entry to show based on event classification
+                    const isMilitaryCategory = eventAtCurrentDate.category === 'military' || 
+                                              eventAtCurrentDate.category === 'military_withdrawal' || 
+                                              eventAtCurrentDate.category === 'military_operation';
+                    
+                    const isPoliticalCategory = eventAtCurrentDate.category === 'coalition_threat' ||
+                                               eventAtCurrentDate.category === 'extremist_statement' ||
+                                               eventAtCurrentDate.category === 'political_admission' ||
+                                               eventAtCurrentDate.category === 'coalition_departure' ||
+                                               eventAtCurrentDate.category === 'political_manipulation';
+                    
+                    let targetLegendClass;
+                    
+                    if (eventAtCurrentDate.could_have_ended === 'yes' || eventAtCurrentDate.could_have_ended === 'ended_war') {
+                        // Blue for war-ending events
+                        targetLegendClass = 'blue';
+                    } else if (isMilitaryCategory) {
+                        // Black for military events  
+                        targetLegendClass = 'black';
+                    } else if (isPoliticalCategory) {
+                        // Orange for political events
+                        targetLegendClass = 'orange';
+                    } else {
+                        // Default blue for other diplomatic events
+                        targetLegendClass = 'blue';
+                    }
+                    
+                    // Add show-specific class and mark the appropriate legend item as active
+                    legend.classList.add('show-specific');
+                    
+                    // Update legend items - remove active from all, add to matching one
+                    const allLegendItems = legend.querySelectorAll('.legend-item');
+                    allLegendItems.forEach(item => {
+                        const colorElement = item.querySelector('.legend-color');
+                        if (colorElement && colorElement.classList.contains(targetLegendClass)) {
+                            item.classList.add('active');
+                        } else {
+                            item.classList.remove('active');
+                        }
+                    });
+                } else {
+                    // Not on any event - remove show-specific class
+                    legend.classList.remove('show-specific');
+                    const allLegendItems = legend.querySelectorAll('.legend-item');
+                    allLegendItems.forEach(item => item.classList.remove('active'));
+                }
             }
 
             escapeHtml(text) {
@@ -7420,6 +7547,21 @@
             // Animate in
             setTimeout(() => {
                 aboutOverlay.style.opacity = '1';
+            }, 10);
+        });
+
+        // Share button functionality - opens the same modal as skip button when at current date
+        document.getElementById('shareButton').addEventListener('click', function() {
+            const endTimelineOverlay = document.getElementById('endTimelineModalOverlay');
+            
+            // Show end timeline modal (sharing modal)
+            endTimelineOverlay.style.display = 'flex';
+            endTimelineOverlay.style.opacity = '0';
+            document.body.classList.add('modal-open'); // Add blur effects
+            
+            // Animate modal in
+            setTimeout(() => {
+                endTimelineOverlay.style.opacity = '1';
             }, 10);
         });
 
