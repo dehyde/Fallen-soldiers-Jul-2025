@@ -6108,6 +6108,9 @@
                             return;
                         }
                         
+                        // Hide any existing tooltip first to ensure clean state
+                        tooltip.classList.remove('visible', 'mobile-active');
+                        
                         // Show tooltip for this soldier
                         const name = nameEl.textContent;
                         const rank = nameEl.dataset.rank;
@@ -6173,12 +6176,15 @@
                         };
                         this.positionSoldierTooltip(fakeMouseEvent, tooltip, nameEl);
                         
-                        // Add mobile-active class first (for display override)
-                        tooltip.classList.add('mobile-active');
-                        
-                        // Add visible class with small delay to trigger transitions
+                        // Use setTimeout to ensure DOM processes the class removal first
                         setTimeout(() => {
-                            tooltip.classList.add('visible');
+                            // Add mobile-active class first (for display override)
+                            tooltip.classList.add('mobile-active');
+                            
+                            // Add visible class with small delay to trigger transitions
+                            setTimeout(() => {
+                                tooltip.classList.add('visible');
+                            }, 10);
                         }, 10);
                         
                         activeTooltip = true;
