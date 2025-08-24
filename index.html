@@ -107,19 +107,41 @@
             background: none;
             border: none;
             font-family: 'Heebo', sans-serif;
-            font-size: 16px;
-            font-weight: 400;
-            color: #666;
+            font-size: 14px; /* Match description text font size */
+            font-weight: 500; /* Slightly higher than description (400) */
+            color: #888; /* Match description text color */
             cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
+            padding: 4px 0; /* Remove horizontal padding, keep vertical for click area */
+            position: relative; /* For underline positioning */
+            transition: color 0.2s ease;
+        }
+
+        .about-button::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background-color: #888;
+            transition: width 0.3s ease;
         }
 
         .about-button:hover {
-            color: #333;
-            background: rgba(0, 0, 0, 0.05);
-            transform: translateY(-1px);
+            color: #888; /* Keep same color on hover */
+        }
+
+        .about-button:hover::after {
+            width: 100%; /* Animate underline to full width */
+        }
+
+        /* About modal specific styling - more white background */
+        #aboutModal {
+            background: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        #aboutModal:hover {
+            background: rgba(255, 255, 255, 0.95) !important;
         }
 
         .cta-container {
@@ -1457,8 +1479,8 @@
                 position: absolute !important;
                 left: 15px !important;
                 top: 16px !important;
-                font-size: 14px !important;
-                padding: 4px 8px !important;
+                font-size: 13px !important; /* Slightly smaller on mobile */
+                padding: 4px 0 !important; /* Keep consistent with desktop */
             }
 
             /* Mobile timeline description */
