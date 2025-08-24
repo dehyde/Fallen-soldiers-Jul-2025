@@ -101,9 +101,9 @@
         }
 
         .about-button {
-            position: absolute;
-            left: -450px; /* Position to the left of the title */
-            top: -4px; /* Slightly above the first line for gridline alignment */
+            position: fixed;
+            left: 50px; /* Always 50px from viewport left edge */
+            top: 54px; /* Calculated to align with title first line (50px + 4px) */
             background: none;
             border: none;
             font-family: 'Heebo', sans-serif;
@@ -1476,8 +1476,8 @@
 
             /* Mobile about button */
             .about-button {
-                position: absolute !important;
-                left: 15px !important;
+                position: fixed !important;
+                left: 50px !important;
                 top: 16px !important;
                 font-size: 13px !important; /* Slightly smaller on mobile */
                 padding: 4px 0 !important; /* Keep consistent with desktop */
@@ -1874,8 +1874,10 @@
         </div>
     </div>
 
+    <!-- About button - viewport positioned -->
+    <button class="about-button" id="aboutButton">אודות</button>
+
     <div class="header-container">
-        <button class="about-button" id="aboutButton">אודות</button>
         <div class="names-title">
             הנופלים, ואלה שיכלו עוד להיות חיים<br>
             אם המלחמה הייתה מסתיימת
