@@ -100,6 +100,28 @@
             z-index: 1000;
         }
 
+        .about-button {
+            position: absolute;
+            left: -450px; /* Position to the left of the title */
+            top: -8px; /* Slightly above the first line for gridline alignment */
+            background: none;
+            border: none;
+            font-family: 'Heebo', sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            color: #666;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .about-button:hover {
+            color: #333;
+            background: rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+
         .cta-container {
             position: fixed;
             top: 115px;
@@ -1430,6 +1452,15 @@
                 display: none !important;
             }
 
+            /* Mobile about button */
+            .about-button {
+                position: absolute !important;
+                left: 15px !important;
+                top: 16px !important;
+                font-size: 14px !important;
+                padding: 4px 8px !important;
+            }
+
             /* Mobile timeline description */
             .timeline-description {
                 display: flex !important;
@@ -1777,6 +1808,20 @@
         </div>
     </div>
 
+    <!-- About Modal -->
+    <div class="modal-overlay" id="aboutModalOverlay" style="display: none;">
+        <div class="initial-modal" id="aboutModal">
+            <div class="initial-modal-content">
+                <div class="initial-modal-text" id="aboutModalText">
+                    אודות הפרוייקט
+                </div>
+                <div class="initial-modal-cta">
+                    <button class="cta-primary" id="aboutModalCloseBtn">סגור</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="draggable-container" id="draggableContainer">
         <div class="draggable-content">
             <div class="content-text" id="contentText">
@@ -1790,6 +1835,7 @@
     </div>
 
     <div class="header-container">
+        <button class="about-button" id="aboutButton">אודות</button>
         <div class="names-title">
             הנופלים, ואלה שיכלו עוד להיות חיים<br>
             אם המלחמה הייתה מסתיימת
@@ -6644,6 +6690,51 @@
             setTimeout(() => {
                 overlay.style.display = 'none';
             }, 300);
+        });
+
+        // About modal functionality
+        document.getElementById('aboutButton').addEventListener('click', function() {
+            const aboutOverlay = document.getElementById('aboutModalOverlay');
+            
+            // Show about modal
+            aboutOverlay.style.display = 'flex';
+            aboutOverlay.style.opacity = '0';
+            document.body.classList.add('modal-open'); // Add blur effects
+            
+            // Start auto-hover system if available
+            if (window.autoHoverSystem && window.autoHoverSystem.start) {
+                window.autoHoverSystem.start();
+            }
+            
+            // Animate in
+            setTimeout(() => {
+                aboutOverlay.style.opacity = '1';
+            }, 10);
+        });
+
+        // About modal close functionality
+        document.getElementById('aboutModalCloseBtn').addEventListener('click', function() {
+            const aboutOverlay = document.getElementById('aboutModalOverlay');
+            document.body.classList.remove('modal-open'); // Remove blur
+            
+            // Stop auto-hover system if available
+            if (window.autoHoverSystem && window.autoHoverSystem.stop) {
+                window.autoHoverSystem.stop();
+            }
+            
+            aboutOverlay.style.opacity = '0';
+            aboutOverlay.style.transition = 'opacity 0.3s ease';
+            
+            setTimeout(() => {
+                aboutOverlay.style.display = 'none';
+            }, 300);
+        });
+
+        // Close about modal when clicking outside
+        document.getElementById('aboutModalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                document.getElementById('aboutModalCloseBtn').click();
+            }
         });
 
         // Initialize the memorial
