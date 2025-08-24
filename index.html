@@ -2925,6 +2925,7 @@
                 this.todayDate = new Date(); // Dynamic current date
                 this.todayDate.setHours(12, 0, 0, 0); // Normalize today to noon
                 this.currentEndDate = new Date(); // Start at today so all soldiers are "fallen"
+                this.descriptionUpdateTimeout = null; // Track current description update timeout
                 
                 this.navigationState = 'month_back'; // 'month_back' or 'today'
                 this.narrative = new NarrativeEngine(this);
@@ -3872,11 +3873,18 @@
                     return;
                 }
                 
+                // Cancel any existing update timeout
+                if (this.descriptionUpdateTimeout) {
+                    clearTimeout(this.descriptionUpdateTimeout);
+                    this.descriptionUpdateTimeout = null;
+                }
+                
                 if (!event) {
                     timelineDescriptionEl.style.opacity = '0';
-                    setTimeout(() => {
+                    this.descriptionUpdateTimeout = setTimeout(() => {
                         timelineDescriptionEl.innerHTML = '';
-                    }, 300);
+                        this.descriptionUpdateTimeout = null;
+                    }, 350);
                     return;
                 }
                 
@@ -3886,7 +3894,7 @@
                 // Fade out current content
                 timelineDescriptionEl.style.opacity = '0';
                 
-                setTimeout(() => {
+                this.descriptionUpdateTimeout = setTimeout(() => {
                     console.log('🔧 DEBUG: Setting content after 300ms delay');
                     // Update content - different behavior for mobile vs desktop
                     let content;
@@ -3929,7 +3937,12 @@
                         left: getComputedStyle(timelineDescriptionEl).left,
                         top: getComputedStyle(timelineDescriptionEl).top
                     });
-                }, 300);
+                    
+                    // Clear timeout reference after transition completes  
+                    setTimeout(() => {
+                        this.descriptionUpdateTimeout = null;
+                    }, 350); // Wait for fade-in transition to complete
+                }, 350); // Increased from 300ms to ensure CSS transition completes
             }
 
             jumpToEventDate(eventOrDate) {
