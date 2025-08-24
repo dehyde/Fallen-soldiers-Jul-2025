@@ -37,6 +37,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@100..900&family:Heebo:wght@100..900&family=Suez+One&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Shareon.js for social sharing -->
+    <link href="https://cdn.jsdelivr.net/npm/shareon@2/dist/shareon.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/shareon@2/dist/shareon.iife.js" defer init></script>
     <style>
         * {
             margin: 0;
@@ -142,6 +146,20 @@
 
         #aboutModal:hover {
             background: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        /* Custom shareon button styling for about modal */
+        .shareon a {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50% !important;
+            transition: transform 0.2s ease, opacity 0.2s ease !important;
+            opacity: 0.8 !important;
+        }
+
+        .shareon a:hover {
+            transform: scale(1.1) !important;
+            opacity: 1 !important;
         }
 
         .cta-container {
@@ -1845,12 +1863,16 @@
                         ייתכנו טעויות בתכני הפרוייקט, ניתן ליצור קשר על מנת לתקנן<br><br>
                         
                         <div style="margin-top: 20px;">
-                            <div style="font-weight: 600; margin-bottom: 10px;">לשיתוף הפרוייקט:</div>
-                            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                                <button onclick="shareToFacebook()" style="background: #1877F2; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">Facebook</button>
-                                <button onclick="shareToTwitter()" style="background: #1DA1F2; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">Twitter</button>
-                                <button onclick="shareToLinkedIn()" style="background: #0A66C2; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">LinkedIn</button>
-                                <button onclick="copyToClipboard()" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">העתק קישור</button>
+                            <div style="font-weight: 600; margin-bottom: 15px;">לשיתוף הפרוייקט:</div>
+                            <div class="shareon" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;" data-title="Fallen Swords - מחיר המלחמה" data-text="אתר הנצחה אינטראקטיבי לנופלי מלחמת חרבות ברזל">
+                                <a class="whatsapp"></a>
+                                <a class="telegram"></a>
+                                <a class="linkedin"></a>
+                                <a class="facebook"></a>
+                                <a class="twitter"></a>
+                            </div>
+                            <div style="margin-top: 10px; text-align: center;">
+                                <button onclick="copyToClipboard()" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 5px;">העתק קישור</button>
                             </div>
                         </div>
                     </div>
@@ -6902,24 +6924,7 @@
             }
         });
 
-        // Social sharing functions for about modal
-        function shareToFacebook() {
-            const url = encodeURIComponent(window.location.href);
-            const text = encodeURIComponent('Fallen Swords - מחיר המלחמה');
-            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
-        }
-
-        function shareToTwitter() {
-            const url = encodeURIComponent(window.location.href);
-            const text = encodeURIComponent('Fallen Swords - מחיר המלחמה');
-            window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
-        }
-
-        function shareToLinkedIn() {
-            const url = encodeURIComponent(window.location.href);
-            const title = encodeURIComponent('Fallen Swords - מחיר המלחמה');
-            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
-        }
+        // Copy to clipboard function for about modal
 
         function copyToClipboard() {
             navigator.clipboard.writeText(window.location.href).then(() => {
