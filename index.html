@@ -458,7 +458,7 @@
 
         .timeline-legend {
             position: absolute;
-            bottom: -40px;
+            bottom: -52px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
@@ -1890,6 +1890,41 @@
                         <a href="https://www.linkedin.com/in/tom-bar-gal/" target="_blank" style="color: #666; text-decoration: underline;">https://www.linkedin.com/in/tom-bar-gal/</a><br><br>
                         
                         ייתכנו טעויות בתכני הפרוייקט, ניתן ליצור קשר על מנת לתקנן<br><br>
+                        
+                        <div style="margin-top: 20px;">
+                            <div style="font-weight: 600; margin-bottom: 15px;">לשיתוף הפרוייקט:</div>
+                            <div class="shareon" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;" data-url="https://dehyde.github.io/Fallen-soldiers-Jul-2025/" data-title="Fallen Swords - מחיר המלחמה" data-text="אתר הנצחה אינטראקטיבי לנופלי מלחמת חרבות ברזל">
+                                <a class="whatsapp"></a>
+                                <a class="telegram"></a>
+                                <a class="linkedin"></a>
+                                <a class="facebook"></a>
+                                <a class="twitter"></a>
+                            </div>
+                            <div style="margin-top: 10px; text-align: center; margin-bottom: 10px;">
+                                <button onclick="copyToClipboard(this)" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 5px;">העתק קישור</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Timeline Modal -->
+    <div class="modal-overlay" id="endTimelineModalOverlay" style="display: none;">
+        <div class="initial-modal" id="endTimelineModal">
+            <div class="initial-modal-content">
+                <button id="endTimelineModalCloseBtn" style="position: absolute; top: 15px; left: 15px; background: transparent; color: #333; border: none; border-radius: 4px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; z-index: 1;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='transparent'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m18 6-12 12"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+                <div style="font-size: 1.1em; margin-bottom: 15px; font-weight: 600; max-width: calc(100% - 45px);">הגיע הזמן להחזיר את החיילים הביתה</div>
+                <div class="initial-modal-text" id="endTimelineModalText">
+                    <div style="font-size: 14px; line-height: 1.5;">
+                        כל פעולה צבאית וכל יממה שהמלחמה ממשיכה מביאה איתה אובדן של חיילים, צעירים ומילואימניקים, שפשוט אינו נגמר.<br><br>
+                        הגיע הזמן לדבר על המחיר עם המשפחה, חברים ובעבודה.<br><br>
                         
                         <div style="margin-top: 20px;">
                             <div style="font-weight: 600; margin-bottom: 15px;">לשיתוף הפרוייקט:</div>
@@ -3346,6 +3381,9 @@
                 const initialProgress = ((totalDays - initialDaysBack) / totalDays) * 100;
                 document.getElementById('timelineProgress').style.width = initialProgress + '%';
                 
+                // Initialize CTA icon (at today - share icon)
+                this.updateCTAIcon(initialDaysBack);
+                
                 // Recalculate font size after timeline changes with buffer
                 setTimeout(() => {
                     const relevantSoldiers = this.soldiers.filter(s => s.death_date >= this.startDate);
@@ -4073,6 +4111,10 @@
                     'skip-back': {
                         width: 16,
                         height: 16
+                    },
+                    'share-2': {
+                        width: 16,
+                        height: 16
                     }
                 });
                     }
@@ -4631,37 +4673,29 @@
 
                     bracketSvg.appendChild(bracketPath);
                     
-                    // Add to timeline track (same parent as axis and living chart)
+                    // Always add bracket to timeline track
                     timelineTrack.appendChild(bracketSvg);
                     
-                    // Create fallen count label positioned above the living count (gray text) - only if there are fallen soldiers
-                    if (currentFallenCount > 0) {
-                        const fallenLabel = document.createElement('div');
-                        fallenLabel.classList.add('timeline-bracket-fallen-label');
-                        fallenLabel.innerHTML = `<span style="font-weight: 300;">חללים</span>&nbsp;&nbsp;<span style="font-weight: 600;">${currentFallenCount}</span>`;
-                        fallenLabel.style.position = 'absolute';
-                        fallenLabel.style.top = (bracketTop - 50) + 'px'; // Closer to the living count tooltip
-                        fallenLabel.style.left = '-1px'; // Adjusted to align right edge of text with living tooltip text
-                        fallenLabel.style.fontFamily = "'Heebo', sans-serif";
-                        fallenLabel.style.fontSize = '9px';
-                        fallenLabel.style.fontWeight = '300';
-                        fallenLabel.style.color = '#999';
-                        fallenLabel.style.background = 'transparent';
-                        fallenLabel.style.padding = '0';
-                        fallenLabel.style.borderRadius = '0';
-                        fallenLabel.style.direction = 'rtl';
-                        fallenLabel.style.whiteSpace = 'nowrap';
-                        fallenLabel.style.pointerEvents = 'none';
-                        fallenLabel.style.zIndex = '7';
-                        
-                        // Add fallen label to timeline track
-                        timelineTrack.appendChild(fallenLabel);
-                    }
-
-                    // Create living count label positioned above the bracket (tooltip style)
+                    // Always create living count label but conditionally show it
                     const bracketLabel = document.createElement('div');
                     bracketLabel.classList.add('timeline-bracket-label');
                     bracketLabel.innerHTML = `<span style="font-weight: 300;">היו יכולים להיות חיים</span>&nbsp;&nbsp;<span style="font-weight: 600;">${currentLivingCount}</span>`;
+                    
+                    // Add transition for smooth appearance/disappearance
+                    bracketLabel.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    
+                    // Show/hide based on living count with smooth transition
+                    if (currentLivingCount > 0) {
+                        bracketLabel.style.opacity = '1';
+                        bracketLabel.style.transform = 'scale(1)';
+                        bracketSvg.style.opacity = '1';
+                        bracketSvg.style.transition = 'opacity 0.4s ease';
+                    } else {
+                        bracketLabel.style.opacity = '0';
+                        bracketLabel.style.transform = 'scale(0.9)';
+                        bracketSvg.style.opacity = '0';
+                        bracketSvg.style.transition = 'opacity 0.4s ease';
+                    }
                     
                     // Double-check mobile detection for immediate positioning
                     const isMobileCheck = window.innerWidth <= 768;
@@ -4686,11 +4720,44 @@
                         bracketLabel.style.top = (bracketTop - 35) + 'px'; // 35px above bracket top to accommodate tooltip height
                         bracketLabel.style.left = '-9px'; // Align left edge with horizontal center of bracket (bracket is at -14px, width 10px, so center is -14+5 = -9px)
                         
-                        // Add to timeline track for desktop
-                        timelineTrack.appendChild(bracketLabel);
+                            // Add to timeline track for desktop
+                            timelineTrack.appendChild(bracketLabel);
+                        }
+                    
+                    // Always create fallen count label on desktop but conditionally show it
+                    if (window.innerWidth > 768) {
+                        const fallenLabel = document.createElement('div');
+                        fallenLabel.classList.add('timeline-bracket-fallen-label');
+                        fallenLabel.innerHTML = `<span style="font-weight: 300;">חללים</span>&nbsp;&nbsp;<span style="font-weight: 600;">${currentFallenCount}</span>`;
+                        fallenLabel.style.position = 'absolute';
+                        fallenLabel.style.top = (bracketTop - 50) + 'px';
+                        fallenLabel.style.left = '-1px';
+                        fallenLabel.style.fontFamily = "'Heebo', sans-serif";
+                        fallenLabel.style.fontSize = '9px';
+                        fallenLabel.style.fontWeight = '300';
+                        fallenLabel.style.color = '#999';
+                        fallenLabel.style.background = 'transparent';
+                        fallenLabel.style.padding = '0';
+                        fallenLabel.style.borderRadius = '0';
+                        fallenLabel.style.direction = 'rtl';
+                        fallenLabel.style.whiteSpace = 'nowrap';
+                        fallenLabel.style.pointerEvents = 'none';
+                        fallenLabel.style.zIndex = '7';
+                        fallenLabel.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                        
+                        // Show/hide fallen label with smooth transition
+                        if (currentFallenCount > 0) {
+                            fallenLabel.style.opacity = '1';
+                            fallenLabel.style.transform = 'scale(1)';
+                        } else {
+                            fallenLabel.style.opacity = '0';
+                            fallenLabel.style.transform = 'scale(0.9)';
+                        }
+                        
+                        timelineTrack.appendChild(fallenLabel);
                     }
                     
-                    console.log(`Height bracket: living ratio ${livingRatio.toFixed(2)}, chart height ${currentChartHeight.toFixed(1)}px, bracket ${bracketHeight.toFixed(1)}px from ${currentLivingTop.toFixed(1)}px to ${axisCenter}px`);
+                    console.log(`Height bracket: living count ${currentLivingCount}, fallen count ${currentFallenCount}, bracket visible: ${currentLivingCount > 0}`);
                     
                 } catch (error) {
                     console.error('Error updating height bracket:', error);
@@ -5012,6 +5079,9 @@
                     this.updateTooltip(days, newEndDate);
                     
                     this.updateVisualization();
+                    
+                    // Update CTA icon based on timeline position
+                    this.updateCTAIcon(days);
                 });
 
                 // Setup draggable container
@@ -5911,6 +5981,38 @@
                 this.updateHandleColor(currentDate);
             }
 
+            updateCTAIcon(days) {
+                const ctaButton = document.getElementById('ctaSkipBack');
+                if (!ctaButton) return;
+                
+                const iconElement = ctaButton.querySelector('i');
+                if (!iconElement) return;
+                
+                if (days === 0) {
+                    // At "today" - show Share-2 icon (flipped horizontally)
+                    iconElement.setAttribute('data-lucide', 'share-2');
+                    iconElement.style.transform = 'scaleX(-1)'; // Flip horizontally
+                } else {
+                    // Not at today - show skip-back icon (normal)
+                    iconElement.setAttribute('data-lucide', 'skip-back');
+                    iconElement.style.transform = 'none';
+                }
+                
+                // Recreate the icon to apply the change
+                if (window.lucide) {
+                    window.lucide.createIcons({
+                        'skip-back': {
+                            width: 16,
+                            height: 16
+                        },
+                        'share-2': {
+                            width: 16,
+                            height: 16
+                        }
+                    });
+                }
+            }
+
             updateHandleColor(currentDate) {
                 const slider = document.getElementById('timelineSlider');
                 if (!slider || !currentDate) return;
@@ -6621,41 +6723,24 @@
                 // Enhanced mobile detection and positioning logic
                 const isMobile = window.innerWidth <= 768;
                 
-                // AGGRESSIVE Debug logging 
-                console.log(`=== TOOLTIP POSITIONING DEBUG ===`);
-                console.log(`Screen width: ${screenWidth}px, isMobile: ${isMobile}`);
-                console.log(`Name rect: left=${nameRect.left.toFixed(0)}, right=${nameRect.right.toFixed(0)}, width=${nameRect.width.toFixed(0)}`);
-                console.log(`Name center: ${nameCenterX.toFixed(0)}px, visuallyOnRightSide: ${isVisuallyOnRightSide}`);
-                console.log(`Tooltip dimensions: ${tooltipWidth}x${tooltipHeight}`);
-                
                 if (isMobile) {
-                    console.log(`=== MOBILE RTL POSITIONING ===`);
                     // RTL Mobile-specific logic: When name appears visually on the right (low x values),
                     // show tooltip visually to the left (higher x values)
-                    const wouldFitVisuallyLeft = (nameRect.right + offset + tooltipWidth) <= (screenWidth - 20);
-                    const wouldOverflowVisuallyRight = (nameRect.left - tooltipWidth - offset) < 20;
-                    
-                    console.log(`wouldFitVisuallyLeft: ${wouldFitVisuallyLeft}, wouldOverflowVisuallyRight: ${wouldOverflowVisuallyRight}`);
-                    
                     if (isVisuallyOnRightSide) {
                         // Name is visually on RIGHT side in RTL - position tooltip visually to the LEFT (higher x)
                         x = nameRect.right + offset;
-                        console.log(`🎯 Mobile RTL: Name on visual RIGHT - positioning visually LEFT (x=${x})`);
                         
                         // If tooltip would go off right edge, position at right edge of screen
                         if (x + tooltipWidth > screenWidth - 20) {
                             x = screenWidth - tooltipWidth - 20;
-                            console.log(`📏 Mobile RTL: Adjusted to right screen edge (x=${x})`);
                         }
                     } else {
                         // Name is visually on LEFT side in RTL - position tooltip visually to the RIGHT (lower x)
                         x = nameRect.left - tooltipWidth - offset;
-                        console.log(`🎯 Mobile RTL: Name on visual LEFT - positioning visually RIGHT (x=${x})`);
                         
                         // If tooltip would go off left edge, position at left edge
                         if (x < 20) {
                             x = 20;
-                            console.log(`📏 Mobile RTL: Adjusted to left screen edge (x=${x})`);
                         }
                     }
                 } else {
@@ -6685,11 +6770,9 @@
                     
                     if (rightEdge > screenWidth - 10) {
                         x = screenWidth - tooltipWidth - 10;
-                        console.log(`Mobile RTL: Final safety - moved to x=${x} to prevent right cutoff`);
                     }
                     if (leftEdge < 10) {
                         x = 10;
-                        console.log(`Mobile RTL: Final safety - moved to x=${x} to prevent left cutoff`);
                     }
                 }
                 
@@ -6703,7 +6786,6 @@
                     y = screenHeight - tooltipHeight - 10;
                 }
                 
-                console.log(`🏁 FINAL POSITION: x=${x}px, y=${y}px`);
                 tooltip.style.left = x + 'px';
                 tooltip.style.top = y + 'px';
             }
@@ -7181,12 +7263,81 @@
             }
         });
 
+        // End timeline modal close functionality
+        document.getElementById('endTimelineModalCloseBtn').addEventListener('click', function() {
+            const endTimelineOverlay = document.getElementById('endTimelineModalOverlay');
+            document.body.classList.remove('modal-open'); // Remove blur
+            
+            // Animate modal out
+            endTimelineOverlay.style.opacity = '0';
+            endTimelineOverlay.style.transition = 'opacity 0.3s ease';
+            
+            setTimeout(() => {
+                endTimelineOverlay.style.display = 'none';
+                
+                // Reset timeline to start (maximum slider value)
+                const timelineSlider = document.getElementById('timelineSlider');
+                const maxSliderValue = parseInt(timelineSlider.max);
+                
+                // Animate timeline reset
+                const startValue = parseInt(timelineSlider.value);
+                const duration = 500; // 0.5 seconds
+                const startTime = performance.now();
+                
+                function animateReset(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Ease-out function
+                    const easeOut = 1 - Math.pow(1 - progress, 2);
+                    
+                    const newValue = startValue + (maxSliderValue - startValue) * easeOut;
+                    timelineSlider.value = newValue;
+                    
+                    // Trigger the timeline update
+                    const event = new Event('input', { bubbles: true });
+                    timelineSlider.dispatchEvent(event);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateReset);
+                    }
+                }
+                
+                requestAnimationFrame(animateReset);
+            }, 300);
+        });
+
+        // Close end timeline modal when clicking outside
+        document.getElementById('endTimelineModalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                document.getElementById('endTimelineModalCloseBtn').click();
+            }
+        });
+
         // Initialize the memorial
         const memorial = new TimelineMemorial();
         
         // Skip-back functionality - jump to next visible event
         function performSkipAction() {
             if (!memorial.timelineEvents) return;
+            
+            // Check if timeline is at "today" position (slider value = 0)
+            const timelineSlider = document.getElementById('timelineSlider');
+            const currentSliderValue = parseInt(timelineSlider.value);
+            
+            if (currentSliderValue === 0) {
+                // Show end timeline modal instead of skipping
+                const endTimelineOverlay = document.getElementById('endTimelineModalOverlay');
+                endTimelineOverlay.style.display = 'flex';
+                endTimelineOverlay.style.opacity = '0';
+                document.body.classList.add('modal-open'); // Add blur effects
+                
+                // Animate modal in
+                setTimeout(() => {
+                    endTimelineOverlay.style.opacity = '1';
+                }, 10);
+                return;
+            }
             
             // Get all visible events sorted by date (chronological order: past to future)
             const visibleEvents = memorial.timelineEvents
@@ -7197,9 +7348,7 @@
             
             if (visibleEvents.length === 0) return;
             
-            // Calculate current timeline position
-            const timelineSlider = document.getElementById('timelineSlider');
-            const currentSliderValue = parseInt(timelineSlider.value);
+            // Calculate current timeline position (already have slider and value above)
             const maxSliderValue = parseInt(timelineSlider.max);
             
             // console.log('Current slider value:', currentSliderValue);
@@ -7284,6 +7433,10 @@
             if (window.lucide) {
                 lucide.createIcons({
                     'skip-back': {
+                        width: 16,
+                        height: 16
+                    },
+                    'share-2': {
                         width: 16,
                         height: 16
                     }
