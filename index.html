@@ -1835,7 +1835,25 @@
         <div class="initial-modal" id="aboutModal">
             <div class="initial-modal-content">
                 <div class="initial-modal-text" id="aboutModalText">
-                    אודות הפרוייקט
+                    <div style="font-size: 1.1em; margin-bottom: 15px; font-weight: 600;">אודות הפרוייקט</div>
+                    <div style="font-size: 14px; line-height: 1.5;">
+                        בתחילת המלחמה, ישבתי בחמ״ל מפקדת האוגדה ושמעתי בקשר מדי יום כמעט כל אירוע שבו נהרגו חיילי צה״ל. שנה לאחר מכן חבר יקר שלי נפל במילואים. כל פעולה צבאית וכל יממה שהמלחמה ממשיכה מביאה איתה אובדן של חיילים, צעירים ומילואימניקים, שפשוט אינו נגמר.<br><br>
+                        
+                        הפרוייקט נוצר על ידי תום בר-גל, מעצב, מרצה, ומילואימניק<br>
+                        <a href="https://www.linkedin.com/in/tom-bar-gal/" target="_blank" style="color: #666; text-decoration: underline;">https://www.linkedin.com/in/tom-bar-gal/</a><br><br>
+                        
+                        ייתכנו טעויות בתכני הפרוייקט, ניתן ליצור קשר על מנת לתקנן<br><br>
+                        
+                        <div style="margin-top: 20px;">
+                            <div style="font-weight: 600; margin-bottom: 10px;">לשיתוף הפרוייקט:</div>
+                            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                <button onclick="shareToFacebook()" style="background: #1877F2; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">Facebook</button>
+                                <button onclick="shareToTwitter()" style="background: #1DA1F2; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">Twitter</button>
+                                <button onclick="shareToLinkedIn()" style="background: #0A66C2; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">LinkedIn</button>
+                                <button onclick="copyToClipboard()" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;">העתק קישור</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="initial-modal-cta">
                     <button class="cta-primary" id="aboutModalCloseBtn">סגור</button>
@@ -6868,6 +6886,57 @@
                 });
             }
         });
+
+        // Social sharing functions for about modal
+        function shareToFacebook() {
+            const url = encodeURIComponent(window.location.href);
+            const text = encodeURIComponent('Fallen Swords - מחיר המלחמה');
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+        }
+
+        function shareToTwitter() {
+            const url = encodeURIComponent(window.location.href);
+            const text = encodeURIComponent('Fallen Swords - מחיר המלחמה');
+            window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
+        }
+
+        function shareToLinkedIn() {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent('Fallen Swords - מחיר המלחמה');
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+        }
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                // Visual feedback for successful copy
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'הועתק!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#666';
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = window.location.href;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'הועתק!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#666';
+                }, 2000);
+            });
+        }
     </script>
 </body>
 </html>
