@@ -17,8 +17,8 @@
     <meta name="theme-color" content="#1a1a1a">
     
     <!-- Open Graph -->
-    <meta property="og:title" content="Fallen Soldiers - Timeline Memorial">
-    <meta property="og:description" content="Interactive timeline memorial honoring fallen soldiers and exploring missed opportunities to end the conflict. A visual tribute to those who could still be with their families today.">
+    <meta property="og:title" content="Fallen Swords - מחיר המלחמה">
+    <meta property="og:description" content="מי יכול היה להיות חי אם המלחמה הייתה נגמרת. מי הם הנופלים ומתי איבדנו אותם - זיכרון חזותי למחיר המלחמה">
     <meta property="og:image" content="https://dehyde.github.io/Fallen-soldiers-Jul-2025/images/opengraph_image.png">
     <meta property="og:image:alt" content="Fallen Soldiers Timeline Memorial - Interactive visualization of conflict timeline">
     <meta property="og:image:width" content="1200">
@@ -1038,7 +1038,8 @@
         .cta-container,
         .status-components-container,
         .desktop-status-components-container,
-        .timeline-bracket-label {
+        .timeline-bracket-label,
+        .about-button {
             transition: filter 0.4s ease, opacity 0.4s ease;
         }
 
@@ -1047,7 +1048,8 @@
         .modal-open .cta-container,
         .modal-open .status-components-container,
         .modal-open .desktop-status-components-container,
-        .modal-open .timeline-bracket-label {
+        .modal-open .timeline-bracket-label,
+        .modal-open .about-button {
             filter: blur(3px);
             opacity: 0.3;
         }
@@ -1897,7 +1899,7 @@
                                 <a class="twitter"></a>
                             </div>
                             <div style="margin-top: 10px; text-align: center; margin-bottom: 10px;">
-                                <button onclick="copyToClipboard()" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 5px;">העתק קישור</button>
+                                <button onclick="copyToClipboard(this)" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 5px;">העתק קישור</button>
                             </div>
                         </div>
                     </div>
@@ -1910,6 +1912,9 @@
         <div class="draggable-content">
             <div class="content-text" id="contentText">
                 טוען נתונים...
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="mobile-about-button" id="mobileAboutButton" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">אודות</button>
             </div>
             <div class="cta-buttons">
                 <button class="cta-tertiary" id="ctaBack">חזור</button>
@@ -1982,7 +1987,7 @@
             </div>
             <div class="timeline-handle-tooltip" id="timelineTooltip">
                 <div id="tooltipDate">27/07/25</div>
-                <div id="tooltipAlive" style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;"></div>
+                <div id="tooltipAlive" style="font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 12px;"></div>
             </div>
         </div>
         <!-- Removed timeline labels -->
@@ -4919,6 +4924,9 @@
                 // Setup timeline track hover functionality
                 this.setupTimelineTrackHover();
 
+                // Setup desktop scroll wheel timeline control
+                this.setupDesktopScrollControl();
+
                 // Recalculate font size when window is resized with buffer
                 window.addEventListener('resize', () => {
                     // Check if we switched between mobile and desktop
@@ -5142,7 +5150,7 @@
                         const aliveSoldiers = this.soldiers.filter(s => s.death_date > hoverDate).length;
                         const tooltipAlive = document.getElementById('tooltipAlive');
                         if (tooltipAlive) {
-                            tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;"></div>`;
+                            tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 12px;"></div>`;
                         }
                         
                         // Check if hover date matches any timeline event for cursor state
@@ -5255,6 +5263,122 @@
                 document.addEventListener('mouseup', () => {
                     isDraggingTrack = false;
                 });
+            }
+
+            setupDesktopScrollControl() {
+                // Only enable on desktop
+                if (this.isMobile) return;
+
+                const slider = document.getElementById('timelineSlider');
+                if (!slider) return;
+
+                // Track scroll wheel state
+                let scrollAnimationId = null;
+                let lastScrollTime = 0;
+                let scrollVelocity = 0;
+                let targetSliderValue = null; // Will be initialized on first scroll
+                
+                // Track dragging state from existing dragging detection
+                let isDraggingSlider = false;
+                let isDraggingContainer = false;
+                let isDraggingTrack = false;
+
+                // Monitor dragging states
+                slider.addEventListener('mousedown', () => { isDraggingSlider = true; });
+                document.addEventListener('mouseup', () => { 
+                    isDraggingSlider = false; 
+                    isDraggingContainer = false;
+                    isDraggingTrack = false;
+                });
+
+                // Monitor draggable container state
+                const draggableContainer = document.getElementById('draggableContainer');
+                if (draggableContainer) {
+                    const observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                                isDraggingContainer = draggableContainer.classList.contains('dragging');
+                            }
+                        });
+                    });
+                    observer.observe(draggableContainer, { attributes: true, attributeFilter: ['class'] });
+                }
+
+                // Smooth animation function
+                const animateToTarget = () => {
+                    const currentValue = parseInt(slider.value);
+                    const difference = targetSliderValue - currentValue;
+                    
+                    if (Math.abs(difference) < 0.1) {
+                        scrollAnimationId = null;
+                        return;
+                    }
+                    
+                    // Ease-out factor - correlates with scroll velocity
+                    const baseEaseFactor = 0.15;
+                    const velocityBoost = Math.min(Math.abs(scrollVelocity) * 0.02, 0.1);
+                    const easeFactor = baseEaseFactor + velocityBoost;
+                    
+                    const newValue = currentValue + (difference * easeFactor);
+                    slider.value = newValue;
+                    
+                    // Trigger timeline update
+                    const event = new Event('input', { bubbles: true });
+                    slider.dispatchEvent(event);
+                    
+                    // Decay velocity
+                    scrollVelocity *= 0.95;
+                    
+                    scrollAnimationId = requestAnimationFrame(animateToTarget);
+                };
+
+                // Wheel event handler
+                const handleWheel = (e) => {
+                    // Skip if any dragging is active
+                    if (isDraggingSlider || isDraggingContainer || isDraggingTrack) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    
+                    const now = performance.now();
+                    const deltaTime = now - lastScrollTime;
+                    lastScrollTime = now;
+                    
+                    // Calculate scroll sensitivity - reasonable starting point
+                    const scrollSensitivity = 3; // days per scroll tick
+                    const maxScrollValue = parseInt(slider.max);
+                    const minScrollValue = 0;
+                    
+                    // Normalize wheel delta and apply sensitivity
+                    let scrollDelta = 0;
+                    if (e.deltaY !== 0) {
+                        scrollDelta = Math.sign(e.deltaY) * scrollSensitivity;
+                    }
+                    
+                    // Update velocity based on scroll frequency
+                    if (deltaTime < 100) { // Quick consecutive scrolls
+                        scrollVelocity = Math.max(Math.abs(scrollVelocity), Math.abs(scrollDelta)) * Math.sign(scrollDelta);
+                    } else {
+                        scrollVelocity = scrollDelta;
+                    }
+                    
+                    // Initialize target value on first scroll or update existing target
+                    if (targetSliderValue === null) {
+                        targetSliderValue = parseInt(slider.value);
+                    }
+                    
+                    // Update target value (scroll down = forward in time = smaller slider value)
+                    targetSliderValue = Math.max(minScrollValue, Math.min(maxScrollValue, targetSliderValue - scrollDelta));
+                    
+                    // Start or continue animation
+                    if (scrollAnimationId === null) {
+                        scrollAnimationId = requestAnimationFrame(animateToTarget);
+                    }
+                };
+
+                // Add wheel event listener to document for page-wide scrolling
+                document.addEventListener('wheel', handleWheel, { passive: false });
             }
 
             addClickOutlineEffect(element) {
@@ -5435,14 +5559,11 @@
                         : eventAtDate.title_hebrew;
                     
                     tooltipDate.innerHTML = titleLink;
-                    tooltipAlive.innerHTML = `
-                        <div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px; margin-top: 4px;">
-                        </div>
-                    `;
+                    tooltipAlive.innerHTML = ``;
                 } else {
                     // Regular tooltip content
                     tooltipDate.textContent = formattedDate;
-                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;"></div>`;
+                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 12px;"></div>`;
                 }
                 
                 // Force layout recalculation
@@ -5616,18 +5737,14 @@
                 if (isStoppedOverEvent) {
                     // Show event details in tooltip
                     const titleLink = eventAtSliderDate.source && eventAtSliderDate.source.startsWith('http')
-                        ? `<a href="${eventAtSliderDate.source}" target="_blank" style="color: #333; text-decoration: none; cursor: pointer; font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">${eventAtSliderDate.title_hebrew}</a>`
-                        : `<span style="color: #333; font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">${eventAtSliderDate.title_hebrew}</span>`;
+                        ? `<a href="${eventAtSliderDate.source}" target="_blank" style="color: #333; text-decoration: none; cursor: pointer; font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 12px;">${eventAtSliderDate.title_hebrew}</a>`
+                        : `<span style="color: #333; font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 12px;">${eventAtSliderDate.title_hebrew}</span>`;
                     tooltipDate.innerHTML = titleLink;
-                    tooltipAlive.innerHTML = `
-                        <div style="padding-top: 6px; font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;">
-                            ${formattedDate}
-                        </div>
-                    `;
+                    tooltipAlive.textContent = formattedDate;
                 } else {
                     // Regular tooltip content
                     tooltipDate.textContent = formattedDate;
-                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 300; font-size: 13px;"></div>`;
+                    tooltipAlive.innerHTML = `<div style="font-family: 'Heebo', sans-serif; font-weight: 500; font-size: 12px;"></div>`;
                 }
                 
                 // Calculate positioning immediately for smooth animation
@@ -6811,6 +6928,26 @@
             }, 10);
         });
 
+        // Mobile about button functionality
+        document.getElementById('mobileAboutButton').addEventListener('click', function() {
+            const aboutOverlay = document.getElementById('aboutModalOverlay');
+            
+            // Show about modal
+            aboutOverlay.style.display = 'flex';
+            aboutOverlay.style.opacity = '0';
+            document.body.classList.add('modal-open'); // Add blur effects
+            
+            // Start auto-hover system if available
+            if (window.autoHoverSystem && window.autoHoverSystem.start) {
+                window.autoHoverSystem.start();
+            }
+            
+            // Animate in
+            setTimeout(() => {
+                aboutOverlay.style.opacity = '1';
+            }, 10);
+        });
+
         // About modal close functionality
         document.getElementById('aboutModalCloseBtn').addEventListener('click', function() {
             const aboutOverlay = document.getElementById('aboutModalOverlay');
@@ -6948,18 +7085,19 @@
 
         // Copy to clipboard function for about modal
 
-        function copyToClipboard() {
+        function copyToClipboard(button) {
             navigator.clipboard.writeText(window.location.href).then(() => {
                 // Visual feedback for successful copy
-                const button = event.target;
                 const originalText = button.textContent;
                 const originalBg = button.style.background;
+                const originalColor = button.style.color;
                 button.textContent = 'הועתק בהצלחה!';
-                button.style.background = '#28a745';
-                button.style.color = 'white';
+                button.style.background = '#E7F0FF';
+                button.style.color = '#1168FF';
                 setTimeout(() => {
                     button.textContent = originalText;
                     button.style.background = originalBg || '#666';
+                    button.style.color = originalColor || 'white';
                 }, 3000);
             }).catch(() => {
                 // Fallback for older browsers
@@ -6971,15 +7109,16 @@
                 document.body.removeChild(textArea);
                 
                 // Visual feedback
-                const button = event.target;
                 const originalText = button.textContent;
                 const originalBg = button.style.background;
+                const originalColor = button.style.color;
                 button.textContent = 'הועתק בהצלחה!';
-                button.style.background = '#28a745';
-                button.style.color = 'white';
+                button.style.background = '#E7F0FF';
+                button.style.color = '#1168FF';
                 setTimeout(() => {
                     button.textContent = originalText;
                     button.style.background = originalBg || '#666';
+                    button.style.color = originalColor || 'white';
                 }, 3000);
             });
         }
