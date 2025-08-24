@@ -496,12 +496,12 @@
 
         .timeline-slider {
             --handle-width: 6px;
-            width: calc(100% + var(--handle-width) + 2px);
+            width: calc(100% + 6px);
             height: 4px;
             background: transparent;
             outline: none;
             position: absolute;
-            left: calc(-1 * (var(--handle-width) + 2px) / 2); /* Offset by half handle width to align handle center with track edges */
+            left: calc(-6px / 2); /* Offset by half the extra width to center the slider */
             top: -1.5px; /* Center slider on track to align thumb with progress bar */
             cursor: default;
             -webkit-appearance: none;
