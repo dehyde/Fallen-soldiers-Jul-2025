@@ -114,6 +114,7 @@
             padding: 4px 0; /* Remove horizontal padding, keep vertical for click area */
             position: relative; /* For underline positioning */
             transition: color 0.2s ease;
+            z-index: 1001; /* Ensure button is above other elements */
         }
 
         .about-button::after {
@@ -1874,8 +1875,10 @@
         </div>
     </div>
 
+    <!-- About button positioned relative to viewport -->
+    <button class="about-button" id="aboutButton">אודות</button>
+
     <div class="header-container">
-        <button class="about-button" id="aboutButton">אודות</button>
         <div class="names-title">
             הנופלים, ואלה שיכלו עוד להיות חיים<br>
             אם המלחמה הייתה מסתיימת
