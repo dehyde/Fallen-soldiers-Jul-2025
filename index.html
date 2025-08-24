@@ -1039,7 +1039,8 @@
         .status-components-container,
         .desktop-status-components-container,
         .timeline-bracket-label,
-        .about-button {
+        .about-button,
+        .mobile-about-button {
             transition: filter 0.4s ease, opacity 0.4s ease;
         }
 
@@ -1049,7 +1050,8 @@
         .modal-open .status-components-container,
         .modal-open .desktop-status-components-container,
         .modal-open .timeline-bracket-label,
-        .modal-open .about-button {
+        .modal-open .about-button,
+        .modal-open .mobile-about-button {
             filter: blur(3px);
             opacity: 0.3;
         }
@@ -6562,19 +6564,20 @@
                             tooltip.classList.add('alive');
                         }
                         
+                        // Add mobile-active class BEFORE positioning to ensure accurate dimensions
+                        tooltip.classList.add('mobile-active');
+                        
                         // Position tooltip relative to the clicked element (use element center instead of mouse)
                         const fakeMouseEvent = {
                             clientX: nameEl.getBoundingClientRect().left + (nameEl.getBoundingClientRect().width / 2),
                             clientY: nameEl.getBoundingClientRect().top + (nameEl.getBoundingClientRect().height / 2)
                         };
-                        this.positionSoldierTooltip(fakeMouseEvent, tooltip, nameEl);
                         
-                        // Use setTimeout to ensure DOM processes the class removal first
+                        // Add short delay to ensure mobile-active class is processed
                         setTimeout(() => {
-                            // Add mobile-active class first (for display override)
-                            tooltip.classList.add('mobile-active');
+                            this.positionSoldierTooltip(fakeMouseEvent, tooltip, nameEl);
                             
-                            // Add visible class with small delay to trigger transitions
+                            // Add visible class to trigger transitions
                             setTimeout(() => {
                                 tooltip.classList.add('visible');
                             }, 10);
@@ -6587,8 +6590,21 @@
 
             positionSoldierTooltip(mouseEvent, tooltip, nameElement) {
                 const nameRect = nameElement.getBoundingClientRect();
+                
+                // Force layout calculation to ensure accurate dimensions
+                tooltip.style.visibility = 'hidden';
+                tooltip.style.display = 'block';
+                
+                // For mobile, ensure mobile-active class is applied for accurate measurement
+                if (window.innerWidth <= 768) {
+                    tooltip.classList.add('mobile-active');
+                }
+                
                 const tooltipWidth = tooltip.offsetWidth;
                 const tooltipHeight = tooltip.offsetHeight;
+                tooltip.style.visibility = '';
+                tooltip.style.display = '';
+                
                 const screenWidth = window.innerWidth;
                 const screenHeight = window.innerHeight;
                 
@@ -6597,21 +6613,83 @@
                 
                 // Determine if name is on right or left side of screen
                 const nameCenterX = nameRect.left + (nameRect.width / 2);
-                const isOnRightSide = nameCenterX > screenWidth / 2;
                 
-                if (isOnRightSide) {
-                    // Position tooltip to the LEFT of the name
-                    x = nameRect.left - tooltipWidth - offset;
-                    // If it would go off left edge, show on right instead
-                    if (x < 10) {
+                // RTL-aware positioning: In RTL layout, visual right = lower left values
+                // For RTL, we need to check if name appears on the VISUAL right side of screen
+                const isVisuallyOnRightSide = nameCenterX < screenWidth / 2;
+                
+                // Enhanced mobile detection and positioning logic
+                const isMobile = window.innerWidth <= 768;
+                
+                // AGGRESSIVE Debug logging 
+                console.log(`=== TOOLTIP POSITIONING DEBUG ===`);
+                console.log(`Screen width: ${screenWidth}px, isMobile: ${isMobile}`);
+                console.log(`Name rect: left=${nameRect.left.toFixed(0)}, right=${nameRect.right.toFixed(0)}, width=${nameRect.width.toFixed(0)}`);
+                console.log(`Name center: ${nameCenterX.toFixed(0)}px, visuallyOnRightSide: ${isVisuallyOnRightSide}`);
+                console.log(`Tooltip dimensions: ${tooltipWidth}x${tooltipHeight}`);
+                
+                if (isMobile) {
+                    console.log(`=== MOBILE RTL POSITIONING ===`);
+                    // RTL Mobile-specific logic: When name appears visually on the right (low x values),
+                    // show tooltip visually to the left (higher x values)
+                    const wouldFitVisuallyLeft = (nameRect.right + offset + tooltipWidth) <= (screenWidth - 20);
+                    const wouldOverflowVisuallyRight = (nameRect.left - tooltipWidth - offset) < 20;
+                    
+                    console.log(`wouldFitVisuallyLeft: ${wouldFitVisuallyLeft}, wouldOverflowVisuallyRight: ${wouldOverflowVisuallyRight}`);
+                    
+                    if (isVisuallyOnRightSide) {
+                        // Name is visually on RIGHT side in RTL - position tooltip visually to the LEFT (higher x)
                         x = nameRect.right + offset;
+                        console.log(`🎯 Mobile RTL: Name on visual RIGHT - positioning visually LEFT (x=${x})`);
+                        
+                        // If tooltip would go off right edge, position at right edge of screen
+                        if (x + tooltipWidth > screenWidth - 20) {
+                            x = screenWidth - tooltipWidth - 20;
+                            console.log(`📏 Mobile RTL: Adjusted to right screen edge (x=${x})`);
+                        }
+                    } else {
+                        // Name is visually on LEFT side in RTL - position tooltip visually to the RIGHT (lower x)
+                        x = nameRect.left - tooltipWidth - offset;
+                        console.log(`🎯 Mobile RTL: Name on visual LEFT - positioning visually RIGHT (x=${x})`);
+                        
+                        // If tooltip would go off left edge, position at left edge
+                        if (x < 20) {
+                            x = 20;
+                            console.log(`📏 Mobile RTL: Adjusted to left screen edge (x=${x})`);
+                        }
                     }
                 } else {
-                    // Position tooltip to the RIGHT of the name
-                    x = nameRect.right + offset;
-                    // If it would go off right edge, show on left instead
-                    if (x + tooltipWidth > screenWidth - 10) {
+                    // Desktop RTL-aware logic
+                    if (isVisuallyOnRightSide) {
+                        // Position tooltip visually to the LEFT (higher x in RTL)
+                        x = nameRect.right + offset;
+                        // If it would go off right edge, show visually on right instead (lower x)
+                        if (x + tooltipWidth > screenWidth - 10) {
+                            x = nameRect.left - tooltipWidth - offset;
+                        }
+                    } else {
+                        // Position tooltip visually to the RIGHT (lower x in RTL)
                         x = nameRect.left - tooltipWidth - offset;
+                        // If it would go off left edge, show visually on left instead (higher x)
+                        if (x < 10) {
+                            x = nameRect.right + offset;
+                        }
+                    }
+                }
+                
+                
+                // Final RTL mobile safety check - ensure tooltip never goes off-screen
+                if (isMobile) {
+                    const rightEdge = x + tooltipWidth;
+                    const leftEdge = x;
+                    
+                    if (rightEdge > screenWidth - 10) {
+                        x = screenWidth - tooltipWidth - 10;
+                        console.log(`Mobile RTL: Final safety - moved to x=${x} to prevent right cutoff`);
+                    }
+                    if (leftEdge < 10) {
+                        x = 10;
+                        console.log(`Mobile RTL: Final safety - moved to x=${x} to prevent left cutoff`);
                     }
                 }
                 
@@ -6625,6 +6703,7 @@
                     y = screenHeight - tooltipHeight - 10;
                 }
                 
+                console.log(`🏁 FINAL POSITION: x=${x}px, y=${y}px`);
                 tooltip.style.left = x + 'px';
                 tooltip.style.top = y + 'px';
             }
