@@ -1913,9 +1913,6 @@
             <div class="content-text" id="contentText">
                 טוען נתונים...
             </div>
-            <div style="margin-top: 20px; text-align: center;">
-                <button class="mobile-about-button" id="mobileAboutButton" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">אודות</button>
-            </div>
             <div class="cta-buttons">
                 <button class="cta-tertiary" id="ctaBack">חזור</button>
                 <button class="cta-primary" id="ctaContinue">המשך (<span id="selectedDateInTitle">30.1.2024</span>)</button>
@@ -5884,6 +5881,37 @@
 
                 container.innerHTML = namesHtml;
                 
+                // Add mobile about button (only on mobile)
+                if (this.isMobile) {
+                    const mobileAboutDiv = document.createElement('div');
+                    mobileAboutDiv.style.cssText = 'margin-top: 20px; padding: 10px; display: flex; justify-content: center; width: 100%;';
+                    mobileAboutDiv.innerHTML = '<button class="mobile-about-button" id="mobileAboutButton" style="background: white; color: #333; border: 1px solid #ddd; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">אודות הפרוייקט</button>';
+                    container.appendChild(mobileAboutDiv);
+                    
+                    // Setup event listener for mobile about button
+                    const mobileAboutButton = document.getElementById('mobileAboutButton');
+                    if (mobileAboutButton) {
+                        mobileAboutButton.addEventListener('click', function() {
+                            const aboutOverlay = document.getElementById('aboutModalOverlay');
+                            
+                            // Show about modal
+                            aboutOverlay.style.display = 'flex';
+                            aboutOverlay.style.opacity = '0';
+                            document.body.classList.add('modal-open'); // Add blur effects
+                            
+                            // Start auto-hover system if available
+                            if (window.autoHoverSystem && window.autoHoverSystem.start) {
+                                window.autoHoverSystem.start();
+                            }
+                            
+                            // Animate in
+                            setTimeout(() => {
+                                aboutOverlay.style.opacity = '1';
+                            }, 10);
+                        });
+                    }
+                }
+                
                 // Setup custom tooltips for soldier names
                 this.setupSoldierTooltips();
                 
@@ -6928,25 +6956,6 @@
             }, 10);
         });
 
-        // Mobile about button functionality
-        document.getElementById('mobileAboutButton').addEventListener('click', function() {
-            const aboutOverlay = document.getElementById('aboutModalOverlay');
-            
-            // Show about modal
-            aboutOverlay.style.display = 'flex';
-            aboutOverlay.style.opacity = '0';
-            document.body.classList.add('modal-open'); // Add blur effects
-            
-            // Start auto-hover system if available
-            if (window.autoHoverSystem && window.autoHoverSystem.start) {
-                window.autoHoverSystem.start();
-            }
-            
-            // Animate in
-            setTimeout(() => {
-                aboutOverlay.style.opacity = '1';
-            }, 10);
-        });
 
         // About modal close functionality
         document.getElementById('aboutModalCloseBtn').addEventListener('click', function() {
