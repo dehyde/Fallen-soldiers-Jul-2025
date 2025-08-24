@@ -1487,6 +1487,11 @@
             .soldier-tooltip {
                 display: none !important;
             }
+            
+            /* Show soldier tooltip when explicitly activated on mobile */
+            .soldier-tooltip.mobile-active {
+                display: block !important;
+            }
 
             /* Mobile timeline track */
             .timeline-track {
@@ -5629,10 +5634,11 @@
             }
 
             setupSoldierTooltips() {
-                // Completely disable tooltips on mobile
+                // Setup mobile click tooltips instead of hover tooltips
                 if (this.isMobile) {
                     window.autoHoverSystem = { active: false, start: () => {}, stop: () => {} };
-                    return; // Don't setup any tooltip functionality on mobile
+                    this.setupMobileClickTooltips(); // Setup mobile click functionality
+                    return; // Don't setup hover functionality on mobile
                 }
                 
                 const soldierNames = document.querySelectorAll('.soldier-name');
@@ -6050,6 +6056,121 @@
                         if (tooltip.classList.contains('visible')) {
                             this.positionSoldierTooltip(e, tooltip, nameEl);
                         }
+                    });
+                });
+            }
+
+            setupMobileClickTooltips() {
+                // Only run on mobile devices
+                if (!this.isMobile) return;
+                
+                const soldierNames = document.querySelectorAll('.soldier-name');
+                const tooltip = document.getElementById('soldierTooltip');
+                const soldierNameEl = document.getElementById('soldierName');
+                const soldierDetailsEl = document.getElementById('soldierDetails');
+                const soldierPhotoEl = document.getElementById('soldierPhoto');
+                const soldierImageEl = document.getElementById('soldierImage');
+                
+                if (!tooltip || !soldierNameEl || !soldierDetailsEl || !soldierPhotoEl || !soldierImageEl) {
+                    return;
+                }
+                
+                let currentSoldierName = null;
+                let activeTooltip = false;
+                
+                // Hide tooltip when clicking anywhere else on the document
+                document.addEventListener('click', (e) => {
+                    // Check if click is on a soldier name
+                    const clickedSoldierName = e.target.closest('.soldier-name');
+                    if (!clickedSoldierName && activeTooltip) {
+                        // Clicked elsewhere - hide tooltip
+                        tooltip.classList.remove('visible', 'mobile-active');
+                        activeTooltip = false;
+                    }
+                });
+                
+                soldierNames.forEach(nameEl => {
+                    nameEl.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent document click handler
+                        
+                        const clickedName = nameEl.textContent;
+                        
+                        // If clicking the same soldier that's already showing, hide tooltip
+                        if (activeTooltip && currentSoldierName === clickedName) {
+                            tooltip.classList.remove('visible', 'mobile-active');
+                            activeTooltip = false;
+                            currentSoldierName = null;
+                            return;
+                        }
+                        
+                        // Show tooltip for this soldier
+                        const name = nameEl.textContent;
+                        const rank = nameEl.dataset.rank;
+                        const unit = nameEl.dataset.unit;
+                        const imageUrl = nameEl.dataset.imageUrl;
+                        const deathDate = new Date(parseInt(nameEl.dataset.deathDate));
+                        
+                        // Format date in Hebrew style
+                        const formattedDate = deathDate.toLocaleDateString('he-IL');
+                        
+                        // Update tooltip content (compact format)
+                        soldierNameEl.textContent = name;
+                        soldierDetailsEl.innerHTML = `
+                            <div>${unit}</div>
+                            <div style="opacity: 0.8;">נפל ${formattedDate}</div>
+                        `;
+                        
+                        // IMMEDIATELY clear any previous image to prevent flickering
+                        soldierImageEl.style.opacity = '0';
+                        soldierImageEl.src = '';
+                        currentSoldierName = name;
+                        
+                        // Handle image with fade-in animation
+                        if (imageUrl && imageUrl.trim()) {
+                            // Show container after clearing previous image
+                            soldierPhotoEl.style.display = 'block';
+                            
+                            // Set up load handler for fade-in animation
+                            soldierImageEl.onload = () => {
+                                // Only fade in if this is still the current soldier being displayed
+                                if (currentSoldierName === name) {
+                                    soldierImageEl.style.opacity = '1';
+                                }
+                            };
+                            
+                            // Add error handler to hide image if it fails to load
+                            soldierImageEl.onerror = () => {
+                                soldierPhotoEl.style.display = 'none';
+                            };
+                            
+                            // Set the image source to trigger loading
+                            soldierImageEl.src = imageUrl;
+                        } else {
+                            soldierPhotoEl.style.display = 'none';
+                        }
+                        
+                        // Apply random subtle tilt via CSS custom property
+                        const tiltAngle = (Math.random() - 0.5) * 12; // Random tilt between -6° and +6°
+                        tooltip.style.setProperty('--tilt-angle', `${tiltAngle}deg`);
+                        
+                        // Add fallen/alive class to tooltip based on soldier state
+                        tooltip.classList.remove('fallen', 'alive');
+                        if (nameEl.classList.contains('fallen')) {
+                            tooltip.classList.add('fallen');
+                        } else if (nameEl.classList.contains('alive')) {
+                            tooltip.classList.add('alive');
+                        }
+                        
+                        // Position tooltip relative to the clicked element (use element center instead of mouse)
+                        const fakeMouseEvent = {
+                            clientX: nameEl.getBoundingClientRect().left + (nameEl.getBoundingClientRect().width / 2),
+                            clientY: nameEl.getBoundingClientRect().top + (nameEl.getBoundingClientRect().height / 2)
+                        };
+                        this.positionSoldierTooltip(fakeMouseEvent, tooltip, nameEl);
+                        
+                        // Show tooltip with mobile-active class
+                        tooltip.classList.add('visible', 'mobile-active');
+                        activeTooltip = true;
                     });
                 });
             }
