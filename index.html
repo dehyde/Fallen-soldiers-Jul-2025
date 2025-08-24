@@ -6173,8 +6173,14 @@
                         };
                         this.positionSoldierTooltip(fakeMouseEvent, tooltip, nameEl);
                         
-                        // Show tooltip with mobile-active class
-                        tooltip.classList.add('visible', 'mobile-active');
+                        // Add mobile-active class first (for display override)
+                        tooltip.classList.add('mobile-active');
+                        
+                        // Add visible class with small delay to trigger transitions
+                        setTimeout(() => {
+                            tooltip.classList.add('visible');
+                        }, 10);
+                        
                         activeTooltip = true;
                     });
                 });
